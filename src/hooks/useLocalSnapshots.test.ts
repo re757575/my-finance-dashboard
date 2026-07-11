@@ -96,7 +96,7 @@ describe("useLocalSnapshots", () => {
   // PRD 第 4.2 節：本月無快照時，自動帶入最近一筆快照的資料
   it("importBackup 成功時覆蓋資料，並依最新快照預帶當月表單", async () => {
     const importedData = {
-      schemaVersion: 1 as const,
+      schemaVersion: 2 as const,
       snapshots: [
         {
           month: "2026-01",
@@ -104,6 +104,7 @@ describe("useLocalSnapshots", () => {
           cashSources: [{ id: "x", name: "匯入現金", amount: 88888 }],
           twStockValue: 0,
           usStockValue: 0,
+          usStockCurrency: "USD" as const,
           exchangeRate: 0,
           loan: 0,
           otherDebt: 0,

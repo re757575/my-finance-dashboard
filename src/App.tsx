@@ -70,6 +70,7 @@ function App() {
             <StockInputs
               twStockValue={draft.twStockValue}
               usStockValue={draft.usStockValue}
+              usStockCurrency={draft.usStockCurrency}
               exchangeRate={draft.exchangeRate}
               onChange={updateDraft}
             />

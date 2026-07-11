@@ -116,6 +116,36 @@ describe("parseFinanceData", () => {
     const raw = JSON.stringify(data);
     expect(parseFinanceData(raw)).toEqual({ status: "ok", data });
   });
+
+  // PRD 第 6.1 節：schemaVersion 低於目前版本時，執行轉換邏輯後再載入
+  it("V1 舊格式資料（無 usStockCurrency）會自動遷移為 V2，補上預設值 USD", () => {
+    const v1Raw = JSON.stringify({
+      schemaVersion: 1,
+      snapshots: [
+        {
+          month: "2026-01",
+          updatedAt: "2026-01-01T00:00:00Z",
+          cashSources: [{ id: "x", name: "現金", amount: 1000 }],
+          twStockValue: 100000,
+          usStockValue: 1000,
+          exchangeRate: 32,
+          loan: 0,
+          otherDebt: 0,
+          cashFlow: 0,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v1Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.data.schemaVersion).toBe(2);
+      expect(result.data.snapshots[0].usStockCurrency).toBe("USD");
+      // 遷移後的計算結果應與遷移前的行為完全一致（美股原本就是以 USD 換算）
+      expect(result.data.snapshots[0].usStockValue).toBe(1000);
+      expect(result.data.snapshots[0].exchangeRate).toBe(32);
+    }
+  });
 });
 
 describe("getCurrentMonth", () => {

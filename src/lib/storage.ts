@@ -12,6 +12,42 @@ export type LoadResult =
   | { status: "corrupted" }
   | { status: "version-mismatch"; foundVersion: unknown };
 
+interface RawSnapshotV1 {
+  month: string;
+  updatedAt: string;
+  cashSources: { id: string; name: string; amount: number }[];
+  twStockValue: number;
+  usStockValue: number;
+  exchangeRate: number;
+  loan: number;
+  otherDebt: number;
+  cashFlow: number;
+}
+
+/** V1（無 usStockCurrency）→ V2：美股市值當時一律以 USD 計價換算，遷移時補上此預設值。 */
+function migrateV1ToV2(raw: {
+  schemaVersion: 1;
+  snapshots: RawSnapshotV1[];
+}): FinanceData {
+  return {
+    schemaVersion: 2,
+    snapshots: raw.snapshots.map((s) => ({ ...s, usStockCurrency: "USD" })),
+  };
+}
+
+/** 已知舊版本資料的轉換邏輯（PRD 第 6.1 節）。回傳 null 代表版本無法識別/轉換，不得覆蓋原始資料。 */
+function migrateFinanceData(parsed: {
+  schemaVersion: unknown;
+  snapshots: unknown[];
+}): FinanceData | null {
+  if (parsed.schemaVersion === 1) {
+    return migrateV1ToV2(
+      parsed as { schemaVersion: 1; snapshots: RawSnapshotV1[] }
+    );
+  }
+  return null;
+}
+
 /** 依 PRD 第 6.1 節規則解析快照資料：格式錯誤或版本不符時不拋錯，回傳明確狀態供上層處理。 */
 export function parseFinanceData(raw: string | null): LoadResult {
   if (raw === null) return { status: "empty" };
@@ -33,11 +69,18 @@ export function parseFinanceData(raw: string | null): LoadResult {
   }
 
   const data = parsed as FinanceData;
-  if (data.schemaVersion !== CURRENT_SCHEMA_VERSION) {
-    return { status: "version-mismatch", foundVersion: data.schemaVersion };
+  if (data.schemaVersion === CURRENT_SCHEMA_VERSION) {
+    return { status: "ok", data };
   }
 
-  return { status: "ok", data };
+  const migrated = migrateFinanceData(
+    parsed as { schemaVersion: unknown; snapshots: unknown[] }
+  );
+  if (migrated) {
+    return { status: "ok", data: migrated };
+  }
+
+  return { status: "version-mismatch", foundVersion: data.schemaVersion };
 }
 
 export function loadFinanceData(): LoadResult {
