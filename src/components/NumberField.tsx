@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { toSafeNumber } from "@/lib/calculations";
+import { useNumberInputText } from "@/hooks/useNumberInputText";
 
 interface NumberFieldProps {
   label: string;
@@ -17,19 +17,24 @@ export function NumberField({
   min,
   suffix,
 }: NumberFieldProps) {
+  const { text, handleChange, handleFocus, handleBlur } = useNumberInputText({
+    value,
+    onChange,
+    min,
+  });
+
   return (
     <label className="block space-y-1">
       <span className="text-sm font-medium text-slate-700">{label}</span>
       <div className="relative">
         <Input
-          type="number"
+          type="text"
           inputMode="decimal"
-          min={min}
-          value={value}
-          onChange={(e) => {
-            const next = toSafeNumber(e.target.value);
-            onChange(min !== undefined ? Math.max(min, next) : next);
-          }}
+          placeholder="0"
+          value={text}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           className={suffix ? "pr-14" : undefined}
         />
         {suffix && (
