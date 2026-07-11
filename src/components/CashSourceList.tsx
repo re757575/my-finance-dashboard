@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { sumCashSources, toSafeNumber } from "@/lib/calculations";
+import { useNumberInputText } from "@/hooks/useNumberInputText";
+import { sumCashSources } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
 import type { CashSource } from "@/types/schema";
 
@@ -42,44 +43,62 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
 
       <div className="space-y-2">
         {value.map((source) => (
-          <div key={source.id} className="flex items-center gap-2">
-            <Input
-              placeholder="來源名稱"
-              value={source.name}
-              onChange={(e) =>
-                updateSource(source.id, { name: e.target.value })
-              }
-              className="flex-1"
-              aria-label="來源名稱"
-            />
-            <Input
-              type="number"
-              inputMode="decimal"
-              placeholder="金額"
-              value={source.amount}
-              onChange={(e) =>
-                updateSource(source.id, {
-                  amount: toSafeNumber(e.target.value),
-                })
-              }
-              className="w-32"
-              aria-label="金額"
-            />
-            <button
-              type="button"
-              onClick={() => removeSource(source.id)}
-              aria-label={`刪除 ${source.name || "此筆現金來源"}`}
-              className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
-            >
-              🗑️
-            </button>
-          </div>
+          <CashSourceRow
+            key={source.id}
+            source={source}
+            onUpdate={(patch) => updateSource(source.id, patch)}
+            onRemove={() => removeSource(source.id)}
+          />
         ))}
       </div>
 
       <p className="text-right text-sm text-slate-500">
         現金合計：{formatCurrency(sumCashSources(value))}
       </p>
+    </div>
+  );
+}
+
+interface CashSourceRowProps {
+  source: CashSource;
+  onUpdate: (patch: Partial<CashSource>) => void;
+  onRemove: () => void;
+}
+
+function CashSourceRow({ source, onUpdate, onRemove }: CashSourceRowProps) {
+  const { text, handleChange, handleFocus, handleBlur } = useNumberInputText({
+    value: source.amount,
+    onChange: (amount) => onUpdate({ amount }),
+  });
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        placeholder="來源名稱"
+        value={source.name}
+        onChange={(e) => onUpdate({ name: e.target.value })}
+        className="flex-1"
+        aria-label="來源名稱"
+      />
+      <Input
+        type="text"
+        inputMode="decimal"
+        placeholder="0"
+        value={text}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        className="w-32"
+        aria-label="金額"
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`刪除 ${source.name || "此筆現金來源"}`}
+        className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+      >
+        🗑️
+      </button>
     </div>
   );
 }
