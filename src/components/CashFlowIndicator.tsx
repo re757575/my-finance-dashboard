@@ -17,6 +17,7 @@ export function CashFlowIndicator({ cashFlow }: CashFlowIndicatorProps) {
           aria-hidden
         />
         <p
+          data-testid="cash-flow-value"
           className={`text-2xl font-bold ${isNegative ? "text-rose-600" : "text-slate-900"}`}
         >
           {formatCurrency(cashFlow)}

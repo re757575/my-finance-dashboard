@@ -7,6 +7,12 @@ logs
 *.log
 npm-debug.log*
 
+### Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 ### macOS
 # Finder metadata
 .DS_Store

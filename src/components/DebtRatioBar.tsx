@@ -30,16 +30,21 @@ export function DebtRatioBar({ ratio, status }: DebtRatioBarProps) {
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-slate-500">負債比</p>
         <span
+          data-testid="debt-ratio-status"
           className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}
         >
           {DEBT_RATIO_STATUS_LABEL[status]}
         </span>
       </div>
-      <p className="mt-1 text-2xl font-bold text-slate-900">
+      <p
+        data-testid="debt-ratio-value"
+        className="mt-1 text-2xl font-bold text-slate-900"
+      >
         {formatPercent(ratio)}
       </p>
       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
         <div
+          data-testid="debt-ratio-bar-fill"
           className={`h-full rounded-full transition-all duration-100 ${style.bar}`}
           style={{ width: `${width}%` }}
         />

@@ -86,6 +86,7 @@ function App() {
             <div className="space-y-1">
               <Button
                 type="button"
+                data-testid="save-button"
                 className="w-full"
                 onClick={handleSave}
                 disabled={!isDirty}
@@ -93,7 +94,10 @@ function App() {
                 更新儀表板{isDirty ? "" : "（已是最新）"}
               </Button>
               {saveMessage && (
-                <p className="text-center text-xs text-slate-500">
+                <p
+                  data-testid="save-message"
+                  className="text-center text-xs text-slate-500"
+                >
                   {saveMessage}
                 </p>
               )}
