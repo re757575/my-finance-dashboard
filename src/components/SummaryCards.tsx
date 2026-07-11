@@ -11,9 +11,18 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <SummaryCard label="總資產" value={metrics.totalAssets} />
-      <SummaryCard label="總負債" value={metrics.totalLiabilities} />
       <SummaryCard
+        testId="total-assets"
+        label="總資產"
+        value={metrics.totalAssets}
+      />
+      <SummaryCard
+        testId="total-liabilities"
+        label="總負債"
+        value={metrics.totalLiabilities}
+      />
+      <SummaryCard
+        testId="net-worth"
         label="個人淨資產"
         value={metrics.netWorth}
         negative={netWorthNegative}
@@ -23,10 +32,12 @@ export function SummaryCards({ metrics }: SummaryCardsProps) {
 }
 
 function SummaryCard({
+  testId,
   label,
   value,
   negative,
 }: {
+  testId: string;
   label: string;
   value: number;
   negative?: boolean;
@@ -35,6 +46,7 @@ function SummaryCard({
     <div className="rounded-xl bg-white p-4 shadow-sm">
       <p className="text-sm text-slate-500">{label}</p>
       <p
+        data-testid={testId}
         className={`mt-1 text-2xl font-bold sm:text-3xl ${negative ? "text-rose-600" : "text-slate-900"}`}
       >
         {formatCurrency(value)}

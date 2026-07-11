@@ -1,0 +1,7 @@
+dist
+node_modules
+playwright-report
+test-results
+
+# 刻意寫成非法 JSON 的 e2e 測試 fixture，Prettier 會解析失敗
+e2e/fixtures/corrupted-backup.json

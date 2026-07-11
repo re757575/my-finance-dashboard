@@ -4,23 +4,26 @@
 
 ## 專案狀態
 
-目前為**規格文件階段**，尚未開始實作。專案骨架（Vite + React 專案）尚未建立。
+已完成 Vite + React 19 + TypeScript 專案骨架與核心功能實作，並具備 pre-commit 品質檢查（Husky + lint-staged + Prettier）。
 
 ## 文件
 
 - **[PRD.md](./PRD.md)** — 產品需求文件，定義功能需求、財務計算公式、資料結構、UI/UX 規範、非功能性需求與驗收標準。
 - **[TECH_STACK.md](./TECH_STACK.md)** — 前端技術建議，說明建置工具、框架、狀態管理、圖表、UI 元件庫等技術選型與理由。
 
-## 快速開始（專案 scaffold 完成後）
-
-> 以下指令為預期指令，需先依 [TECH_STACK.md](./TECH_STACK.md) 建立 Vite + React + TypeScript 專案骨架後才能使用。
+## 快速開始
 
 ```bash
-npm install       # 安裝相依套件
-npm run dev       # 啟動本地開發伺服器
-npm run build     # 建置正式版靜態檔案
-npm run test      # 執行單元測試（財務公式計算邏輯）
+npm install              # 安裝相依套件
+npm run dev               # 啟動本地開發伺服器
+npm run build              # 建置正式版靜態檔案
+npm run typecheck          # TypeScript 型別檢查
+npm run test               # 執行單元/元件測試（Vitest）
+npx playwright install --with-deps chromium   # 首次執行 e2e 測試前，安裝瀏覽器
+npm run test:e2e           # 執行 e2e 測試（Playwright，會自動啟動 dev server）
 ```
+
+Commit 時會自動觸發 `.husky/pre-commit`：依序執行 `lint-staged`（Prettier 格式化）、`typecheck`、`test`（單元/元件測試）。e2e 測試因啟動較慢，不包含在 pre-commit 內，建議在推送前或 CI 中執行。
 
 ## 核心原則
 
