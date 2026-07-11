@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CashFlowIndicator } from "@/components/CashFlowIndicator";
 import { CashFlowInput } from "@/components/CashFlowInput";
+import { CashRatioCard } from "@/components/CashRatioCard";
 import { CashSourceList } from "@/components/CashSourceList";
 import { DataManagement } from "@/components/DataManagement";
 import { DebtInputs } from "@/components/DebtInputs";
@@ -115,11 +116,12 @@ function App() {
           <div className="space-y-6 md:col-span-2">
             <section className="space-y-3">
               <SummaryCards metrics={metrics} />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <DebtRatioBar
                   ratio={metrics.debtRatio}
                   status={metrics.debtRatioStatus}
                 />
+                <CashRatioCard ratio={metrics.cashRatio} />
                 <CashFlowIndicator cashFlow={draft.cashFlow} />
               </div>
             </section>

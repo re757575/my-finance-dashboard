@@ -38,6 +38,7 @@ export interface CalculatedMetrics {
   netWorth: number;
   debtRatio: number;
   debtRatioStatus: DebtRatioStatus;
+  cashRatio: number;
 }
 
 export function createEmptySnapshot(month: string): Snapshot {

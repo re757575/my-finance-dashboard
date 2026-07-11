@@ -116,6 +116,22 @@ describe("calculateMetrics", () => {
     expect(result.totalStockValue).toBe(100000 + 32000);
   });
 
+  it("總資產為 0 時，現金比例為 0%", () => {
+    const result = calculateMetrics(baseSnapshotInput());
+    expect(result.cashRatio).toBe(0);
+    expect(Number.isFinite(result.cashRatio)).toBe(true);
+  });
+
+  it("現金比例 = 總現金 / 總資產 × 100", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [{ id: "1", name: "現金", amount: 30000 }],
+        twStockValue: 70000,
+      })
+    );
+    expect(result.cashRatio).toBeCloseTo(30);
+  });
+
   it("完整案例：資產、負債、淨資產、負債比一致", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
@@ -140,5 +156,6 @@ describe("calculateMetrics", () => {
     expect(result.debtRatio).toBeCloseTo(
       (totalLiabilities / totalAssets) * 100
     );
+    expect(result.cashRatio).toBeCloseTo((totalCash / totalAssets) * 100);
   });
 });

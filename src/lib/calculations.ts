@@ -76,6 +76,8 @@ export function calculateMetrics(
   // 總資產為 0 時負債比預設為 0%，避免除以零（PRD 第 5 節）
   const debtRatio =
     totalAssets === 0 ? 0 : (totalLiabilities / totalAssets) * 100;
+  // 總資產為 0 時現金比例同樣預設為 0%，避免除以零
+  const cashRatio = totalAssets === 0 ? 0 : (totalCash / totalAssets) * 100;
 
   return {
     totalCash,
@@ -85,5 +87,6 @@ export function calculateMetrics(
     netWorth,
     debtRatio,
     debtRatioStatus: calculateDebtRatioStatus(debtRatio),
+    cashRatio,
   };
 }
