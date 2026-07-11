@@ -21,6 +21,7 @@ import {
 } from "@/types/schema";
 
 const TREND_WINDOW_MONTHS = 12;
+const PROMPT_WINDOW_MONTHS = 6;
 
 /** 依 PRD 4.2「本月表單自動帶入上月資料」：當月無快照時，沿用上月數值但月份/時間戳改為當月。 */
 function buildInitialDraft(data: FinanceData, currentMonth: string): Snapshot {
@@ -137,6 +138,11 @@ export function useLocalSnapshots() {
     [financeData]
   );
   const visibleSnapshots = showAllHistory ? allSnapshots : recentSnapshots;
+  /** 一鍵複製提示詞用：近 6 個月已儲存快照（不含當月未儲存的異動）。 */
+  const promptSnapshots = useMemo(
+    () => getRecentSnapshots(financeData, PROMPT_WINDOW_MONTHS),
+    [financeData]
+  );
 
   return {
     currentMonth,
@@ -153,5 +159,6 @@ export function useLocalSnapshots() {
     visibleSnapshots,
     showAllHistory,
     setShowAllHistory,
+    promptSnapshots,
   };
 }

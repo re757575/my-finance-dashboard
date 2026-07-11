@@ -3,6 +3,7 @@ import { CashFlowIndicator } from "@/components/CashFlowIndicator";
 import { CashFlowInput } from "@/components/CashFlowInput";
 import { CashRatioCard } from "@/components/CashRatioCard";
 import { CashSourceList } from "@/components/CashSourceList";
+import { CopyPromptButton } from "@/components/CopyPromptButton";
 import { DataManagement } from "@/components/DataManagement";
 import { DebtInputs } from "@/components/DebtInputs";
 import { DebtRatioBar } from "@/components/DebtRatioBar";
@@ -28,6 +29,7 @@ function App() {
     visibleSnapshots,
     showAllHistory,
     setShowAllHistory,
+    promptSnapshots,
   } = useLocalSnapshots();
 
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -115,6 +117,15 @@ function App() {
           {/* 右欄：看板與趨勢 */}
           <div className="space-y-6 md:col-span-2">
             <section className="space-y-3">
+              <div className="flex justify-end">
+                <CopyPromptButton
+                  currentMonth={currentMonth}
+                  draft={draft}
+                  metrics={metrics}
+                  recentSnapshots={promptSnapshots}
+                  disabled={snapshotCount === 0}
+                />
+              </div>
               <SummaryCards metrics={metrics} />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <DebtRatioBar
