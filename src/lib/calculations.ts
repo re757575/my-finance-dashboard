@@ -3,6 +3,7 @@ import type {
   CashSource,
   DebtRatioStatus,
   Snapshot,
+  StockCurrency,
 } from "@/types/schema";
 
 /** 非數字或空值一律視為 0（PRD 4.2 輸入防呆規則） */
@@ -18,15 +19,21 @@ export function sumCashSources(cashSources: CashSource[]): number {
   );
 }
 
+/**
+ * 美股市值計價幣別為 USD 時，需乘上匯率換算成台幣；
+ * 若使用者選擇直接以台幣等值金額填入（TWD），則不再重複換算。
+ */
 export function calculateTotalStockValue(
   twStockValue: number,
   usStockValue: number,
-  exchangeRate: number
+  exchangeRate: number,
+  usStockCurrency: StockCurrency = "USD"
 ): number {
-  return (
-    toSafeNumber(twStockValue) +
-    toSafeNumber(usStockValue) * toSafeNumber(exchangeRate)
-  );
+  const usValueInTwd =
+    usStockCurrency === "TWD"
+      ? toSafeNumber(usStockValue)
+      : toSafeNumber(usStockValue) * toSafeNumber(exchangeRate);
+  return toSafeNumber(twStockValue) + usValueInTwd;
 }
 
 export function calculateDebtRatioStatus(ratio: number): DebtRatioStatus {
@@ -49,6 +56,7 @@ export function calculateMetrics(
     | "cashSources"
     | "twStockValue"
     | "usStockValue"
+    | "usStockCurrency"
     | "exchangeRate"
     | "loan"
     | "otherDebt"
@@ -58,7 +66,8 @@ export function calculateMetrics(
   const totalStockValue = calculateTotalStockValue(
     snapshot.twStockValue,
     snapshot.usStockValue,
-    snapshot.exchangeRate
+    snapshot.exchangeRate,
+    snapshot.usStockCurrency
   );
   const totalAssets = totalCash + totalStockValue;
   const totalLiabilities =

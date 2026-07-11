@@ -66,6 +66,29 @@ test("負債比燈號隨輸入即時切換健康狀態", async ({ page }) => {
   );
 });
 
+// 美股市值可切換計價幣別：USD 需乘匯率、TWD 直接採用輸入的台幣等值金額
+test("美股市值可切換 USD/TWD 計價，切換後總資產與匯率欄位跟著變化", async ({
+  page,
+}) => {
+  await page.getByLabel("美股市值", { exact: true }).fill("1000");
+  await page.locator('label:has-text("美股匯率") input').fill("32");
+
+  await expect(page.getByTestId("total-assets")).toHaveText("$32,000");
+  await expect(page.locator('label:has-text("美股匯率")')).toBeVisible();
+
+  await page.getByRole("button", { name: "TWD", exact: true }).click();
+
+  // 切到 TWD 模式：匯率欄位消失，美股市值 1000 直接當台幣使用，不再乘 32
+  await expect(page.locator('label:has-text("美股匯率")')).toHaveCount(0);
+  await expect(page.getByTestId("total-assets")).toHaveText("$1,000");
+
+  await page.getByRole("button", { name: "USD", exact: true }).click();
+
+  // 切回 USD：先前輸入的匯率仍保留，重新乘回去
+  await expect(page.locator('label:has-text("美股匯率")')).toBeVisible();
+  await expect(page.getByTestId("total-assets")).toHaveText("$32,000");
+});
+
 test("按下更新儀表板後正式存檔，重新整理後資料仍在", async ({ page }) => {
   await page.getByText("+ 新增現金來源").click();
   await page.getByLabel("金額").fill("50000");

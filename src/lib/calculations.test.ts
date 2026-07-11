@@ -9,6 +9,7 @@ function baseSnapshotInput(
     cashSources: [] as CashSource[],
     twStockValue: 0,
     usStockValue: 0,
+    usStockCurrency: "USD" as const,
     exchangeRate: 0,
     loan: 0,
     otherDebt: 0,
@@ -89,16 +90,30 @@ describe("calculateMetrics", () => {
     expect(Number.isNaN(result.debtRatio)).toBe(false);
   });
 
-  // PRD 第 9 節 #10：台股/美股/匯率換算
-  it("股票市值合計 = 台股 + 美股 × 匯率", () => {
+  // PRD 第 9 節 #10：台股/美股/匯率換算（美股以 USD 計價時）
+  it("美股以 USD 計價時，股票市值合計 = 台股 + 美股 × 匯率", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
         twStockValue: 100000,
         usStockValue: 1000,
+        usStockCurrency: "USD",
         exchangeRate: 32,
       })
     );
     expect(result.totalStockValue).toBe(100000 + 1000 * 32);
+  });
+
+  // 美股改以 TWD 計價時，直接採用使用者輸入的台幣等值金額，不再乘匯率
+  it("美股以 TWD 計價時，股票市值合計 = 台股 + 美股（不乘匯率）", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        twStockValue: 100000,
+        usStockValue: 32000,
+        usStockCurrency: "TWD",
+        exchangeRate: 32, // 刻意保留匯率值，驗證此模式下不會被誤用
+      })
+    );
+    expect(result.totalStockValue).toBe(100000 + 32000);
   });
 
   it("完整案例：資產、負債、淨資產、負債比一致", () => {
