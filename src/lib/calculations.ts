@@ -1,7 +1,11 @@
 import type {
   CalculatedMetrics,
   CashSource,
+  Debt,
+  DebtCategory,
   DebtRatioStatus,
+  IncomeSource,
+  RepaymentMethod,
   Snapshot,
   StockCurrency,
 } from "@/types/schema";
@@ -17,6 +21,56 @@ export function sumCashSources(cashSources: CashSource[]): number {
     (sum, source) => sum + toSafeNumber(source.amount),
     0
   );
+}
+
+export function sumIncomeSources(incomeSources: IncomeSource[]): number {
+  return incomeSources.reduce(
+    (sum, source) => sum + toSafeNumber(source.amount),
+    0
+  );
+}
+
+/** 新增負債時依類別帶入的常見攤還方式預設值，使用者可自行覆寫（PRD 4.2、5.2 節）。 */
+export const DEFAULT_REPAYMENT_METHOD_BY_CATEGORY: Record<
+  DebtCategory,
+  RepaymentMethod
+> = {
+  信貸: "amortizing",
+  質押: "interestOnly",
+  房貸: "amortizing",
+  其他: "amortizing",
+};
+
+/**
+ * 單筆負債的每月應還款金額（PRD 5.2 節）。
+ * 本息平均攤還採標準 PMT 年金公式；只計息簡化為「年利率 ÷ 12」，不採實際天數計息。
+ * 剩餘還款期數 ≤ 0 時一律視為 0，避免除以零或 NaN/Infinity。
+ */
+export function calculateMonthlyPayment(debt: Debt): number {
+  const principal = toSafeNumber(debt.principal);
+  const annualRate = toSafeNumber(debt.annualRate);
+  const remainingMonths = toSafeNumber(debt.remainingMonths);
+
+  if (remainingMonths <= 0) return 0;
+
+  const monthlyRate = annualRate / 100 / 12;
+
+  if (debt.repaymentMethod === "interestOnly") {
+    return principal * monthlyRate;
+  }
+
+  if (monthlyRate === 0) return principal / remainingMonths;
+
+  const factor = Math.pow(1 + monthlyRate, remainingMonths);
+  return (principal * (monthlyRate * factor)) / (factor - 1);
+}
+
+export function calculateTotalMonthlyDebtPayment(debts: Debt[]): number {
+  return debts.reduce((sum, debt) => sum + calculateMonthlyPayment(debt), 0);
+}
+
+export function sumDebtPrincipal(debts: Debt[]): number {
+  return debts.reduce((sum, debt) => sum + toSafeNumber(debt.principal), 0);
 }
 
 /**
@@ -58,8 +112,9 @@ export function calculateMetrics(
     | "usStockValue"
     | "usStockCurrency"
     | "exchangeRate"
-    | "loan"
-    | "otherDebt"
+    | "debts"
+    | "incomeSources"
+    | "monthlyExpense"
   >
 ): CalculatedMetrics {
   const totalCash = sumCashSources(snapshot.cashSources);
@@ -70,14 +125,22 @@ export function calculateMetrics(
     snapshot.usStockCurrency
   );
   const totalAssets = totalCash + totalStockValue;
-  const totalLiabilities =
-    toSafeNumber(snapshot.loan) + toSafeNumber(snapshot.otherDebt);
+  const totalLiabilities = sumDebtPrincipal(snapshot.debts);
   const netWorth = totalAssets - totalLiabilities;
   // 總資產為 0 時負債比預設為 0%，避免除以零（PRD 第 5 節）
   const debtRatio =
     totalAssets === 0 ? 0 : (totalLiabilities / totalAssets) * 100;
   // 總資產為 0 時現金比例同樣預設為 0%，避免除以零
   const cashRatio = totalAssets === 0 ? 0 : (totalCash / totalAssets) * 100;
+  const totalMonthlyDebtPayment = calculateTotalMonthlyDebtPayment(
+    snapshot.debts
+  );
+  const totalIncome = sumIncomeSources(snapshot.incomeSources);
+  // 現金流 = 總收入 − 本月支出 − 本月應還款總額（PRD 5.3 節）
+  const cashFlow =
+    totalIncome -
+    toSafeNumber(snapshot.monthlyExpense) -
+    totalMonthlyDebtPayment;
 
   return {
     totalCash,
@@ -88,5 +151,8 @@ export function calculateMetrics(
     debtRatio,
     debtRatioStatus: calculateDebtRatioStatus(debtRatio),
     cashRatio,
+    totalMonthlyDebtPayment,
+    totalIncome,
+    cashFlow,
   };
 }

@@ -9,6 +9,19 @@ vi.mock("@/lib/backup", () => ({
 
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
 import { downloadBackup, parseBackupFile } from "@/lib/backup";
+import type { Debt } from "@/types/schema";
+
+function oneDebt(principal: number): Debt {
+  return {
+    id: "d1",
+    name: "測試負債",
+    category: "信貸",
+    principal,
+    annualRate: 0,
+    remainingMonths: 0,
+    repaymentMethod: "amortizing",
+  };
+}
 
 beforeEach(() => {
   localStorage.clear();
@@ -43,7 +56,7 @@ describe("useLocalSnapshots", () => {
     const { result } = renderHook(() => useLocalSnapshots());
 
     act(() => {
-      result.current.updateDraft({ loan: 10000 });
+      result.current.updateDraft({ debts: [oneDebt(10000)] });
     });
     act(() => {
       expect(result.current.save().ok).toBe(true);
@@ -54,7 +67,7 @@ describe("useLocalSnapshots", () => {
     expect(loaded.status).toBe("ok");
     if (loaded.status === "ok") {
       expect(loaded.data.snapshots).toHaveLength(1);
-      expect(loaded.data.snapshots[0].loan).toBe(10000);
+      expect(loaded.data.snapshots[0].debts[0].principal).toBe(10000);
     }
   });
 
@@ -63,13 +76,13 @@ describe("useLocalSnapshots", () => {
     const { result } = renderHook(() => useLocalSnapshots());
 
     act(() => {
-      result.current.updateDraft({ loan: 1000 });
+      result.current.updateDraft({ debts: [oneDebt(1000)] });
     });
     act(() => {
       result.current.save();
     });
     act(() => {
-      result.current.updateDraft({ loan: 5000 });
+      result.current.updateDraft({ debts: [oneDebt(5000)] });
     });
     act(() => {
       result.current.save();
@@ -79,7 +92,7 @@ describe("useLocalSnapshots", () => {
     expect(loaded.status).toBe("ok");
     if (loaded.status === "ok") {
       expect(loaded.data.snapshots).toHaveLength(1);
-      expect(loaded.data.snapshots[0].loan).toBe(5000);
+      expect(loaded.data.snapshots[0].debts[0].principal).toBe(5000);
     }
   });
 
@@ -96,7 +109,7 @@ describe("useLocalSnapshots", () => {
   // PRD 第 4.2 節：本月無快照時，自動帶入最近一筆快照的資料
   it("importBackup 成功時覆蓋資料，並依最新快照預帶當月表單", async () => {
     const importedData = {
-      schemaVersion: 2 as const,
+      schemaVersion: 3 as const,
       snapshots: [
         {
           month: "2026-01",
@@ -106,9 +119,9 @@ describe("useLocalSnapshots", () => {
           usStockValue: 0,
           usStockCurrency: "USD" as const,
           exchangeRate: 0,
-          loan: 0,
-          otherDebt: 0,
-          cashFlow: 0,
+          debts: [],
+          incomeSources: [],
+          monthlyExpense: 0,
         },
       ],
     };
@@ -145,7 +158,7 @@ describe("useLocalSnapshots", () => {
     const { result } = renderHook(() => useLocalSnapshots());
 
     act(() => {
-      result.current.updateDraft({ loan: 1000 });
+      result.current.updateDraft({ debts: [oneDebt(1000)] });
     });
     act(() => {
       result.current.save();
@@ -155,7 +168,7 @@ describe("useLocalSnapshots", () => {
     });
 
     expect(result.current.loadStatus).toBe("empty");
-    expect(result.current.draft.loan).toBe(0);
+    expect(result.current.draft.debts).toEqual([]);
     expect(loadFinanceData()).toEqual({ status: "empty" });
   });
 
@@ -170,7 +183,7 @@ describe("useLocalSnapshots", () => {
     expect(result.current.loadStatus).toBe("version-mismatch");
 
     act(() => {
-      result.current.updateDraft({ loan: 1000 });
+      result.current.updateDraft({ debts: [oneDebt(1000)] });
     });
 
     act(() => {

@@ -1,6 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { calculateMetrics, toSafeNumber } from "@/lib/calculations";
-import type { CashSource } from "@/types/schema";
+import {
+  calculateMetrics,
+  calculateMonthlyPayment,
+  calculateTotalMonthlyDebtPayment,
+  toSafeNumber,
+} from "@/lib/calculations";
+import type { CashSource, Debt, IncomeSource } from "@/types/schema";
+
+function baseDebt(overrides: Partial<Debt> = {}): Debt {
+  return {
+    id: "d1",
+    name: "測試負債",
+    category: "信貸",
+    principal: 0,
+    annualRate: 0,
+    remainingMonths: 0,
+    repaymentMethod: "amortizing",
+    ...overrides,
+  };
+}
 
 function baseSnapshotInput(
   overrides: Partial<Parameters<typeof calculateMetrics>[0]> = {}
@@ -11,8 +29,9 @@ function baseSnapshotInput(
     usStockValue: 0,
     usStockCurrency: "USD" as const,
     exchangeRate: 0,
-    loan: 0,
-    otherDebt: 0,
+    debts: [] as Debt[],
+    incomeSources: [] as IncomeSource[],
+    monthlyExpense: 0,
     ...overrides,
   };
 }
@@ -50,7 +69,7 @@ describe("calculateMetrics", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
         cashSources: [{ id: "1", name: "現金", amount: totalAssets }],
-        loan: totalLiabilities,
+        debts: [baseDebt({ principal: totalLiabilities })],
       })
     );
     expect(result.debtRatioStatus).toBe(expected);
@@ -83,7 +102,7 @@ describe("calculateMetrics", () => {
         cashSources: [
           { id: "1", name: "現金", amount: "abc" as unknown as number },
         ],
-        loan: "abc" as unknown as number,
+        debts: [baseDebt({ principal: "abc" as unknown as number })],
       })
     );
     expect(Number.isNaN(result.totalAssets)).toBe(false);
@@ -142,8 +161,10 @@ describe("calculateMetrics", () => {
         twStockValue: 320000,
         usStockValue: 9000,
         exchangeRate: 32.7,
-        loan: 300000,
-        otherDebt: 15000,
+        debts: [
+          baseDebt({ id: "d1", category: "房貸", principal: 300000 }),
+          baseDebt({ id: "d2", category: "其他", principal: 15000 }),
+        ],
       })
     );
     const totalCash = 12000 + 150000;
@@ -157,5 +178,122 @@ describe("calculateMetrics", () => {
       (totalLiabilities / totalAssets) * 100
     );
     expect(result.cashRatio).toBeCloseTo((totalCash / totalAssets) * 100);
+  });
+
+  // 現金流 = 總收入 − 本月支出 − 本月應還款總額（PRD 5.3 節），不再由使用者手動輸入
+  it("現金流 = 收入合計 − 本月支出 − 本月應還款總額", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        incomeSources: [
+          { id: "i1", name: "薪資", amount: 60000 },
+          { id: "i2", name: "接案", amount: 8000 },
+        ],
+        monthlyExpense: 22000,
+        debts: [
+          baseDebt({
+            principal: 500000,
+            annualRate: 3.5,
+            remainingMonths: 12,
+            repaymentMethod: "interestOnly",
+          }),
+        ],
+      })
+    );
+    const totalIncome = 68000;
+    const monthlyDebtPayment = 500000 * (3.5 / 100 / 12);
+    expect(result.totalIncome).toBe(totalIncome);
+    expect(result.totalMonthlyDebtPayment).toBeCloseTo(monthlyDebtPayment);
+    expect(result.cashFlow).toBeCloseTo(
+      totalIncome - 22000 - monthlyDebtPayment
+    );
+  });
+
+  it("負債清單可為空，總負債與本月應還款總額皆為 0，不報錯", () => {
+    const result = calculateMetrics(baseSnapshotInput());
+    expect(result.totalLiabilities).toBe(0);
+    expect(result.totalMonthlyDebtPayment).toBe(0);
+    expect(result.debtRatioStatus).toBe("debt-free");
+  });
+});
+
+describe("calculateMonthlyPayment", () => {
+  // PRD 第 9 節 #21：本息平均攤還月付試算，以標準 PMT 公式驗證
+  it("本息平均攤還：月付金額等於標準 PMT 公式結果", () => {
+    const principal = 5000000;
+    const annualRate = 2.1;
+    const remainingMonths = 240;
+    const monthlyRate = annualRate / 100 / 12;
+    const factor = Math.pow(1 + monthlyRate, remainingMonths);
+    const expectedPayment = (principal * (monthlyRate * factor)) / (factor - 1);
+
+    const payment = calculateMonthlyPayment(
+      baseDebt({
+        principal,
+        annualRate,
+        remainingMonths,
+        repaymentMethod: "amortizing",
+      })
+    );
+    expect(payment).toBeCloseTo(expectedPayment);
+  });
+
+  // PRD 第 9 節 #22：只計息簡化為「年利率 ÷ 12」
+  it("只計息：月付金額 = 本金 × 年利率 ÷ 12", () => {
+    const payment = calculateMonthlyPayment(
+      baseDebt({
+        principal: 500000,
+        annualRate: 3.5,
+        remainingMonths: 12,
+        repaymentMethod: "interestOnly",
+      })
+    );
+    expect(payment).toBeCloseTo(500000 * (3.5 / 100 / 12));
+  });
+
+  // PRD 第 9 節 #24：剩餘期數為 0 時月付視為 0，避免除以零或 NaN/Infinity
+  it("剩餘期數為 0 時，本息平均攤還月付視為 0", () => {
+    const payment = calculateMonthlyPayment(
+      baseDebt({
+        principal: 100000,
+        annualRate: 2,
+        remainingMonths: 0,
+        repaymentMethod: "amortizing",
+      })
+    );
+    expect(payment).toBe(0);
+    expect(Number.isFinite(payment)).toBe(true);
+  });
+
+  it("年利率為 0 的本息平均攤還：月付 = 本金 / 剩餘期數", () => {
+    const payment = calculateMonthlyPayment(
+      baseDebt({
+        principal: 120000,
+        annualRate: 0,
+        remainingMonths: 12,
+        repaymentMethod: "amortizing",
+      })
+    );
+    expect(payment).toBeCloseTo(10000);
+  });
+
+  it("calculateTotalMonthlyDebtPayment 為所有負債月付加總", () => {
+    const debts: Debt[] = [
+      baseDebt({
+        id: "d1",
+        principal: 120000,
+        annualRate: 0,
+        remainingMonths: 12,
+        repaymentMethod: "amortizing",
+      }),
+      baseDebt({
+        id: "d2",
+        principal: 500000,
+        annualRate: 3.5,
+        remainingMonths: 12,
+        repaymentMethod: "interestOnly",
+      }),
+    ];
+    const total = calculateTotalMonthlyDebtPayment(debts);
+    expect(total).toBeCloseTo(10000 + 500000 * (3.5 / 100 / 12));
   });
 });

@@ -50,17 +50,20 @@ test("負債比燈號隨輸入即時切換健康狀態", async ({ page }) => {
 
   await expect(page.getByTestId("debt-ratio-status")).toHaveText("完美無債");
 
-  await page.locator('label:has-text("銀行貸款餘額") input').fill("39990");
+  await page.getByText("+ 新增負債").click();
+  const principalInput = page.getByLabel("剩餘本金");
+
+  await principalInput.fill("39990");
   await expect(page.getByTestId("debt-ratio-status")).toHaveText(
     "財務健康（安全範圍）"
   );
 
-  await page.locator('label:has-text("銀行貸款餘額") input').fill("40000");
+  await principalInput.fill("40000");
   await expect(page.getByTestId("debt-ratio-status")).toHaveText(
     "負債偏高（需注意調控）"
   );
 
-  await page.locator('label:has-text("銀行貸款餘額") input').fill("60001");
+  await principalInput.fill("60001");
   await expect(page.getByTestId("debt-ratio-status")).toHaveText(
     "財務高風險（請儘速理債）"
   );

@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { CashFlowIndicator } from "@/components/CashFlowIndicator";
-import { CashFlowInput } from "@/components/CashFlowInput";
 import { CashRatioCard } from "@/components/CashRatioCard";
 import { CashSourceList } from "@/components/CashSourceList";
 import { CopyPromptButton } from "@/components/CopyPromptButton";
 import { DataManagement } from "@/components/DataManagement";
-import { DebtInputs } from "@/components/DebtInputs";
+import { DebtList } from "@/components/DebtList";
 import { DebtRatioBar } from "@/components/DebtRatioBar";
+import { ExpenseInput } from "@/components/ExpenseInput";
+import { IncomeSourceList } from "@/components/IncomeSourceList";
+import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
 import { StockInputs } from "@/components/StockInputs";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TrendSection } from "@/components/TrendSection";
@@ -77,14 +79,17 @@ function App() {
               exchangeRate={draft.exchangeRate}
               onChange={updateDraft}
             />
-            <DebtInputs
-              loan={draft.loan}
-              otherDebt={draft.otherDebt}
-              onChange={updateDraft}
+            <DebtList
+              value={draft.debts}
+              onChange={(debts) => updateDraft({ debts })}
             />
-            <CashFlowInput
-              value={draft.cashFlow}
-              onChange={(cashFlow) => updateDraft({ cashFlow })}
+            <IncomeSourceList
+              value={draft.incomeSources}
+              onChange={(incomeSources) => updateDraft({ incomeSources })}
+            />
+            <ExpenseInput
+              value={draft.monthlyExpense}
+              onChange={(monthlyExpense) => updateDraft({ monthlyExpense })}
             />
 
             <div className="space-y-1">
@@ -127,13 +132,16 @@ function App() {
                 />
               </div>
               <SummaryCards metrics={metrics} />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <DebtRatioBar
                   ratio={metrics.debtRatio}
                   status={metrics.debtRatioStatus}
                 />
                 <CashRatioCard ratio={metrics.cashRatio} />
-                <CashFlowIndicator cashFlow={draft.cashFlow} />
+                <CashFlowIndicator cashFlow={metrics.cashFlow} />
+                <MonthlyDebtPaymentCard
+                  amount={metrics.totalMonthlyDebtPayment}
+                />
               </div>
             </section>
 

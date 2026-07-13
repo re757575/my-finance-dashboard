@@ -12,9 +12,9 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     usStockValue: 0,
     usStockCurrency: "USD",
     exchangeRate: 0,
-    loan: 0,
-    otherDebt: 0,
-    cashFlow: 0,
+    debts: [],
+    incomeSources: [],
+    monthlyExpense: 0,
     ...overrides,
   };
 }
@@ -23,7 +23,17 @@ describe("buildFinancePrompt", () => {
   it("包含當月標題與核心財務指標", () => {
     const draft = baseSnapshot({
       cashSources: [{ id: "1", name: "國泰活期", amount: 100000 }],
-      loan: 20000,
+      debts: [
+        {
+          id: "d1",
+          name: "信貸",
+          category: "信貸",
+          principal: 20000,
+          annualRate: 0,
+          remainingMonths: 0,
+          repaymentMethod: "amortizing",
+        },
+      ],
     });
     const prompt = buildFinancePrompt({
       currentMonth: "2026-07",

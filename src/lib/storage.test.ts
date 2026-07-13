@@ -117,8 +117,8 @@ describe("parseFinanceData", () => {
     expect(parseFinanceData(raw)).toEqual({ status: "ok", data });
   });
 
-  // PRD 第 6.1 節：schemaVersion 低於目前版本時，執行轉換邏輯後再載入
-  it("V1 舊格式資料（無 usStockCurrency）會自動遷移為 V2，補上預設值 USD", () => {
+  // PRD 第 6.1 節：schemaVersion 低於目前版本時，執行轉換邏輯後再載入（V1 一路遷移到目前版本 V3）
+  it("V1 舊格式資料（無 usStockCurrency）會自動遷移為目前版本，補上預設值 USD", () => {
     const v1Raw = JSON.stringify({
       schemaVersion: 1,
       snapshots: [
@@ -139,11 +139,58 @@ describe("parseFinanceData", () => {
     const result = parseFinanceData(v1Raw);
     expect(result.status).toBe("ok");
     if (result.status === "ok") {
-      expect(result.data.schemaVersion).toBe(2);
+      expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
       expect(result.data.snapshots[0].usStockCurrency).toBe("USD");
       // 遷移後的計算結果應與遷移前的行為完全一致（美股原本就是以 USD 換算）
       expect(result.data.snapshots[0].usStockValue).toBe(1000);
       expect(result.data.snapshots[0].exchangeRate).toBe(32);
+      // V1 → V3 一路遷移，loan/otherDebt 應轉為 debts 清單
+      expect(result.data.snapshots[0].debts).toHaveLength(2);
+      expect(result.data.snapshots[0].incomeSources).toEqual([]);
+      expect(result.data.snapshots[0].monthlyExpense).toBe(0);
+    }
+  });
+
+  // PRD 第 9 節 #16b：V2（loan/otherDebt 單一數字）遷移為 V3 類別化負債清單
+  it("V2 舊格式資料（loan/otherDebt/cashFlow）會自動遷移為 V3 負債清單", () => {
+    const v2Raw = JSON.stringify({
+      schemaVersion: 2,
+      snapshots: [
+        {
+          month: "2026-06",
+          updatedAt: "2026-06-01T00:00:00Z",
+          cashSources: [{ id: "x", name: "現金", amount: 1000 }],
+          twStockValue: 100000,
+          usStockValue: 1000,
+          usStockCurrency: "USD",
+          exchangeRate: 32,
+          loan: 300000,
+          otherDebt: 15000,
+          cashFlow: 28000,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v2Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.data.schemaVersion).toBe(3);
+      const snapshot = result.data.snapshots[0];
+      expect(snapshot.debts).toHaveLength(2);
+      const totalPrincipal = snapshot.debts.reduce(
+        (sum, d) => sum + d.principal,
+        0
+      );
+      expect(totalPrincipal).toBe(315000);
+      const houseDebt = snapshot.debts.find((d) => d.category === "房貸");
+      const otherDebtItem = snapshot.debts.find((d) => d.category === "其他");
+      expect(houseDebt?.principal).toBe(300000);
+      expect(otherDebtItem?.principal).toBe(15000);
+      expect(houseDebt?.annualRate).toBe(0);
+      expect(houseDebt?.remainingMonths).toBe(0);
+      expect(snapshot.incomeSources).toEqual([]);
+      // 舊 cashFlow 語意為淨現金流，與新欄位「支出」語意相反，不沿用
+      expect(snapshot.monthlyExpense).toBe(0);
     }
   });
 });

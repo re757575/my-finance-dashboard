@@ -1,4 +1,8 @@
-import { calculateMetrics, DEBT_RATIO_STATUS_LABEL } from "@/lib/calculations";
+import {
+  calculateMetrics,
+  calculateMonthlyPayment,
+  DEBT_RATIO_STATUS_LABEL,
+} from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import type { CalculatedMetrics, Snapshot } from "@/types/schema";
 
@@ -33,7 +37,10 @@ export function buildFinancePrompt({
     `- 負債比：${formatPercent(metrics.debtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.debtRatioStatus]}）`
   );
   lines.push(`- 現金比例：${formatPercent(metrics.cashRatio)}`);
-  lines.push(`- 本月淨現金流：${formatCurrency(draft.cashFlow)}`, "");
+  lines.push(
+    `- 本月應還款總額：${formatCurrency(metrics.totalMonthlyDebtPayment)}`
+  );
+  lines.push(`- 本月淨現金流：${formatCurrency(metrics.cashFlow)}`, "");
 
   lines.push("### 現金來源明細", "");
   if (draft.cashSources.length === 0) {
@@ -55,8 +62,30 @@ export function buildFinancePrompt({
   lines.push("");
 
   lines.push("### 負債明細", "");
-  lines.push(`- 貸款：${formatCurrency(draft.loan)}`);
-  lines.push(`- 其他負債：${formatCurrency(draft.otherDebt)}`, "");
+  if (draft.debts.length === 0) {
+    lines.push("（尚未新增負債）");
+  } else {
+    for (const debt of draft.debts) {
+      const methodLabel =
+        debt.repaymentMethod === "interestOnly" ? "只計息" : "本息平均攤還";
+      lines.push(
+        `- ${debt.name || "未命名"}（${debt.category}）：本金 ${formatCurrency(debt.principal)}，年利率 ${debt.annualRate}%，剩餘 ${debt.remainingMonths} 期，${methodLabel}，每月應還 ${formatCurrency(calculateMonthlyPayment(debt))}`
+      );
+    }
+  }
+  lines.push("");
+
+  lines.push("### 收入明細", "");
+  if (draft.incomeSources.length === 0) {
+    lines.push("（尚未新增收入）");
+  } else {
+    for (const source of draft.incomeSources) {
+      lines.push(
+        `- ${source.name || "未命名"}：${formatCurrency(source.amount)}`
+      );
+    }
+  }
+  lines.push(`- 本月支出：${formatCurrency(draft.monthlyExpense)}`, "");
 
   if (recentSnapshots.length > 0) {
     lines.push(`## 近 ${recentSnapshots.length} 個月趨勢（已儲存資料）`, "");
