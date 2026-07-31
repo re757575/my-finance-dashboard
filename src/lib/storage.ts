@@ -29,6 +29,10 @@ interface RawSnapshotV2 extends RawSnapshotV1 {
   usStockCurrency: "USD" | "TWD";
 }
 
+interface RawSnapshotV3 extends Omit<Snapshot, "date"> {
+  month: string; // "YYYY-MM"
+}
+
 /** V1（無 usStockCurrency）→ V2：美股市值當時一律以 USD 計價換算，遷移時補上此預設值。 */
 function migrateV1ToV2(raw: { schemaVersion: 1; snapshots: RawSnapshotV1[] }): {
   schemaVersion: 2;
@@ -46,10 +50,10 @@ function migrateV1ToV2(raw: { schemaVersion: 1; snapshots: RawSnapshotV1[] }): {
  * （沿用本金，日後由使用者自行補上利率/期數才能看到正確的每月應還款金額）；
  * 新增空的 incomeSources；不沿用舊 cashFlow 數值（語意為淨現金流，與新欄位「支出」相反，沿用會誤導使用者）。
  */
-function migrateV2ToV3(raw: {
-  schemaVersion: 2;
-  snapshots: RawSnapshotV2[];
-}): FinanceData {
+function migrateV2ToV3(raw: { schemaVersion: 2; snapshots: RawSnapshotV2[] }): {
+  schemaVersion: 3;
+  snapshots: RawSnapshotV3[];
+} {
   return {
     schemaVersion: 3,
     snapshots: raw.snapshots.map((s) => {
@@ -84,6 +88,23 @@ function migrateV2ToV3(raw: {
   };
 }
 
+/**
+ * V3（快照顆粒度為「月」，month: "YYYY-MM"）→ V4（顆粒度改為「日」，date: "YYYY-MM-DD"）：
+ * date 取自該筆快照 updatedAt 的實際日期（而非統一映射到月初或月底），盡量還原使用者實際存檔當下的日期。
+ */
+function migrateV3ToV4(raw: {
+  schemaVersion: 3;
+  snapshots: RawSnapshotV3[];
+}): FinanceData {
+  return {
+    schemaVersion: 4,
+    snapshots: raw.snapshots.map((s) => {
+      const { month: _month, ...rest } = s;
+      return { ...rest, date: s.updatedAt.slice(0, 10) };
+    }),
+  };
+}
+
 /** 已知舊版本資料的轉換邏輯（PRD 第 6.1 節）。回傳 null 代表版本無法識別/轉換，不得覆蓋原始資料。逐版遞進遷移，確保任何舊版本都能一路轉到目前版本。 */
 function migrateFinanceData(parsed: {
   schemaVersion: unknown;
@@ -93,11 +114,18 @@ function migrateFinanceData(parsed: {
     const v2 = migrateV1ToV2(
       parsed as { schemaVersion: 1; snapshots: RawSnapshotV1[] }
     );
-    return migrateV2ToV3(v2);
+    const v3 = migrateV2ToV3(v2);
+    return migrateV3ToV4(v3);
   }
   if (parsed.schemaVersion === 2) {
-    return migrateV2ToV3(
+    const v3 = migrateV2ToV3(
       parsed as { schemaVersion: 2; snapshots: RawSnapshotV2[] }
+    );
+    return migrateV3ToV4(v3);
+  }
+  if (parsed.schemaVersion === 3) {
+    return migrateV3ToV4(
+      parsed as { schemaVersion: 3; snapshots: RawSnapshotV3[] }
     );
   }
   return null;
@@ -154,45 +182,53 @@ export function createEmptyFinanceData(): FinanceData {
   return { schemaVersion: CURRENT_SCHEMA_VERSION, snapshots: [] };
 }
 
-export function getCurrentMonth(date: Date = new Date()): string {
+export function getCurrentDate(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function sortedByMonth(snapshots: Snapshot[]): Snapshot[] {
-  return [...snapshots].sort((a, b) => a.month.localeCompare(b.month));
+function sortedByDate(snapshots: Snapshot[]): Snapshot[] {
+  return [...snapshots].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** 同月覆蓋、跨月新增（PRD 5.2 / 6 節：快照顆粒度為月）。 */
+/** 同日覆蓋、跨日新增（PRD 5.2 / 6 節：快照顆粒度為日）。 */
 export function upsertSnapshot(
   data: FinanceData,
   snapshot: Snapshot
 ): FinanceData {
-  const withoutMonth = data.snapshots.filter((s) => s.month !== snapshot.month);
+  const withoutDate = data.snapshots.filter((s) => s.date !== snapshot.date);
   return {
     ...data,
-    snapshots: sortedByMonth([...withoutMonth, snapshot]),
+    snapshots: sortedByDate([...withoutDate, snapshot]),
   };
 }
 
-export function getSnapshotForMonth(
+export function getSnapshotForDate(
   data: FinanceData,
-  month: string
+  date: string
 ): Snapshot | undefined {
-  return data.snapshots.find((s) => s.month === month);
+  return data.snapshots.find((s) => s.date === date);
 }
 
-/** 最近一筆快照（月份最大者），用於「本月表單自動帶入上月資料」。 */
+/** 最近一筆快照（日期最大者），用於「今日表單自動帶入最近一筆資料」。 */
 export function getLatestSnapshot(data: FinanceData): Snapshot | undefined {
   if (data.snapshots.length === 0) return undefined;
-  return sortedByMonth(data.snapshots).at(-1);
+  return sortedByDate(data.snapshots).at(-1);
 }
 
-/** 趨勢圖預設視窗：最近 N 筆快照，資料本身不刪除（PRD 4.2 節）。 */
-export function getRecentSnapshots(
+function subtractDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() - days);
+  return getCurrentDate(d);
+}
+
+/** 趨勢圖範圍：最近 N 天（含今天），資料本身不刪除（PRD 4.2、5.4 節）。 */
+export function getSnapshotsInRange(
   data: FinanceData,
-  count: number
+  days: number
 ): Snapshot[] {
-  return sortedByMonth(data.snapshots).slice(-count);
+  const cutoff = subtractDays(getCurrentDate(), days - 1);
+  return sortedByDate(data.snapshots).filter((s) => s.date >= cutoff);
 }

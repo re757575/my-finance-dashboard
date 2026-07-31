@@ -1,7 +1,7 @@
 import { EmptyTrendCard } from "@/components/charts/EmptyTrendCard";
 
 interface AssetsLiabilitiesBarChartProps {
-  points: { month: string; assets: number; liabilities: number }[];
+  points: { date: string; assets: number; liabilities: number }[];
 }
 
 const WIDTH = 320;
@@ -40,14 +40,14 @@ export function AssetsLiabilitiesBarChart({
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="mt-2 w-full"
         role="img"
-        aria-label={`資產負債對比長條圖，共 ${points.length} 個月資料`}
+        aria-label={`資產負債對比長條圖，共 ${points.length} 筆資料`}
       >
         {points.map((p, i) => {
           const groupX = PADDING + i * groupWidth;
           const assetsHeight = (p.assets / max) * chartHeight;
           const liabilitiesHeight = (p.liabilities / max) * chartHeight;
           return (
-            <g key={p.month}>
+            <g key={p.date}>
               <rect
                 x={groupX + groupWidth / 2 - barWidth - 1}
                 y={HEIGHT - PADDING - assetsHeight}
@@ -69,8 +69,8 @@ export function AssetsLiabilitiesBarChart({
         })}
       </svg>
       <div className="mt-1 flex justify-between text-xs text-slate-400">
-        <span>{points[0].month}</span>
-        <span>{points.at(-1)?.month}</span>
+        <span>{points[0].date}</span>
+        <span>{points.at(-1)?.date}</span>
       </div>
     </div>
   );

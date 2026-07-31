@@ -2,7 +2,7 @@ import { EmptyTrendCard } from "@/components/charts/EmptyTrendCard";
 
 interface TrendLineChartProps {
   title: string;
-  points: { month: string; value: number }[];
+  points: { date: string; value: number }[];
   formatValue?: (value: number) => string;
   colorClassName?: string;
 }
@@ -49,7 +49,7 @@ export function TrendLineChart({
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className={`mt-2 w-full ${colorClassName}`}
         role="img"
-        aria-label={`${title}折線圖，共 ${points.length} 個月資料`}
+        aria-label={`${title}折線圖，共 ${points.length} 筆資料`}
       >
         <path
           d={path}
@@ -61,7 +61,7 @@ export function TrendLineChart({
         />
         {coords.map((c, i) => (
           <circle
-            key={points[i].month}
+            key={points[i].date}
             cx={c.x}
             cy={c.y}
             r={2.5}
@@ -70,8 +70,8 @@ export function TrendLineChart({
         ))}
       </svg>
       <div className="mt-1 flex justify-between text-xs text-slate-400">
-        <span>{points[0].month}</span>
-        <span>{last.month}</span>
+        <span>{points[0].date}</span>
+        <span>{last.date}</span>
       </div>
     </div>
   );

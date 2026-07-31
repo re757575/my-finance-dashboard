@@ -3,10 +3,10 @@ import { calculateMetrics } from "@/lib/calculations";
 import {
   clearFinanceData,
   createEmptyFinanceData,
-  getCurrentMonth,
+  getCurrentDate,
   getLatestSnapshot,
-  getRecentSnapshots,
-  getSnapshotForMonth,
+  getSnapshotForDate,
+  getSnapshotsInRange,
   loadFinanceData,
   persistFinanceData,
   upsertSnapshot,
@@ -20,36 +20,37 @@ import {
   type Snapshot,
 } from "@/types/schema";
 
-const TREND_WINDOW_MONTHS = 12;
-const PROMPT_WINDOW_MONTHS = 6;
+export type TrendRange = 7 | 30 | 90 | "all";
 
-/** 依 PRD 4.2「本月表單自動帶入上月資料」：當月無快照時，沿用上月數值但月份/時間戳改為當月。 */
-function buildInitialDraft(data: FinanceData, currentMonth: string): Snapshot {
-  const existing = getSnapshotForMonth(data, currentMonth);
+const DEFAULT_TREND_RANGE: TrendRange = 90;
+
+/** 依 PRD 4.2「今日表單自動帶入最近一筆資料」：今天無快照時，沿用最近一筆數值但日期/時間戳改為今天。 */
+function buildInitialDraft(data: FinanceData, currentDate: string): Snapshot {
+  const existing = getSnapshotForDate(data, currentDate);
   if (existing) return existing;
 
   const latest = getLatestSnapshot(data);
   if (latest) {
     return {
       ...latest,
-      month: currentMonth,
+      date: currentDate,
       updatedAt: new Date().toISOString(),
     };
   }
 
-  return createEmptySnapshot(currentMonth);
+  return createEmptySnapshot(currentDate);
 }
 
 export function useLocalSnapshots() {
-  const currentMonth = useMemo(() => getCurrentMonth(), []);
+  const currentDate = useMemo(() => getCurrentDate(), []);
   const [loadStatus, setLoadStatus] = useState<LoadResult["status"]>("empty");
   const [financeData, setFinanceData] = useState<FinanceData>(
     createEmptyFinanceData()
   );
   const [draft, setDraft] = useState<Snapshot>(() =>
-    createEmptySnapshot(currentMonth)
+    createEmptySnapshot(currentDate)
   );
-  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [trendRange, setTrendRange] = useState<TrendRange>(DEFAULT_TREND_RANGE);
 
   useEffect(() => {
     const result = loadFinanceData();
@@ -58,7 +59,7 @@ export function useLocalSnapshots() {
     const data =
       result.status === "ok" ? result.data : createEmptyFinanceData();
     setFinanceData(data);
-    setDraft(buildInitialDraft(data, currentMonth));
+    setDraft(buildInitialDraft(data, currentDate));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -67,7 +68,7 @@ export function useLocalSnapshots() {
     [draft]
   );
 
-  const savedSnapshot = getSnapshotForMonth(financeData, currentMonth);
+  const savedSnapshot = getSnapshotForDate(financeData, currentDate);
   const isDirty =
     JSON.stringify(savedSnapshot ?? null) !== JSON.stringify(draft);
 
@@ -75,7 +76,7 @@ export function useLocalSnapshots() {
     setDraft((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  /** 「更新儀表板」：正式將當月草稿寫入 LocalStorage（PRD 4.2 節）。version-mismatch 狀態下拒絕覆蓋既有資料。 */
+  /** 「更新儀表板」：正式將今日草稿寫入 LocalStorage（PRD 4.2 節）。version-mismatch 狀態下拒絕覆蓋既有資料。 */
   const save = useCallback((): { ok: boolean; reason?: string } => {
     if (loadStatus === "version-mismatch") {
       return {
@@ -85,7 +86,7 @@ export function useLocalSnapshots() {
     }
     const finalized: Snapshot = {
       ...draft,
-      month: currentMonth,
+      date: currentDate,
       updatedAt: new Date().toISOString(),
     };
     const next = upsertSnapshot(financeData, finalized);
@@ -94,7 +95,7 @@ export function useLocalSnapshots() {
     setDraft(finalized);
     setLoadStatus("ok");
     return { ok: true };
-  }, [draft, financeData, currentMonth, loadStatus]);
+  }, [draft, financeData, currentDate, loadStatus]);
 
   const exportBackup = useCallback(() => {
     downloadBackup(financeData);
@@ -112,11 +113,11 @@ export function useLocalSnapshots() {
       }
       persistFinanceData(result.data);
       setFinanceData(result.data);
-      setDraft(buildInitialDraft(result.data, currentMonth));
+      setDraft(buildInitialDraft(result.data, currentDate));
       setLoadStatus("ok");
       return { ok: true };
     },
-    [currentMonth]
+    [currentDate]
   );
 
   /** 清空前必須先由 UI 呼叫 exportBackup() 強制備份，才能呼叫本函式（PRD 4.2 節）。 */
@@ -124,28 +125,26 @@ export function useLocalSnapshots() {
     clearFinanceData();
     const empty = createEmptyFinanceData();
     setFinanceData(empty);
-    setDraft(createEmptySnapshot(currentMonth));
+    setDraft(createEmptySnapshot(currentDate));
     setLoadStatus("empty");
-  }, [currentMonth]);
+  }, [currentDate]);
 
   const allSnapshots = useMemo(
     () =>
-      [...financeData.snapshots].sort((a, b) => a.month.localeCompare(b.month)),
+      [...financeData.snapshots].sort((a, b) => a.date.localeCompare(b.date)),
     [financeData]
   );
-  const recentSnapshots = useMemo(
-    () => getRecentSnapshots(financeData, TREND_WINDOW_MONTHS),
-    [financeData]
-  );
-  const visibleSnapshots = showAllHistory ? allSnapshots : recentSnapshots;
-  /** 一鍵複製提示詞用：近 6 個月已儲存快照（不含當月未儲存的異動）。 */
-  const promptSnapshots = useMemo(
-    () => getRecentSnapshots(financeData, PROMPT_WINDOW_MONTHS),
-    [financeData]
+  /** 趨勢圖與「一鍵複製 AI 分析提示詞」共用同一個範圍（PRD 5.4 節）。 */
+  const visibleSnapshots = useMemo(
+    () =>
+      trendRange === "all"
+        ? allSnapshots
+        : getSnapshotsInRange(financeData, trendRange),
+    [financeData, allSnapshots, trendRange]
   );
 
   return {
-    currentMonth,
+    currentDate,
     loadStatus,
     draft,
     metrics,
@@ -157,8 +156,7 @@ export function useLocalSnapshots() {
     clearAllData,
     snapshotCount: allSnapshots.length,
     visibleSnapshots,
-    showAllHistory,
-    setShowAllHistory,
-    promptSnapshots,
+    trendRange,
+    setTrendRange,
   };
 }

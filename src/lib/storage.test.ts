@@ -1,60 +1,60 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   createEmptyFinanceData,
-  getCurrentMonth,
+  getCurrentDate,
   getLatestSnapshot,
-  getRecentSnapshots,
-  getSnapshotForMonth,
+  getSnapshotForDate,
+  getSnapshotsInRange,
   parseFinanceData,
   upsertSnapshot,
 } from "@/lib/storage";
 import { createEmptySnapshot, CURRENT_SCHEMA_VERSION } from "@/types/schema";
 
-function snapshot(month: string, amount: number) {
+function snapshot(date: string, amount: number) {
   return {
-    ...createEmptySnapshot(month),
+    ...createEmptySnapshot(date),
     cashSources: [{ id: "1", name: "現金", amount }],
   };
 }
 
 describe("upsertSnapshot", () => {
-  // PRD 第 9 節 #11：同月多次存檔只保留最後一次
-  it("同月存檔會覆蓋既有快照，不新增筆數", () => {
+  // PRD 第 9 節 #11：同日多次存檔只保留最後一次
+  it("同日存檔會覆蓋既有快照，不新增筆數", () => {
     let data = createEmptyFinanceData();
-    data = upsertSnapshot(data, snapshot("2026-07", 1000));
-    data = upsertSnapshot(data, snapshot("2026-07", 5000));
+    data = upsertSnapshot(data, snapshot("2026-07-13", 1000));
+    data = upsertSnapshot(data, snapshot("2026-07-13", 5000));
 
     expect(data.snapshots).toHaveLength(1);
-    expect(getSnapshotForMonth(data, "2026-07")?.cashSources[0].amount).toBe(
+    expect(getSnapshotForDate(data, "2026-07-13")?.cashSources[0].amount).toBe(
       5000
     );
   });
 
-  // PRD 第 9 節 #12：跨月存檔新增一筆，不影響前一筆
-  it("跨月存檔新增一筆快照，既有月份不受影響", () => {
+  // PRD 第 9 節 #12：跨日存檔新增一筆，不影響前一筆
+  it("跨日存檔新增一筆快照，既有日期不受影響", () => {
     let data = createEmptyFinanceData();
-    data = upsertSnapshot(data, snapshot("2026-06", 1000));
-    data = upsertSnapshot(data, snapshot("2026-07", 2000));
+    data = upsertSnapshot(data, snapshot("2026-07-12", 1000));
+    data = upsertSnapshot(data, snapshot("2026-07-13", 2000));
 
     expect(data.snapshots).toHaveLength(2);
-    expect(getSnapshotForMonth(data, "2026-06")?.cashSources[0].amount).toBe(
+    expect(getSnapshotForDate(data, "2026-07-12")?.cashSources[0].amount).toBe(
       1000
     );
-    expect(getSnapshotForMonth(data, "2026-07")?.cashSources[0].amount).toBe(
+    expect(getSnapshotForDate(data, "2026-07-13")?.cashSources[0].amount).toBe(
       2000
     );
   });
 });
 
 describe("getLatestSnapshot", () => {
-  // PRD 第 9 節 #13：當月尚無快照時，取得上月資料供表單預帶
-  it("回傳月份最大的快照，不受插入順序影響", () => {
+  // PRD 第 9 節 #13：今天尚無快照時，取得最近一筆資料供表單預帶
+  it("回傳日期最大的快照，不受插入順序影響", () => {
     let data = createEmptyFinanceData();
-    data = upsertSnapshot(data, snapshot("2026-07", 2000));
-    data = upsertSnapshot(data, snapshot("2026-05", 500));
-    data = upsertSnapshot(data, snapshot("2026-06", 1000));
+    data = upsertSnapshot(data, snapshot("2026-07-13", 2000));
+    data = upsertSnapshot(data, snapshot("2026-07-05", 500));
+    data = upsertSnapshot(data, snapshot("2026-07-10", 1000));
 
-    expect(getLatestSnapshot(data)?.month).toBe("2026-07");
+    expect(getLatestSnapshot(data)?.date).toBe("2026-07-13");
   });
 
   it("沒有任何快照時回傳 undefined", () => {
@@ -62,24 +62,26 @@ describe("getLatestSnapshot", () => {
   });
 });
 
-describe("getRecentSnapshots", () => {
-  // PRD 第 4.2 節：趨勢圖預設顯示最近 12 個月，資料本身不刪除
-  it("只取最近 N 筆，但不影響底層資料", () => {
-    // 產生跨年的 15 個連續月份：2025-05 ~ 2026-07
-    const months = Array.from({ length: 15 }, (_, i) => {
-      const date = new Date(2025, 4 + i, 1); // 月份從 0 開始，4 = 5 月
-      return getCurrentMonth(date);
+describe("getSnapshotsInRange", () => {
+  // PRD 第 4.2、5.4 節：趨勢圖範圍下拉選單（7/30/90 天），資料本身不刪除
+  it("只取最近 N 天（含今天）的快照，但不影響底層資料", () => {
+    const today = new Date();
+    // 產生連續 15 天的快照：今天往前推 14 天 ~ 今天
+    const dates = Array.from({ length: 15 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (14 - i));
+      return getCurrentDate(d);
     });
 
     let data = createEmptyFinanceData();
-    months.forEach((month, i) => {
-      data = upsertSnapshot(data, snapshot(month, i));
+    dates.forEach((date, i) => {
+      data = upsertSnapshot(data, snapshot(date, i));
     });
 
-    const recent = getRecentSnapshots(data, 12);
-    expect(recent).toHaveLength(12);
-    expect(recent[0].month).toBe(months[3]); // 最後 12 筆的起點
-    expect(recent.at(-1)?.month).toBe(months.at(-1));
+    const recent = getSnapshotsInRange(data, 7);
+    expect(recent).toHaveLength(7);
+    expect(recent[0].date).toBe(dates[8]); // 最後 7 筆的起點
+    expect(recent.at(-1)?.date).toBe(dates.at(-1));
     expect(data.snapshots).toHaveLength(15);
   });
 });
@@ -117,7 +119,7 @@ describe("parseFinanceData", () => {
     expect(parseFinanceData(raw)).toEqual({ status: "ok", data });
   });
 
-  // PRD 第 6.1 節：schemaVersion 低於目前版本時，執行轉換邏輯後再載入（V1 一路遷移到目前版本 V3）
+  // PRD 第 6.1 節：schemaVersion 低於目前版本時，執行轉換邏輯後再載入（V1 一路遷移到目前版本 V4）
   it("V1 舊格式資料（無 usStockCurrency）會自動遷移為目前版本，補上預設值 USD", () => {
     const v1Raw = JSON.stringify({
       schemaVersion: 1,
@@ -144,15 +146,16 @@ describe("parseFinanceData", () => {
       // 遷移後的計算結果應與遷移前的行為完全一致（美股原本就是以 USD 換算）
       expect(result.data.snapshots[0].usStockValue).toBe(1000);
       expect(result.data.snapshots[0].exchangeRate).toBe(32);
-      // V1 → V3 一路遷移，loan/otherDebt 應轉為 debts 清單
+      // V1 → V4 一路遷移，loan/otherDebt 應轉為 debts 清單，month 應轉為 date
       expect(result.data.snapshots[0].debts).toHaveLength(2);
       expect(result.data.snapshots[0].incomeSources).toEqual([]);
       expect(result.data.snapshots[0].monthlyExpense).toBe(0);
+      expect(result.data.snapshots[0].date).toBe("2026-01-01");
     }
   });
 
-  // PRD 第 9 節 #16b：V2（loan/otherDebt 單一數字）遷移為 V3 類別化負債清單
-  it("V2 舊格式資料（loan/otherDebt/cashFlow）會自動遷移為 V3 負債清單", () => {
+  // PRD 第 9 節 #16b：V2（loan/otherDebt 單一數字）遷移為 V3 類別化負債清單，再遷移為 V4
+  it("V2 舊格式資料（loan/otherDebt/cashFlow）會自動遷移為目前版本", () => {
     const v2Raw = JSON.stringify({
       schemaVersion: 2,
       snapshots: [
@@ -174,8 +177,9 @@ describe("parseFinanceData", () => {
     const result = parseFinanceData(v2Raw);
     expect(result.status).toBe("ok");
     if (result.status === "ok") {
-      expect(result.data.schemaVersion).toBe(3);
+      expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
       const snapshot = result.data.snapshots[0];
+      expect(snapshot.date).toBe("2026-06-01");
       expect(snapshot.debts).toHaveLength(2);
       const totalPrincipal = snapshot.debts.reduce(
         (sum, d) => sum + d.principal,
@@ -193,12 +197,43 @@ describe("parseFinanceData", () => {
       expect(snapshot.monthlyExpense).toBe(0);
     }
   });
+
+  // PRD 第 9 節 #16c：V3（快照顆粒度為月）遷移為 V4（顆粒度改為日）
+  it("V3 舊格式資料（month）會自動遷移為 V4（date，取自 updatedAt 的日期部分）", () => {
+    const v3Raw = JSON.stringify({
+      schemaVersion: 3,
+      snapshots: [
+        {
+          month: "2026-06",
+          updatedAt: "2026-06-28T09:12:00Z",
+          cashSources: [{ id: "x", name: "現金", amount: 1000 }],
+          twStockValue: 0,
+          usStockValue: 0,
+          usStockCurrency: "USD",
+          exchangeRate: 0,
+          debts: [],
+          incomeSources: [],
+          monthlyExpense: 0,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v3Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.data.schemaVersion).toBe(4);
+      expect(result.data.snapshots).toHaveLength(1);
+      expect(result.data.snapshots[0].date).toBe("2026-06-28");
+      expect(result.data.snapshots[0]).not.toHaveProperty("month");
+      expect(result.data.snapshots[0].cashSources[0].amount).toBe(1000);
+    }
+  });
 });
 
-describe("getCurrentMonth", () => {
-  it("格式化為 YYYY-MM", () => {
-    expect(getCurrentMonth(new Date("2026-07-11T00:00:00"))).toBe("2026-07");
-    expect(getCurrentMonth(new Date("2026-01-05T00:00:00"))).toBe("2026-01");
+describe("getCurrentDate", () => {
+  it("格式化為 YYYY-MM-DD", () => {
+    expect(getCurrentDate(new Date("2026-07-11T00:00:00"))).toBe("2026-07-11");
+    expect(getCurrentDate(new Date("2026-01-05T00:00:00"))).toBe("2026-01-05");
   });
 });
 

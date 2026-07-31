@@ -17,7 +17,7 @@ import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
 
 function App() {
   const {
-    currentMonth,
+    currentDate,
     loadStatus,
     draft,
     metrics,
@@ -29,9 +29,8 @@ function App() {
     clearAllData,
     snapshotCount,
     visibleSnapshots,
-    showAllHistory,
-    setShowAllHistory,
-    promptSnapshots,
+    trendRange,
+    setTrendRange,
   } = useLocalSnapshots();
 
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -39,7 +38,7 @@ function App() {
   function handleSave() {
     const result = save();
     setSaveMessage(
-      result.ok ? "已更新並儲存本月資料。" : (result.reason ?? "儲存失敗")
+      result.ok ? "已更新並儲存今日資料。" : (result.reason ?? "儲存失敗")
     );
     window.setTimeout(() => setSaveMessage(null), 4000);
   }
@@ -51,7 +50,7 @@ function App() {
           <h1 className="text-xl font-bold text-slate-900">
             個人資產負債儀表板
           </h1>
-          <p className="text-sm text-slate-500">目前檢視月份：{currentMonth}</p>
+          <p className="text-sm text-slate-500">目前檢視日期：{currentDate}</p>
         </header>
 
         {loadStatus === "corrupted" && (
@@ -124,10 +123,10 @@ function App() {
             <section className="space-y-3">
               <div className="flex justify-end">
                 <CopyPromptButton
-                  currentMonth={currentMonth}
+                  currentDate={currentDate}
                   draft={draft}
                   metrics={metrics}
-                  recentSnapshots={promptSnapshots}
+                  recentSnapshots={visibleSnapshots}
                   disabled={snapshotCount === 0}
                 />
               </div>
@@ -148,8 +147,8 @@ function App() {
             <TrendSection
               visibleSnapshots={visibleSnapshots}
               snapshotCount={snapshotCount}
-              showAllHistory={showAllHistory}
-              onToggleHistory={setShowAllHistory}
+              trendRange={trendRange}
+              onRangeChange={setTrendRange}
             />
           </div>
         </div>

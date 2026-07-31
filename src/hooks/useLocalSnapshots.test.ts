@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurrentMonth, loadFinanceData, STORAGE_KEY } from "@/lib/storage";
+import { getCurrentDate, loadFinanceData, STORAGE_KEY } from "@/lib/storage";
 
 vi.mock("@/lib/backup", () => ({
   downloadBackup: vi.fn(),
@@ -29,11 +29,11 @@ beforeEach(() => {
 });
 
 describe("useLocalSnapshots", () => {
-  it("無資料時，draft 為當月空白快照，且尚未存檔故為 dirty", () => {
+  it("無資料時，draft 為今日空白快照，且尚未存檔故為 dirty", () => {
     const { result } = renderHook(() => useLocalSnapshots());
 
     expect(result.current.loadStatus).toBe("empty");
-    expect(result.current.draft.month).toBe(getCurrentMonth());
+    expect(result.current.draft.date).toBe(getCurrentDate());
     expect(result.current.draft.cashSources).toEqual([]);
     // 尚未有任何已存檔快照，此時的空白草稿仍視為未存檔（存檔按鈕應可點擊）
     expect(result.current.isDirty).toBe(true);
@@ -71,8 +71,8 @@ describe("useLocalSnapshots", () => {
     }
   });
 
-  // PRD 第 9 節 #11：同月多次存檔只保留最後一次
-  it("同月重複 save() 只保留最後一次結果", () => {
+  // PRD 第 9 節 #11：同日多次存檔只保留最後一次
+  it("同日重複 save() 只保留最後一次結果", () => {
     const { result } = renderHook(() => useLocalSnapshots());
 
     act(() => {
@@ -106,13 +106,13 @@ describe("useLocalSnapshots", () => {
     expect(downloadBackup).toHaveBeenCalledTimes(1);
   });
 
-  // PRD 第 4.2 節：本月無快照時，自動帶入最近一筆快照的資料
-  it("importBackup 成功時覆蓋資料，並依最新快照預帶當月表單", async () => {
+  // PRD 第 4.2 節：今日無快照時，自動帶入最近一筆快照的資料
+  it("importBackup 成功時覆蓋資料，並依最新快照預帶今日表單", async () => {
     const importedData = {
-      schemaVersion: 3 as const,
+      schemaVersion: 4 as const,
       snapshots: [
         {
-          month: "2026-01",
+          date: "2026-01-01",
           updatedAt: "2026-01-01T00:00:00Z",
           cashSources: [{ id: "x", name: "匯入現金", amount: 88888 }],
           twStockValue: 0,

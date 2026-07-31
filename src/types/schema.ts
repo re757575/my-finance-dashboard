@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export interface CashSource {
   id: string;
@@ -35,7 +35,7 @@ export interface IncomeSource {
 }
 
 export interface Snapshot {
-  month: string; // "YYYY-MM"
+  date: string; // "YYYY-MM-DD"
   updatedAt: string; // ISO 8601
   cashSources: CashSource[];
   twStockValue: number;
@@ -73,9 +73,9 @@ export interface CalculatedMetrics {
   cashFlow: number;
 }
 
-export function createEmptySnapshot(month: string): Snapshot {
+export function createEmptySnapshot(date: string): Snapshot {
   return {
-    month,
+    date,
     updatedAt: new Date().toISOString(),
     cashSources: [],
     twStockValue: 0,

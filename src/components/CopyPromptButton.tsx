@@ -4,7 +4,7 @@ import { buildFinancePrompt } from "@/lib/promptBuilder";
 import type { CalculatedMetrics, Snapshot } from "@/types/schema";
 
 interface CopyPromptButtonProps {
-  currentMonth: string;
+  currentDate: string;
   draft: Snapshot;
   metrics: CalculatedMetrics;
   recentSnapshots: Snapshot[];
@@ -13,7 +13,7 @@ interface CopyPromptButtonProps {
 
 /** 一鍵複製財務健康檢查提示詞（Markdown）到剪貼簿，供使用者貼給 AI 分析。 */
 export function CopyPromptButton({
-  currentMonth,
+  currentDate,
   draft,
   metrics,
   recentSnapshots,
@@ -23,7 +23,7 @@ export function CopyPromptButton({
 
   async function handleCopy() {
     const prompt = buildFinancePrompt({
-      currentMonth,
+      currentDate,
       draft,
       metrics,
       recentSnapshots,
@@ -50,7 +50,7 @@ export function CopyPromptButton({
         複製 AI 分析提示詞
       </Button>
       {disabled ? (
-        <p className="text-xs text-slate-400">先儲存本月資料才能生成提示詞</p>
+        <p className="text-xs text-slate-400">先儲存今日資料才能生成提示詞</p>
       ) : (
         copyMessage && (
           <p

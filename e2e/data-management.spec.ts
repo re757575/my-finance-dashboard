@@ -70,7 +70,7 @@ test("清空本地資料：強制先觸發匯出，確認後清除所有資料",
 
   await expect(page.getByTestId("total-assets")).toHaveText("$0");
   await expect(page.getByText("尚未新增現金來源")).toBeVisible();
-  await expect(page.getByText("查看全部歷史")).toHaveCount(0);
+  await expect(page.getByLabel("趨勢圖範圍")).toHaveCount(0);
 });
 
 test("取消清空對話框時資料不受影響", async ({ page }) => {

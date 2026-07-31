@@ -7,29 +7,29 @@ import { formatCurrency, formatPercent } from "@/lib/format";
 import type { CalculatedMetrics, Snapshot } from "@/types/schema";
 
 interface BuildFinancePromptParams {
-  currentMonth: string;
+  currentDate: string;
   draft: Snapshot;
   metrics: CalculatedMetrics;
-  /** 已儲存的歷史快照，依月份遞增排序，供趨勢區塊使用（不含當月未儲存的異動）。 */
+  /** 已儲存的歷史快照，依日期遞增排序，供趨勢區塊使用（不含今日未儲存的異動）。 */
   recentSnapshots: Snapshot[];
 }
 
 /** 產生給 AI 分析用的財務健康檢查提示詞（Markdown），供「一鍵複製」功能使用。 */
 export function buildFinancePrompt({
-  currentMonth,
+  currentDate,
   draft,
   metrics,
   recentSnapshots,
 }: BuildFinancePromptParams): string {
   const lines: string[] = [];
 
-  lines.push(`# 我的財務健康檢查（${currentMonth}）`, "");
+  lines.push(`# 我的財務健康檢查（${currentDate}）`, "");
   lines.push(
     "請你扮演一位專業的個人理財顧問，根據以下資料分析我目前的財務狀況，並提出具體、可執行的行動建議與風險提醒。",
     ""
   );
 
-  lines.push(`## 本月財務總覽（${currentMonth}）`, "");
+  lines.push(`## 今日財務總覽（${currentDate}）`, "");
   lines.push(`- 總資產：${formatCurrency(metrics.totalAssets)}`);
   lines.push(`- 總負債：${formatCurrency(metrics.totalLiabilities)}`);
   lines.push(`- 個人淨資產：${formatCurrency(metrics.netWorth)}`);
@@ -88,13 +88,13 @@ export function buildFinancePrompt({
   lines.push(`- 本月支出：${formatCurrency(draft.monthlyExpense)}`, "");
 
   if (recentSnapshots.length > 0) {
-    lines.push(`## 近 ${recentSnapshots.length} 個月趨勢（已儲存資料）`, "");
-    lines.push("| 月份 | 總資產 | 總負債 | 淨資產 | 負債比 | 現金比例 |");
+    lines.push(`## 近 ${recentSnapshots.length} 筆歷史趨勢（已儲存資料）`, "");
+    lines.push("| 日期 | 總資產 | 總負債 | 淨資產 | 負債比 | 現金比例 |");
     lines.push("|---|---|---|---|---|---|");
     for (const snapshot of recentSnapshots) {
       const m = calculateMetrics(snapshot);
       lines.push(
-        `| ${snapshot.month} | ${formatCurrency(m.totalAssets)} | ${formatCurrency(m.totalLiabilities)} | ${formatCurrency(m.netWorth)} | ${formatPercent(m.debtRatio)} | ${formatPercent(m.cashRatio)} |`
+        `| ${snapshot.date} | ${formatCurrency(m.totalAssets)} | ${formatCurrency(m.totalLiabilities)} | ${formatCurrency(m.netWorth)} | ${formatPercent(m.debtRatio)} | ${formatPercent(m.cashRatio)} |`
       );
     }
     lines.push("");

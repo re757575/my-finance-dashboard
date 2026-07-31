@@ -14,10 +14,10 @@ test("首次載入顯示空狀態看板與趨勢圖提示", async ({ page }) => 
   await expect(page.getByTestId("total-assets")).toHaveText("$0");
   await expect(page.getByText("尚未新增現金來源")).toBeVisible();
   await expect(
-    page.getByText("持續使用滿 2 個月即可查看趨勢").first()
+    page.getByText("持續使用滿 2 天即可查看趨勢").first()
   ).toBeVisible();
-  // 尚無任何快照時不顯示「查看全部歷史」
-  await expect(page.getByText("查看全部歷史")).toHaveCount(0);
+  // 尚無任何快照時不顯示趨勢圖範圍下拉選單
+  await expect(page.getByLabel("趨勢圖範圍")).toHaveCount(0);
 });
 
 test("輸入現金與台股市值後，看板數字即時更新（尚未存檔）", async ({ page }) => {
@@ -106,5 +106,5 @@ test("按下更新儀表板後正式存檔，重新整理後資料仍在", async
   await page.reload();
 
   await expect(page.getByTestId("total-assets")).toHaveText("$50,000");
-  await expect(page.getByText("查看全部歷史")).toBeVisible();
+  await expect(page.getByLabel("趨勢圖範圍")).toBeVisible();
 });
