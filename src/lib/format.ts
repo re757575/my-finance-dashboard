@@ -8,3 +8,8 @@ export function formatCurrency(value: number): string {
 export function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
+
+/** "YYYY-MM-DD" → "MM/DD"，供趨勢圖全螢幕檢視的節點日期標籤使用（PRD 4.2 節）。 */
+export function formatShortDate(date: string): string {
+  return date.slice(5).replace("-", "/");
+}

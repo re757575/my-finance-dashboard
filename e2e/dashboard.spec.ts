@@ -108,3 +108,43 @@ test("按下更新儀表板後正式存檔，重新整理後資料仍在", async
   await expect(page.getByTestId("total-assets")).toHaveText("$50,000");
   await expect(page.getByLabel("趨勢圖範圍")).toBeVisible();
 });
+
+// PRD 第 9 節 #14b、#14c：趨勢圖節點 Tooltip 與全螢幕展開
+test("趨勢圖節點可點擊顯示 tooltip，並可全螢幕展開檢視", async ({ page }) => {
+  await page.evaluate(() => {
+    const dates = Array.from({ length: 5 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (4 - i));
+      return d.toISOString().slice(0, 10);
+    });
+    const snapshots = dates.map((date, i) => ({
+      date,
+      updatedAt: `${date}T09:00:00.000Z`,
+      cashSources: [{ id: `c${i}`, name: "現金", amount: 100000 + i * 10000 }],
+      twStockValue: 0,
+      usStockValue: 0,
+      usStockCurrency: "USD",
+      exchangeRate: 0,
+      debts: [],
+      incomeSources: [],
+      monthlyExpense: 0,
+    }));
+    window.localStorage.setItem(
+      "my_finance_dashboard_data",
+      JSON.stringify({ schemaVersion: 4, snapshots })
+    );
+  });
+  await page.reload();
+
+  const trendCard = page.locator("text=淨資產趨勢").locator("..").locator("..");
+  await trendCard.getByTestId("chart-node-2").click();
+  await expect(trendCard.getByTestId("chart-tooltip")).toBeVisible();
+
+  await page.getByLabel("淨資產趨勢全螢幕檢視").click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId("chart-node-2")).toBeVisible();
+
+  await dialog.getByTestId("chart-node-2").click();
+  await expect(dialog.getByTestId("chart-tooltip")).toBeVisible();
+});
