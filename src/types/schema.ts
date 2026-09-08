@@ -74,6 +74,10 @@ export interface CalculatedMetrics {
   debtRatio: number;
   debtRatioStatus: DebtRatioStatus;
   cashRatio: number;
+  /** 台股市值（已轉為安全數字）。供資產配置公式說明顯示實際數值使用（PRD 第 5 節）。 */
+  twStockValue: number;
+  /** 美股市值已換算為台幣後的金額。供資產配置公式說明顯示實際數值使用（PRD 第 5 節）。 */
+  usStockValueInTwd: number;
   /** 台股市值佔總資產比例（PRD 第 5 節資產配置比例公式）。 */
   twStockRatio: number;
   /** 美股市值（已換算台幣）佔總資產比例（PRD 第 5 節資產配置比例公式）。 */

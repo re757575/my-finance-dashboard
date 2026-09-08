@@ -1,3 +1,4 @@
+import { FormulaInfoButton } from "@/components/FormulaInfoButton";
 import { Button } from "@/components/ui/button";
 import { calculateSuggestedTargetNetWorth } from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
@@ -26,7 +27,16 @@ export function GoalProgressSection({
     const suggested = calculateSuggestedTargetNetWorth(monthlyExpense);
     return (
       <div className="rounded-xl bg-white p-4 shadow-sm">
-        <p className="text-sm text-slate-500">FIRE／淨資產目標進度</p>
+        <div className="flex items-center gap-1">
+          <p className="text-sm text-slate-500">FIRE／淨資產目標進度</p>
+          <FormulaInfoButton
+            title="FIRE／淨資產目標進度"
+            formula={
+              "進度 = 淨資產 ÷ 目標淨資產 × 100%\n建議目標 = 本月支出 × 12 × 25（4% 提領法則）"
+            }
+            substitution={`尚未設定目標，建議值 = ${formatCurrency(monthlyExpense)} × 12 × 25 = ${formatCurrency(suggested)}`}
+          />
+        </div>
         <div
           data-testid="goal-progress-empty"
           className="mt-2 flex flex-col items-center justify-center gap-2 rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-400"
@@ -53,7 +63,19 @@ export function GoalProgressSection({
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-slate-500">FIRE／淨資產目標進度</p>
+        <div className="flex items-center gap-1">
+          <p className="text-sm text-slate-500">FIRE／淨資產目標進度</p>
+          <FormulaInfoButton
+            title="FIRE／淨資產目標進度"
+            formula="進度 = 淨資產 ÷ 目標淨資產 × 100%"
+            substitution={`${formatCurrency(netWorth)} ÷ ${formatCurrency(targetNetWorth)} × 100% = ${formatPercent(progress)}`}
+            note={
+              achieved
+                ? "已達成或超過目標，進度條寬度夾在 100%，但數字不封頂"
+                : undefined
+            }
+          />
+        </div>
         {achieved && (
           <span
             data-testid="goal-progress-achieved"

@@ -1,5 +1,6 @@
+import { FormulaInfoButton } from "@/components/FormulaInfoButton";
 import { EMERGENCY_FUND_STATUS_LABEL } from "@/lib/calculations";
-import { formatMonths } from "@/lib/format";
+import { formatCurrency, formatMonths } from "@/lib/format";
 import type { EmergencyFundStatus } from "@/types/schema";
 
 const STATUS_STYLES: Record<
@@ -21,23 +22,45 @@ const FULL_BAR_MONTHS = 6;
 interface EmergencyFundCardProps {
   months: number | null;
   status: EmergencyFundStatus;
+  totalCash: number;
+  monthlyExpense: number;
+  totalMonthlyDebtPayment: number;
 }
 
 /**
  * 緊急預備金月數卡（PRD 5.5 節）：總流動現金 ÷（本月支出 + 本月應還款總額）。
  * 分母為 0 時 months 為 null，顯示「∞」與「無需求」狀態，不套用風險分級。
  */
-export function EmergencyFundCard({ months, status }: EmergencyFundCardProps) {
+export function EmergencyFundCard({
+  months,
+  status,
+  totalCash,
+  monthlyExpense,
+  totalMonthlyDebtPayment,
+}: EmergencyFundCardProps) {
   const style = STATUS_STYLES[status];
   const width =
     months === null
       ? 100
       : Math.min(100, Math.max(0, (months / FULL_BAR_MONTHS) * 100));
+  const denominator = monthlyExpense + totalMonthlyDebtPayment;
+  const substitution =
+    denominator === 0
+      ? `${formatCurrency(totalCash)} ÷ $0 = ∞（無需求）`
+      : `${formatCurrency(totalCash)} ÷ (${formatCurrency(monthlyExpense)} + ${formatCurrency(totalMonthlyDebtPayment)}) = ${formatMonths(months)}`;
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-slate-500">緊急預備金月數</p>
+        <div className="flex items-center gap-1">
+          <p className="text-sm text-slate-500">緊急預備金月數</p>
+          <FormulaInfoButton
+            title="緊急預備金月數"
+            formula="緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）"
+            substitution={substitution}
+            note="分母為 0（本月支出與本月應還款總額皆為 0）時顯示「∞」，代表無需求"
+          />
+        </div>
         <span
           data-testid="emergency-fund-status"
           className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}

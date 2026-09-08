@@ -1,5 +1,6 @@
+import { FormulaInfoButton } from "@/components/FormulaInfoButton";
 import { DEBT_RATIO_STATUS_LABEL } from "@/lib/calculations";
-import { formatPercent } from "@/lib/format";
+import { formatCurrency, formatPercent } from "@/lib/format";
 import type { DebtRatioStatus } from "@/types/schema";
 
 const STATUS_STYLES: Record<DebtRatioStatus, { bar: string; badge: string }> = {
@@ -15,20 +16,35 @@ const STATUS_STYLES: Record<DebtRatioStatus, { bar: string; badge: string }> = {
 interface DebtRatioBarProps {
   ratio: number;
   status: DebtRatioStatus;
+  totalLiabilities: number;
+  totalAssets: number;
 }
 
 /**
  * 負債比動態進度條與健康狀態標籤（PRD 5.1 節）。
  * 文字標籤與顏色同時呈現，顏色僅為輔助，不作為唯一判斷依據（PRD 7 節無障礙規範）。
  */
-export function DebtRatioBar({ ratio, status }: DebtRatioBarProps) {
+export function DebtRatioBar({
+  ratio,
+  status,
+  totalLiabilities,
+  totalAssets,
+}: DebtRatioBarProps) {
   const width = Math.min(100, Math.max(0, ratio));
   const style = STATUS_STYLES[status];
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-slate-500">負債比</p>
+        <div className="flex items-center gap-1">
+          <p className="text-sm text-slate-500">負債比</p>
+          <FormulaInfoButton
+            title="負債比"
+            formula="負債比 = 總負債 ÷ 總資產 × 100%"
+            substitution={`${formatCurrency(totalLiabilities)} ÷ ${formatCurrency(totalAssets)} × 100% = ${formatPercent(ratio)}`}
+            note="總資產為 0 時強制為 0%，避免除以零"
+          />
+        </div>
         <span
           data-testid="debt-ratio-status"
           className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}

@@ -284,6 +284,8 @@ export function calculateMetrics(
     debtRatio,
     debtRatioStatus: calculateDebtRatioStatus(debtRatio),
     cashRatio,
+    twStockValue: twStockValueSafe,
+    usStockValueInTwd,
     twStockRatio,
     usStockRatio,
     totalMonthlyDebtPayment,

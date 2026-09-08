@@ -144,24 +144,41 @@ function App() {
                   disabled={snapshotCount === 0}
                 />
               </div>
-              <SummaryCards metrics={metrics} />
+              <SummaryCards metrics={metrics} debts={draft.debts} />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <DebtRatioBar
                   ratio={metrics.debtRatio}
                   status={metrics.debtRatioStatus}
+                  totalLiabilities={metrics.totalLiabilities}
+                  totalAssets={metrics.totalAssets}
                 />
-                <CashRatioCard ratio={metrics.cashRatio} />
-                <CashFlowIndicator cashFlow={metrics.cashFlow} />
+                <CashRatioCard
+                  ratio={metrics.cashRatio}
+                  totalCash={metrics.totalCash}
+                  totalAssets={metrics.totalAssets}
+                />
+                <CashFlowIndicator
+                  cashFlow={metrics.cashFlow}
+                  totalIncome={metrics.totalIncome}
+                  monthlyExpense={draft.monthlyExpense}
+                  totalMonthlyDebtPayment={metrics.totalMonthlyDebtPayment}
+                />
                 <MonthlyDebtPaymentCard
                   amount={metrics.totalMonthlyDebtPayment}
+                  debts={draft.debts}
                 />
                 <EmergencyFundCard
                   months={metrics.emergencyFundMonths}
                   status={metrics.emergencyFundStatus}
+                  totalCash={metrics.totalCash}
+                  monthlyExpense={draft.monthlyExpense}
+                  totalMonthlyDebtPayment={metrics.totalMonthlyDebtPayment}
                 />
                 <SavingsRateCard
                   rate={metrics.savingsRate}
                   status={metrics.savingsRateStatus}
+                  cashFlow={metrics.cashFlow}
+                  totalIncome={metrics.totalIncome}
                 />
               </div>
             </section>
@@ -171,6 +188,9 @@ function App() {
               twStockRatio={metrics.twStockRatio}
               usStockRatio={metrics.usStockRatio}
               totalAssets={metrics.totalAssets}
+              totalCash={metrics.totalCash}
+              twStockValue={metrics.twStockValue}
+              usStockValueInTwd={metrics.usStockValueInTwd}
             />
 
             <GoalProgressSection

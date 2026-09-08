@@ -1,4 +1,5 @@
-import { formatPercent } from "@/lib/format";
+import { FormulaInfoButton } from "@/components/FormulaInfoButton";
+import { formatCurrency, formatPercent } from "@/lib/format";
 
 const SEGMENTS = [
   { key: "cash", label: "現金", color: "bg-blue-600" },
@@ -11,6 +12,9 @@ interface AssetAllocationBarProps {
   twStockRatio: number;
   usStockRatio: number;
   totalAssets: number;
+  totalCash: number;
+  twStockValue: number;
+  usStockValueInTwd: number;
 }
 
 /**
@@ -23,6 +27,9 @@ export function AssetAllocationBar({
   twStockRatio,
   usStockRatio,
   totalAssets,
+  totalCash,
+  twStockValue,
+  usStockValueInTwd,
 }: AssetAllocationBarProps) {
   if (totalAssets === 0) {
     return (
@@ -46,7 +53,18 @@ export function AssetAllocationBar({
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
-      <p className="text-sm text-slate-500">資產配置</p>
+      <div className="flex items-center gap-1">
+        <p className="text-sm text-slate-500">資產配置</p>
+        <FormulaInfoButton
+          title="資產配置比例"
+          formula={"各類佔比 = 該類金額 ÷ 總資產 × 100%"}
+          substitution={[
+            `現金：${formatCurrency(totalCash)} ÷ ${formatCurrency(totalAssets)} × 100% = ${formatPercent(cashRatio)}`,
+            `台股：${formatCurrency(twStockValue)} ÷ ${formatCurrency(totalAssets)} × 100% = ${formatPercent(twStockRatio)}`,
+            `美股：${formatCurrency(usStockValueInTwd)} ÷ ${formatCurrency(totalAssets)} × 100% = ${formatPercent(usStockRatio)}`,
+          ].join("\n")}
+        />
+      </div>
       <div
         className="mt-3 flex h-6 w-full gap-0.5 overflow-hidden rounded-full bg-slate-100"
         role="img"
