@@ -52,7 +52,7 @@ export function EmergencyFundCard({
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <p className="text-sm text-slate-500">緊急預備金月數</p>
           <FormulaInfoButton
             title="緊急預備金月數"
