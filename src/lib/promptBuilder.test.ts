@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { calculateMetrics } from "@/lib/calculations";
 import {
+  buildAssetRebalancingPrompt,
+  buildDebtPayoffPrompt,
   buildFinancePrompt,
   buildInvestmentDirectionPrompt,
+  buildPeriodicReviewPrompt,
   buildPromptForMode,
 } from "@/lib/promptBuilder";
 import type { Snapshot } from "@/types/schema";
@@ -20,6 +23,7 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     incomeSources: [],
     monthlyExpense: 0,
     targetNetWorth: 0,
+    targetCashRatio: 0,
     ...overrides,
   };
 }
@@ -299,6 +303,198 @@ describe("buildPromptForMode", () => {
     };
     expect(buildPromptForMode("investment-direction", params)).toBe(
       buildInvestmentDirectionPrompt(params)
+    );
+  });
+
+  it("debt-payoff-strategy 模式會呼叫負債清償策略提示詞", () => {
+    const draft = baseSnapshot();
+    const params = {
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    };
+    expect(buildPromptForMode("debt-payoff-strategy", params)).toBe(
+      buildDebtPayoffPrompt(params)
+    );
+  });
+
+  it("periodic-review 模式會呼叫定期回顧報告提示詞", () => {
+    const draft = baseSnapshot();
+    const params = {
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    };
+    expect(buildPromptForMode("periodic-review", params)).toBe(
+      buildPeriodicReviewPrompt(params)
+    );
+  });
+
+  it("asset-rebalancing 模式會呼叫資產配置再平衡建議提示詞", () => {
+    const draft = baseSnapshot();
+    const params = {
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    };
+    expect(buildPromptForMode("asset-rebalancing", params)).toBe(
+      buildAssetRebalancingPrompt(params)
+    );
+  });
+});
+
+describe("buildDebtPayoffPrompt", () => {
+  it("列出每筆負債明細、每月應還款總額與現金狀況", () => {
+    const draft = baseSnapshot({
+      cashSources: [{ id: "1", name: "現金", amount: 300000 }],
+      monthlyExpense: 20000,
+      debts: [
+        {
+          id: "d1",
+          name: "信貸",
+          category: "信貸",
+          principal: 200000,
+          annualRate: 8,
+          remainingMonths: 24,
+          repaymentMethod: "amortizing",
+        },
+        {
+          id: "d2",
+          name: "房貸",
+          category: "房貸",
+          principal: 3000000,
+          annualRate: 2.1,
+          remainingMonths: 240,
+          repaymentMethod: "amortizing",
+        },
+      ],
+    });
+    const prompt = buildDebtPayoffPrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    });
+
+    expect(prompt).toContain("我的負債清償策略評估（2026-07-13）");
+    expect(prompt).toContain("信貸（信貸）：剩餘本金 $200,000，年利率 8%");
+    expect(prompt).toContain("房貸（房貸）：剩餘本金 $3,000,000，年利率 2.1%");
+    expect(prompt).toContain("緊急預備金月數：");
+    expect(prompt).toContain("本月淨現金流（可運用資金）：");
+  });
+
+  it("無負債時顯示提示文字，而非空清單", () => {
+    const draft = baseSnapshot();
+    const prompt = buildDebtPayoffPrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    });
+
+    expect(prompt).toContain("（目前無負債，無需清償策略評估）");
+  });
+});
+
+describe("buildPeriodicReviewPrompt", () => {
+  // 快照筆數不足 2 筆時，無法構成一段可比較的期間
+  it("快照筆數少於 2 筆時，顯示筆數不足提示，不產生完整報告", () => {
+    const draft = baseSnapshot();
+    const prompt = buildPeriodicReviewPrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    });
+
+    expect(prompt).toContain("快照筆數不足");
+    expect(prompt).not.toContain("回顧期間");
+  });
+
+  it("有至少 2 筆快照時，產生期初/期末比較與趨勢明細表格", () => {
+    const draft = baseSnapshot();
+    const history = [
+      baseSnapshot({
+        date: "2026-06-01",
+        cashSources: [{ id: "1", name: "現金", amount: 500000 }],
+      }),
+      baseSnapshot({
+        date: "2026-07-01",
+        cashSources: [{ id: "1", name: "現金", amount: 600000 }],
+      }),
+    ];
+    const prompt = buildPeriodicReviewPrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: history,
+    });
+
+    expect(prompt).toContain(
+      "回顧期間：2026-06-01 ～ 2026-07-01（共 2 筆快照）"
+    );
+    expect(prompt).toContain("期初淨資產（2026-06-01）：$500,000");
+    expect(prompt).toContain("期末淨資產（2026-07-01）：$600,000");
+    expect(prompt).toContain("期間淨資產變化：$100,000（+20.0%）");
+    expect(prompt).toContain("| 2026-06-01 |");
+    expect(prompt).toContain("| 2026-07-01 |");
+  });
+});
+
+describe("buildAssetRebalancingPrompt", () => {
+  // 目標未設定時，改請 AI 自行建議合理的目標配置
+  it("目標現金比例未設定時，指示 AI 自行建議合理配置", () => {
+    const draft = baseSnapshot({
+      cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+      twStockValue: 650000,
+      targetCashRatio: 0,
+    });
+    const prompt = buildAssetRebalancingPrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    });
+
+    expect(prompt).toContain("目前配置：現金 35.0%／台股 65.0%／美股 0.0%");
+    expect(prompt).toContain("我尚未設定目標現金比例");
+  });
+
+  it("已設定目標現金比例時，計算落差百分比與金額", () => {
+    const draft = baseSnapshot({
+      cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+      twStockValue: 650000,
+      targetCashRatio: 20,
+    });
+    const prompt = buildAssetRebalancingPrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    });
+
+    expect(prompt).toContain("目標配置：現金 20.0%／股票（不分台美股）80.0%");
+    expect(prompt).toContain("現金落差：+15.0%（現金超配，約 $150,000）");
+  });
+
+  it("現金低配（股票超配）時，落差顯示為負且註明現金低配", () => {
+    const draft = baseSnapshot({
+      cashSources: [{ id: "1", name: "現金", amount: 100000 }],
+      twStockValue: 900000,
+      targetCashRatio: 30,
+    });
+    const prompt = buildAssetRebalancingPrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    });
+
+    expect(prompt).toContain(
+      "現金落差：-20.0%（現金低配（股票超配），約 $200,000）"
     );
   });
 });

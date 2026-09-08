@@ -29,11 +29,16 @@ interface RawSnapshotV2 extends RawSnapshotV1 {
   usStockCurrency: "USD" | "TWD";
 }
 
-interface RawSnapshotV3 extends Omit<Snapshot, "date" | "targetNetWorth"> {
+interface RawSnapshotV3 extends Omit<
+  Snapshot,
+  "date" | "targetNetWorth" | "targetCashRatio"
+> {
   month: string; // "YYYY-MM"
 }
 
-type RawSnapshotV4 = Omit<Snapshot, "targetNetWorth">;
+type RawSnapshotV4 = Omit<Snapshot, "targetNetWorth" | "targetCashRatio">;
+
+type RawSnapshotV5 = Omit<Snapshot, "targetCashRatio">;
 
 /** V1（無 usStockCurrency）→ V2：美股市值當時一律以 USD 計價換算，遷移時補上此預設值。 */
 function migrateV1ToV2(raw: { schemaVersion: 1; snapshots: RawSnapshotV1[] }): {
@@ -111,13 +116,27 @@ function migrateV3ToV4(raw: { schemaVersion: 3; snapshots: RawSnapshotV3[] }): {
  * V4（無 targetNetWorth）→ V5：每筆快照補上 targetNetWorth: 0（視為「尚未設定目標」），
  * 不依該筆快照的 monthlyExpense 臆測回填建議值，避免捏造使用者從未實際設定過的歷史目標。
  */
-function migrateV4ToV5(raw: {
-  schemaVersion: 4;
-  snapshots: RawSnapshotV4[];
-}): FinanceData {
+function migrateV4ToV5(raw: { schemaVersion: 4; snapshots: RawSnapshotV4[] }): {
+  schemaVersion: 5;
+  snapshots: RawSnapshotV5[];
+} {
   return {
     schemaVersion: 5,
     snapshots: raw.snapshots.map((s) => ({ ...s, targetNetWorth: 0 })),
+  };
+}
+
+/**
+ * V5（無 targetCashRatio）→ V6：每筆快照補上 targetCashRatio: 0（視為「尚未設定目標配置」），
+ * 供「資產配置再平衡建議」提示詞模式使用，同樣不臆測回填任何建議值。
+ */
+function migrateV5ToV6(raw: {
+  schemaVersion: 5;
+  snapshots: RawSnapshotV5[];
+}): FinanceData {
+  return {
+    schemaVersion: 6,
+    snapshots: raw.snapshots.map((s) => ({ ...s, targetCashRatio: 0 })),
   };
 }
 
@@ -132,24 +151,33 @@ function migrateFinanceData(parsed: {
     );
     const v3 = migrateV2ToV3(v2);
     const v4 = migrateV3ToV4(v3);
-    return migrateV4ToV5(v4);
+    const v5 = migrateV4ToV5(v4);
+    return migrateV5ToV6(v5);
   }
   if (parsed.schemaVersion === 2) {
     const v3 = migrateV2ToV3(
       parsed as { schemaVersion: 2; snapshots: RawSnapshotV2[] }
     );
     const v4 = migrateV3ToV4(v3);
-    return migrateV4ToV5(v4);
+    const v5 = migrateV4ToV5(v4);
+    return migrateV5ToV6(v5);
   }
   if (parsed.schemaVersion === 3) {
     const v4 = migrateV3ToV4(
       parsed as { schemaVersion: 3; snapshots: RawSnapshotV3[] }
     );
-    return migrateV4ToV5(v4);
+    const v5 = migrateV4ToV5(v4);
+    return migrateV5ToV6(v5);
   }
   if (parsed.schemaVersion === 4) {
-    return migrateV4ToV5(
+    const v5 = migrateV4ToV5(
       parsed as { schemaVersion: 4; snapshots: RawSnapshotV4[] }
+    );
+    return migrateV5ToV6(v5);
+  }
+  if (parsed.schemaVersion === 5) {
+    return migrateV5ToV6(
+      parsed as { schemaVersion: 5; snapshots: RawSnapshotV5[] }
     );
   }
   return null;

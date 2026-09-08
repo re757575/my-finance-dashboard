@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 export interface CashSource {
   id: string;
@@ -48,6 +48,8 @@ export interface Snapshot {
   monthlyExpense: number;
   /** 目標淨資產，選填，0 代表尚未設定（PRD 4.2、5.7 節 FIRE／淨資產目標進度）。 */
   targetNetWorth: number;
+  /** 目標現金比例（0-100），選填，0 代表尚未設定；股票目標比例＝100 減此值（PRD 4.2 節「AI 分析提示詞多模式」資產配置再平衡建議）。 */
+  targetCashRatio: number;
 }
 
 export interface FinanceData {
@@ -111,5 +113,6 @@ export function createEmptySnapshot(date: string): Snapshot {
     incomeSources: [],
     monthlyExpense: 0,
     targetNetWorth: 0,
+    targetCashRatio: 0,
   };
 }

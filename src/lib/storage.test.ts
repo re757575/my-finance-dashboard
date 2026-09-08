@@ -153,6 +153,7 @@ describe("parseFinanceData", () => {
       expect(result.data.snapshots[0].monthlyExpense).toBe(0);
       expect(result.data.snapshots[0].date).toBe("2026-01-01");
       expect(result.data.snapshots[0].targetNetWorth).toBe(0);
+      expect(result.data.snapshots[0].targetCashRatio).toBe(0);
     }
   });
 
@@ -228,13 +229,14 @@ describe("parseFinanceData", () => {
       expect(result.data.snapshots[0].date).toBe("2026-06-28");
       expect(result.data.snapshots[0]).not.toHaveProperty("month");
       expect(result.data.snapshots[0].cashSources[0].amount).toBe(1000);
-      // V3 → V4 → V5 一路遷移，也應補上 targetNetWorth
+      // V3 → V4 → V5 → V6 一路遷移，也應補上 targetNetWorth／targetCashRatio
       expect(result.data.snapshots[0].targetNetWorth).toBe(0);
+      expect(result.data.snapshots[0].targetCashRatio).toBe(0);
     }
   });
 
   // PRD 第 9 節 #31e：V4（無 targetNetWorth）遷移為 V5，補上 0（未設定），不臆測回填建議值
-  it("V4 舊格式資料（無 targetNetWorth）會自動遷移為 V5，補上 0", () => {
+  it("V4 舊格式資料（無 targetNetWorth）會自動遷移為目前版本，補上 0", () => {
     const v4Raw = JSON.stringify({
       schemaVersion: 4,
       snapshots: [
@@ -258,8 +260,40 @@ describe("parseFinanceData", () => {
     if (result.status === "ok") {
       expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
       expect(result.data.snapshots[0].targetNetWorth).toBe(0);
+      expect(result.data.snapshots[0].targetCashRatio).toBe(0);
       // 不依 monthlyExpense 臆測回填建議值，即使支出不為 0 也維持 0（未設定）
       expect(result.data.snapshots[0].monthlyExpense).toBe(30000);
+    }
+  });
+
+  // 新增：V5（無 targetCashRatio）遷移為 V6，補上 0（未設定），不臆測回填目標配置
+  it("V5 舊格式資料（無 targetCashRatio）會自動遷移為目前版本，補上 0", () => {
+    const v5Raw = JSON.stringify({
+      schemaVersion: 5,
+      snapshots: [
+        {
+          date: "2026-06-28",
+          updatedAt: "2026-06-28T09:12:00Z",
+          cashSources: [{ id: "x", name: "現金", amount: 1000 }],
+          twStockValue: 0,
+          usStockValue: 0,
+          usStockCurrency: "USD",
+          exchangeRate: 0,
+          debts: [],
+          incomeSources: [],
+          monthlyExpense: 30000,
+          targetNetWorth: 5000000,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v5Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+      expect(result.data.snapshots[0].targetCashRatio).toBe(0);
+      // 既有欄位（targetNetWorth）不受影響
+      expect(result.data.snapshots[0].targetNetWorth).toBe(5000000);
     }
   });
 });

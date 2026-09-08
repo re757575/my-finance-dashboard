@@ -16,6 +16,7 @@ import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
 import { StockInputs } from "@/components/StockInputs";
 import { SummaryCards } from "@/components/SummaryCards";
+import { TargetCashRatioInput } from "@/components/TargetCashRatioInput";
 import { TargetNetWorthInput } from "@/components/TargetNetWorthInput";
 import { TrendSection } from "@/components/TrendSection";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,10 @@ function App() {
               value={draft.targetNetWorth}
               monthlyExpense={draft.monthlyExpense}
               onChange={(targetNetWorth) => updateDraft({ targetNetWorth })}
+            />
+            <TargetCashRatioInput
+              value={draft.targetCashRatio}
+              onChange={(targetCashRatio) => updateDraft({ targetCashRatio })}
             />
 
             <div className="space-y-1">
