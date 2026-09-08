@@ -13,6 +13,7 @@ import { Footer } from "@/components/Footer";
 import { GoalProgressSection } from "@/components/GoalProgressSection";
 import { IncomeSourceList } from "@/components/IncomeSourceList";
 import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
+import { PwaUpdatePrompt } from "@/components/PwaUpdatePrompt";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
 import { StockInputs } from "@/components/StockInputs";
 import { SummaryCards } from "@/components/SummaryCards";
@@ -217,6 +218,7 @@ function App() {
 
         <Footer />
       </div>
+      <PwaUpdatePrompt />
     </div>
   );
 }
