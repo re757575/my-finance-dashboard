@@ -2,6 +2,12 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.2.1](https://github.com/re757575/my-finance-dashboard/compare/v0.2.0...v0.2.1) (2026-09-08)
+
+### Features
+
+- **儀表板:** 目標淨資產輸入框新增建議值計算公式說明 ([afdbe37](https://github.com/re757575/my-finance-dashboard/commit/afdbe376ddd8779b4dc9d723a195855a0097e4ab))
+
 ## [0.2.0](https://github.com/re757575/my-finance-dashboard/compare/v0.1.0...v0.2.0) (2026-09-08)
 
 ### ⚠ BREAKING CHANGES
