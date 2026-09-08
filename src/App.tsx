@@ -9,6 +9,7 @@ import { DebtList } from "@/components/DebtList";
 import { DebtRatioBar } from "@/components/DebtRatioBar";
 import { EmergencyFundCard } from "@/components/EmergencyFundCard";
 import { ExpenseInput } from "@/components/ExpenseInput";
+import { Footer } from "@/components/Footer";
 import { IncomeSourceList } from "@/components/IncomeSourceList";
 import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
@@ -173,6 +174,8 @@ function App() {
             />
           </div>
         </div>
+
+        <Footer />
       </div>
     </div>
   );
