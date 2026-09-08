@@ -16,6 +16,14 @@ interface BuildFinancePromptParams {
   recentSnapshots: Snapshot[];
 }
 
+/** 「一鍵複製 AI 分析提示詞」的可選模式（PRD 4.2 節「AI 分析提示詞多模式」）。 */
+export type PromptMode = "health-checkup" | "investment-direction";
+
+export const PROMPT_MODE_LABEL: Record<PromptMode, string> = {
+  "health-checkup": "財務健康檢查",
+  "investment-direction": "投資方向評估",
+};
+
 /** FIRE／淨資產目標進度的一行摘要文字，未設定目標時給出明確提示，避免 AI 誤以為 0% 是負面訊號。 */
 function formatGoalProgressLine(
   metrics: CalculatedMetrics,
@@ -133,4 +141,91 @@ export function buildFinancePrompt({
   lines.push("3. 如果下個月只能做一件事來改善財務體質，你會建議什麼？");
 
   return lines.join("\n");
+}
+
+/**
+ * 產生「投資方向評估」提示詞（PRD 4.2 節）：聚焦股票資產、現金水位、槓桿狀況與近期資產配置趨勢，
+ * 指示 AI 綜合市場趨勢、VIX 指數、貪婪與恐懼指數等外部因素（App 本身零網路請求，不擷取這些數值，
+ * 完全交由 AI 自行考量），從四種立場中擇一給出進出場建議。與「財務健康檢查」模式故意不共用內容，
+ * 不納入負債清單明細、收入明細、每月應還款金額、FIRE 進度等與投資決策關聯度低的資料。
+ */
+export function buildInvestmentDirectionPrompt({
+  currentDate,
+  draft,
+  metrics,
+  recentSnapshots,
+}: BuildFinancePromptParams): string {
+  const lines: string[] = [];
+
+  lines.push(`# 我的投資方向評估（${currentDate}）`, "");
+  lines.push(
+    "請你扮演一位資深投資顧問，綜合我目前的資產配置現況，以及你所掌握的市場趨勢、VIX 指數、貪婪與恐懼指數（Fear & Greed Index）等總體市場情緒指標（不限於此），評估我目前適合採取哪一種投資立場。",
+    ""
+  );
+
+  lines.push(`## 目前資產配置（${currentDate}）`, "");
+  lines.push(`- 台股市值：${formatCurrency(draft.twStockValue)}`);
+  lines.push(
+    `- 美股市值：${formatCurrency(draft.usStockValue)}（計價幣別：${draft.usStockCurrency}，匯率：${draft.exchangeRate}）`
+  );
+  lines.push(`- 股票市值合計：${formatCurrency(metrics.totalStockValue)}`);
+  lines.push(
+    `- 資產配置：現金 ${formatPercent(metrics.cashRatio)}／台股 ${formatPercent(metrics.twStockRatio)}／美股 ${formatPercent(metrics.usStockRatio)}`
+  );
+  lines.push(
+    `- 現金比例：${formatPercent(metrics.cashRatio)}（可動用資金水位）`
+  );
+  lines.push(
+    `- 負債比：${formatPercent(metrics.debtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.debtRatioStatus]}，財務槓桿狀況）`,
+    ""
+  );
+
+  if (recentSnapshots.length > 0) {
+    lines.push(
+      `## 近 ${recentSnapshots.length} 筆資產配置趨勢（已儲存資料）`,
+      ""
+    );
+    lines.push("| 日期 | 淨資產 | 現金比例 | 股票比例 |");
+    lines.push("|---|---|---|---|");
+    for (const snapshot of recentSnapshots) {
+      const m = calculateMetrics(snapshot);
+      const stockRatio = 100 - m.cashRatio;
+      lines.push(
+        `| ${snapshot.date} | ${formatCurrency(m.netWorth)} | ${formatPercent(m.cashRatio)} | ${formatPercent(stockRatio)} |`
+      );
+    }
+    lines.push("");
+  }
+
+  lines.push("## 我想請你評估", "");
+  lines.push(
+    "請從以下四種立場中選一個最符合我目前狀況的建議，並說明理由與風險提醒：",
+    ""
+  );
+  lines.push("1. **積極加碼**：趁勢加大部位");
+  lines.push("2. **維持現狀／定期定額**：按原計畫持續投入，不特別加減碼");
+  lines.push("3. **停利／減碼**：部分獲利了結，降低部位");
+  lines.push("4. **空手觀望／保留現金**：暫不進場，優先持有現金");
+  lines.push("");
+  lines.push(
+    "分析時請綜合考量（不限於）：目前整體市場趨勢、VIX 指數、貪婪與恐懼指數、我的現金水位與槓桿狀況、資產配置是否過度集中單一類別。"
+  );
+
+  return lines.join("\n");
+}
+
+const PROMPT_BUILDERS: Record<
+  PromptMode,
+  (params: BuildFinancePromptParams) => string
+> = {
+  "health-checkup": buildFinancePrompt,
+  "investment-direction": buildInvestmentDirectionPrompt,
+};
+
+/** 依模式分派給對應的提示詞產生函式（PRD 4.2 節「AI 分析提示詞多模式」）。 */
+export function buildPromptForMode(
+  mode: PromptMode,
+  params: BuildFinancePromptParams
+): string {
+  return PROMPT_BUILDERS[mode](params);
 }
