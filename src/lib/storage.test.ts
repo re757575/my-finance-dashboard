@@ -5,6 +5,7 @@ import {
   getLatestSnapshot,
   getSnapshotForDate,
   getSnapshotsInRange,
+  monthsBetweenDates,
   parseFinanceData,
   upsertSnapshot,
 } from "@/lib/storage";
@@ -240,6 +241,25 @@ describe("getCurrentDate", () => {
 describe("createEmptyFinanceData", () => {
   it("使用目前的 schemaVersion", () => {
     expect(createEmptyFinanceData().schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+  });
+});
+
+describe("monthsBetweenDates", () => {
+  it("以曆月差計算，忽略日期造成的天數誤差", () => {
+    expect(monthsBetweenDates("2026-01-15", "2026-03-02")).toBe(2);
+    expect(monthsBetweenDates("2026-01-31", "2026-02-01")).toBe(1);
+  });
+
+  it("跨年份時正確累加月數", () => {
+    expect(monthsBetweenDates("2025-11-01", "2026-02-01")).toBe(3);
+  });
+
+  it("同一個月內不算經過任何一期", () => {
+    expect(monthsBetweenDates("2026-06-01", "2026-06-28")).toBe(0);
+  });
+
+  it("結束日期早於起始日期時，不回傳負數", () => {
+    expect(monthsBetweenDates("2026-06-01", "2026-05-01")).toBe(0);
   });
 });
 

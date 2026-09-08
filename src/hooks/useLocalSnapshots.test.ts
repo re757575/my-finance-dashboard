@@ -1,6 +1,11 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurrentDate, loadFinanceData, STORAGE_KEY } from "@/lib/storage";
+import {
+  getCurrentDate,
+  loadFinanceData,
+  persistFinanceData,
+  STORAGE_KEY,
+} from "@/lib/storage";
 
 vi.mock("@/lib/backup", () => ({
   downloadBackup: vi.fn(),
@@ -9,7 +14,7 @@ vi.mock("@/lib/backup", () => ({
 
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
 import { downloadBackup, parseBackupFile } from "@/lib/backup";
-import type { Debt } from "@/types/schema";
+import { createEmptySnapshot, type Debt } from "@/types/schema";
 
 function oneDebt(principal: number): Debt {
   return {
@@ -21,6 +26,15 @@ function oneDebt(principal: number): Debt {
     remainingMonths: 0,
     repaymentMethod: "amortizing",
   };
+}
+
+/** 依「曆月差」倒推 N 個月前的日期（日固定為 01，避免月底日期在月份運算時進位造成誤差）。 */
+function dateMonthsAgo(months: number): string {
+  const [year, month] = getCurrentDate().split("-").map(Number);
+  const total = year * 12 + (month - 1) - months;
+  const resultYear = Math.floor(total / 12);
+  const resultMonth = (total % 12) + 1;
+  return `${resultYear}-${String(resultMonth).padStart(2, "0")}-01`;
 }
 
 beforeEach(() => {
@@ -193,5 +207,158 @@ describe("useLocalSnapshots", () => {
     });
 
     expect(localStorage.getItem(STORAGE_KEY)).toContain('"schemaVersion":999');
+  });
+
+  // PRD 4.2 節「負債剩餘本金／期數自動估算」
+  describe("負債剩餘本金／期數自動估算", () => {
+    it("今日草稿依經過的月數自動遞減本息平均攤還負債的剩餘本金／期數，並標示為系統估算", () => {
+      const pastDate = dateMonthsAgo(3);
+      persistFinanceData({
+        schemaVersion: 4,
+        snapshots: [
+          {
+            ...createEmptySnapshot(pastDate),
+            debts: [
+              {
+                id: "d1",
+                name: "房貸",
+                category: "房貸",
+                principal: 3000000,
+                annualRate: 2.4,
+                remainingMonths: 240,
+                repaymentMethod: "amortizing",
+              },
+            ],
+          },
+        ],
+      });
+
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      const debt = result.current.draft.debts[0];
+      expect(debt.remainingMonths).toBe(237);
+      expect(debt.principal).toBeLessThan(3000000);
+      expect(result.current.estimatedDebtFields.d1).toEqual({
+        principal: true,
+        remainingMonths: true,
+      });
+    });
+
+    it("只計息負債只遞減剩餘期數，本金維持不變且不標示為估算", () => {
+      const pastDate = dateMonthsAgo(2);
+      persistFinanceData({
+        schemaVersion: 4,
+        snapshots: [
+          {
+            ...createEmptySnapshot(pastDate),
+            debts: [
+              {
+                id: "d1",
+                name: "股票質押",
+                category: "質押",
+                principal: 500000,
+                annualRate: 3.5,
+                remainingMonths: 12,
+                repaymentMethod: "interestOnly",
+              },
+            ],
+          },
+        ],
+      });
+
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      const debt = result.current.draft.debts[0];
+      expect(debt.remainingMonths).toBe(10);
+      expect(debt.principal).toBe(500000);
+      expect(result.current.estimatedDebtFields.d1).toEqual({
+        remainingMonths: true,
+      });
+    });
+
+    it("使用者手動修改被估算的欄位後，該欄位的估算標示會消失", () => {
+      const pastDate = dateMonthsAgo(3);
+      persistFinanceData({
+        schemaVersion: 4,
+        snapshots: [
+          {
+            ...createEmptySnapshot(pastDate),
+            debts: [
+              {
+                id: "d1",
+                name: "房貸",
+                category: "房貸",
+                principal: 3000000,
+                annualRate: 2.4,
+                remainingMonths: 240,
+                repaymentMethod: "amortizing",
+              },
+            ],
+          },
+        ],
+      });
+
+      const { result } = renderHook(() => useLocalSnapshots());
+      const estimatedPrincipal = result.current.draft.debts[0].principal;
+
+      act(() => {
+        result.current.updateDebts([
+          { ...result.current.draft.debts[0], principal: 2900000 },
+        ]);
+      });
+
+      expect(result.current.draft.debts[0].principal).toBe(2900000);
+      expect(result.current.estimatedDebtFields.d1).toEqual({
+        remainingMonths: true,
+      });
+      expect(estimatedPrincipal).not.toBe(2900000);
+    });
+
+    it("save() 之後清除所有估算標示（使用者已確認當下數值）", () => {
+      const pastDate = dateMonthsAgo(3);
+      persistFinanceData({
+        schemaVersion: 4,
+        snapshots: [
+          {
+            ...createEmptySnapshot(pastDate),
+            debts: [
+              {
+                id: "d1",
+                name: "房貸",
+                category: "房貸",
+                principal: 3000000,
+                annualRate: 2.4,
+                remainingMonths: 240,
+                repaymentMethod: "amortizing",
+              },
+            ],
+          },
+        ],
+      });
+
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.save();
+      });
+
+      expect(result.current.estimatedDebtFields).toEqual({});
+    });
+
+    it("同一曆月內建立草稿（沒有經過任何一期）時，不做遞減也不標示估算", () => {
+      persistFinanceData({
+        schemaVersion: 4,
+        snapshots: [
+          {
+            ...createEmptySnapshot(dateMonthsAgo(0)),
+            debts: [oneDebt(100000)],
+          },
+        ],
+      });
+
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.draft.debts[0].principal).toBe(100000);
+      expect(result.current.estimatedDebtFields).toEqual({});
+    });
   });
 });

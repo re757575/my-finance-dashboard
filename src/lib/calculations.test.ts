@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  advanceDebtByMonths,
   calculateMetrics,
   calculateMonthlyPayment,
   calculateTotalMonthlyDebtPayment,
@@ -295,5 +296,78 @@ describe("calculateMonthlyPayment", () => {
     ];
     const total = calculateTotalMonthlyDebtPayment(debts);
     expect(total).toBeCloseTo(10000 + 500000 * (3.5 / 100 / 12));
+  });
+});
+
+describe("advanceDebtByMonths", () => {
+  it("經過的月數 ≤ 0 時，不做任何變動", () => {
+    const debt = baseDebt({ principal: 100000, remainingMonths: 12 });
+    expect(advanceDebtByMonths(debt, 0)).toEqual(debt);
+    expect(advanceDebtByMonths(debt, -3)).toEqual(debt);
+  });
+
+  it("負債已到期（剩餘期數為 0）時，不做任何變動", () => {
+    const debt = baseDebt({
+      principal: 100000,
+      remainingMonths: 0,
+      repaymentMethod: "interestOnly",
+    });
+    expect(advanceDebtByMonths(debt, 6)).toEqual(debt);
+  });
+
+  it("本息平均攤還：往前推進 k 期後，剩餘本金依攤還表遞減、剩餘期數同步遞減", () => {
+    const principal = 5000000;
+    const annualRate = 2.4;
+    const remainingMonths = 240;
+    const monthsElapsed = 12;
+    const monthlyRate = annualRate / 100 / 12;
+    const factor240 = Math.pow(1 + monthlyRate, remainingMonths);
+    const payment = (principal * (monthlyRate * factor240)) / (factor240 - 1);
+    const factorK = Math.pow(1 + monthlyRate, monthsElapsed);
+    const expectedBalance =
+      principal * factorK - (payment * (factorK - 1)) / monthlyRate;
+
+    const advanced = advanceDebtByMonths(
+      baseDebt({ principal, annualRate, remainingMonths }),
+      monthsElapsed
+    );
+
+    expect(advanced.remainingMonths).toBe(228);
+    expect(advanced.principal).toBeCloseTo(expectedBalance, 2);
+  });
+
+  it("只計息：往前推進 k 期後，本金維持不變，只遞減剩餘期數", () => {
+    const debt = baseDebt({
+      principal: 500000,
+      annualRate: 3.5,
+      remainingMonths: 12,
+      repaymentMethod: "interestOnly",
+    });
+    const advanced = advanceDebtByMonths(debt, 5);
+    expect(advanced.principal).toBe(500000);
+    expect(advanced.remainingMonths).toBe(7);
+  });
+
+  it("本息平均攤還：推進期數超過剩餘期數時視為清償完畢，本金與期數皆歸零", () => {
+    const debt = baseDebt({
+      principal: 50000,
+      annualRate: 2,
+      remainingMonths: 3,
+    });
+    const advanced = advanceDebtByMonths(debt, 12);
+    expect(advanced.remainingMonths).toBe(0);
+    expect(advanced.principal).toBe(0);
+  });
+
+  it("只計息：推進期數超過剩餘期數時只有期數歸零，本金維持不變（到期須一次還清，非自動清償）", () => {
+    const debt = baseDebt({
+      principal: 500000,
+      annualRate: 3.5,
+      remainingMonths: 3,
+      repaymentMethod: "interestOnly",
+    });
+    const advanced = advanceDebtByMonths(debt, 12);
+    expect(advanced.remainingMonths).toBe(0);
+    expect(advanced.principal).toBe(500000);
   });
 });

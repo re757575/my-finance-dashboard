@@ -23,6 +23,8 @@ function App() {
     metrics,
     isDirty,
     updateDraft,
+    estimatedDebtFields,
+    updateDebts,
     save,
     exportBackup,
     importBackup,
@@ -80,7 +82,8 @@ function App() {
             />
             <DebtList
               value={draft.debts}
-              onChange={(debts) => updateDraft({ debts })}
+              onChange={updateDebts}
+              estimatedFields={estimatedDebtFields}
             />
             <IncomeSourceList
               value={draft.incomeSources}

@@ -69,6 +69,46 @@ export function calculateTotalMonthlyDebtPayment(debts: Debt[]): number {
   return debts.reduce((sum, debt) => sum + calculateMonthlyPayment(debt), 0);
 }
 
+/**
+ * 依經過的月數，將單筆負債的剩餘本金／剩餘期數往前推進，用於「今日草稿自動預填」估算負債的最新狀態
+ * （PRD 4.2 節「負債剩餘本金／期數自動估算」），使用者仍可在草稿中手動覆寫。
+ * 本息平均攤還：以目前狀態算出的固定月付金額（PMT）逐月扣除利息後推進本金；
+ * 只計息：本金不隨時間攤還，只遞減期數（期滿代表到期須一次還清，非自動清償，本金維持不變）。
+ * monthsElapsed ≤ 0 或負債已到期（remainingMonths ≤ 0）時不做任何變動。
+ */
+export function advanceDebtByMonths(debt: Debt, monthsElapsed: number): Debt {
+  const remainingMonths = toSafeNumber(debt.remainingMonths);
+  if (monthsElapsed <= 0 || remainingMonths <= 0) return debt;
+
+  const newRemainingMonths = Math.max(0, remainingMonths - monthsElapsed);
+
+  if (debt.repaymentMethod === "interestOnly") {
+    return { ...debt, remainingMonths: newRemainingMonths };
+  }
+
+  const monthlyRate = toSafeNumber(debt.annualRate) / 100 / 12;
+  const payment = calculateMonthlyPayment(debt);
+  const steps = Math.min(monthsElapsed, remainingMonths);
+
+  let balance = toSafeNumber(debt.principal);
+  for (let i = 0; i < steps; i++) {
+    balance -= payment - balance * monthlyRate;
+  }
+
+  return {
+    ...debt,
+    principal: newRemainingMonths === 0 ? 0 : Math.max(0, balance),
+    remainingMonths: newRemainingMonths,
+  };
+}
+
+export function advanceDebtsByMonths(
+  debts: Debt[],
+  monthsElapsed: number
+): Debt[] {
+  return debts.map((debt) => advanceDebtByMonths(debt, monthsElapsed));
+}
+
 export function sumDebtPrincipal(debts: Debt[]): number {
   return debts.reduce((sum, debt) => sum + toSafeNumber(debt.principal), 0);
 }

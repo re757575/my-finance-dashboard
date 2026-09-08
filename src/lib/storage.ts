@@ -218,6 +218,16 @@ export function getLatestSnapshot(data: FinanceData): Snapshot | undefined {
   return sortedByDate(data.snapshots).at(-1);
 }
 
+/**
+ * 兩個 YYYY-MM-DD 日期字串的「曆月差」（只看年月，忽略日），用於負債剩餘本金／期數自動估算
+ * （PRD 4.2 節）。例如 2026-01-15 → 2026-03-02 視為經過 2 期，接受曆月差帶來的天數誤差。
+ */
+export function monthsBetweenDates(fromDate: string, toDate: string): number {
+  const [fromYear, fromMonth] = fromDate.split("-").map(Number);
+  const [toYear, toMonth] = toDate.split("-").map(Number);
+  return Math.max(0, (toYear - fromYear) * 12 + (toMonth - fromMonth));
+}
+
 function subtractDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00`);
   d.setDate(d.getDate() - days);

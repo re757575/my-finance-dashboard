@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { calculateMetrics } from "@/lib/calculations";
+import { advanceDebtsByMonths, calculateMetrics } from "@/lib/calculations";
 import {
   clearFinanceData,
   createEmptyFinanceData,
@@ -8,6 +8,7 @@ import {
   getSnapshotForDate,
   getSnapshotsInRange,
   loadFinanceData,
+  monthsBetweenDates,
   persistFinanceData,
   upsertSnapshot,
   type LoadResult,
@@ -16,6 +17,7 @@ import { downloadBackup, parseBackupFile } from "@/lib/backup";
 import {
   createEmptySnapshot,
   type CalculatedMetrics,
+  type Debt,
   type FinanceData,
   type Snapshot,
 } from "@/types/schema";
@@ -24,21 +26,57 @@ export type TrendRange = 7 | 30 | 90 | "all";
 
 const DEFAULT_TREND_RANGE: TrendRange = 90;
 
-/** 依 PRD 4.2「今日表單自動帶入最近一筆資料」：今天無快照時，沿用最近一筆數值但日期/時間戳改為今天。 */
-function buildInitialDraft(data: FinanceData, currentDate: string): Snapshot {
+/** 標示負債草稿中，哪些欄位是系統自動估算、尚未被使用者手動確認過（PRD 4.2 節）。 */
+export type EstimatedDebtFields = Record<
+  string,
+  { principal?: boolean; remainingMonths?: boolean }
+>;
+
+/** 比對推進前後的負債清單，找出哪些負債的哪些欄位被自動估算改動過。 */
+function computeEstimatedDebtFields(
+  before: Debt[],
+  after: Debt[]
+): EstimatedDebtFields {
+  const result: EstimatedDebtFields = {};
+  for (const debt of after) {
+    const prev = before.find((d) => d.id === debt.id);
+    if (!prev) continue;
+    const fields: { principal?: boolean; remainingMonths?: boolean } = {};
+    if (prev.principal !== debt.principal) fields.principal = true;
+    if (prev.remainingMonths !== debt.remainingMonths)
+      fields.remainingMonths = true;
+    if (fields.principal || fields.remainingMonths) result[debt.id] = fields;
+  }
+  return result;
+}
+
+/**
+ * 依 PRD 4.2「今日表單自動帶入最近一筆資料」：今天無快照時，沿用最近一筆數值但日期/時間戳改為今天，
+ * 並依經過的曆月數自動估算負債的剩餘本金／剩餘期數（見「負債剩餘本金／期數自動估算」）。
+ */
+function buildInitialDraft(
+  data: FinanceData,
+  currentDate: string
+): { snapshot: Snapshot; estimatedFields: EstimatedDebtFields } {
   const existing = getSnapshotForDate(data, currentDate);
-  if (existing) return existing;
+  if (existing) return { snapshot: existing, estimatedFields: {} };
 
   const latest = getLatestSnapshot(data);
   if (latest) {
+    const monthsElapsed = monthsBetweenDates(latest.date, currentDate);
+    const debts = advanceDebtsByMonths(latest.debts, monthsElapsed);
     return {
-      ...latest,
-      date: currentDate,
-      updatedAt: new Date().toISOString(),
+      snapshot: {
+        ...latest,
+        date: currentDate,
+        updatedAt: new Date().toISOString(),
+        debts,
+      },
+      estimatedFields: computeEstimatedDebtFields(latest.debts, debts),
     };
   }
 
-  return createEmptySnapshot(currentDate);
+  return { snapshot: createEmptySnapshot(currentDate), estimatedFields: {} };
 }
 
 export function useLocalSnapshots() {
@@ -50,6 +88,8 @@ export function useLocalSnapshots() {
   const [draft, setDraft] = useState<Snapshot>(() =>
     createEmptySnapshot(currentDate)
   );
+  const [estimatedDebtFields, setEstimatedDebtFields] =
+    useState<EstimatedDebtFields>({});
   const [trendRange, setTrendRange] = useState<TrendRange>(DEFAULT_TREND_RANGE);
 
   useEffect(() => {
@@ -59,7 +99,9 @@ export function useLocalSnapshots() {
     const data =
       result.status === "ok" ? result.data : createEmptyFinanceData();
     setFinanceData(data);
-    setDraft(buildInitialDraft(data, currentDate));
+    const { snapshot, estimatedFields } = buildInitialDraft(data, currentDate);
+    setDraft(snapshot);
+    setEstimatedDebtFields(estimatedFields);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -75,6 +117,38 @@ export function useLocalSnapshots() {
   const updateDraft = useCallback((patch: Partial<Snapshot>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
   }, []);
+
+  /**
+   * 負債清單專用的更新入口：使用者手動修改「剩餘本金」或「剩餘還款期數」時，
+   * 移除該欄位的「系統估算」標記（PRD 4.2 節），其餘寫入行為與 updateDraft 相同。
+   */
+  const updateDebts = useCallback(
+    (debts: Debt[]) => {
+      setEstimatedDebtFields((prev) => {
+        if (Object.keys(prev).length === 0) return prev;
+        const next: EstimatedDebtFields = {};
+        for (const debt of debts) {
+          const flags = prev[debt.id];
+          if (!flags) continue;
+          const prevDebt = draft.debts.find((d) => d.id === debt.id);
+          const principal =
+            flags.principal && prevDebt?.principal === debt.principal;
+          const remainingMonths =
+            flags.remainingMonths &&
+            prevDebt?.remainingMonths === debt.remainingMonths;
+          if (principal || remainingMonths) {
+            next[debt.id] = {
+              ...(principal && { principal: true }),
+              ...(remainingMonths && { remainingMonths: true }),
+            };
+          }
+        }
+        return next;
+      });
+      updateDraft({ debts });
+    },
+    [draft.debts, updateDraft]
+  );
 
   /** 「更新儀表板」：正式將今日草稿寫入 LocalStorage（PRD 4.2 節）。version-mismatch 狀態下拒絕覆蓋既有資料。 */
   const save = useCallback((): { ok: boolean; reason?: string } => {
@@ -93,6 +167,7 @@ export function useLocalSnapshots() {
     persistFinanceData(next);
     setFinanceData(next);
     setDraft(finalized);
+    setEstimatedDebtFields({});
     setLoadStatus("ok");
     return { ok: true };
   }, [draft, financeData, currentDate, loadStatus]);
@@ -113,7 +188,12 @@ export function useLocalSnapshots() {
       }
       persistFinanceData(result.data);
       setFinanceData(result.data);
-      setDraft(buildInitialDraft(result.data, currentDate));
+      const { snapshot, estimatedFields } = buildInitialDraft(
+        result.data,
+        currentDate
+      );
+      setDraft(snapshot);
+      setEstimatedDebtFields(estimatedFields);
       setLoadStatus("ok");
       return { ok: true };
     },
@@ -126,6 +206,7 @@ export function useLocalSnapshots() {
     const empty = createEmptyFinanceData();
     setFinanceData(empty);
     setDraft(createEmptySnapshot(currentDate));
+    setEstimatedDebtFields({});
     setLoadStatus("empty");
   }, [currentDate]);
 
@@ -150,6 +231,8 @@ export function useLocalSnapshots() {
     metrics,
     isDirty,
     updateDraft,
+    estimatedDebtFields,
+    updateDebts,
     save,
     exportBackup,
     importBackup,

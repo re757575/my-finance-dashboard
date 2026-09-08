@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { EstimatedDebtFields } from "@/hooks/useLocalSnapshots";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
 import {
   calculateMonthlyPayment,
@@ -14,10 +15,12 @@ const DEBT_CATEGORIES: DebtCategory[] = ["信貸", "質押", "房貸", "其他"]
 interface DebtListProps {
   value: Debt[];
   onChange: (next: Debt[]) => void;
+  /** 哪些負債的剩餘本金／期數是系統自動估算、尚未經使用者確認（PRD 4.2 節），用於顯示提示標記。 */
+  estimatedFields?: EstimatedDebtFields;
 }
 
 /** 類別化負債清單：可動態新增/刪除，每筆即時算出每月應還款金額（PRD 4.2、5.2 節）。 */
-export function DebtList({ value, onChange }: DebtListProps) {
+export function DebtList({ value, onChange, estimatedFields }: DebtListProps) {
   function addDebt() {
     const category: DebtCategory = "信貸";
     onChange([
@@ -62,6 +65,7 @@ export function DebtList({ value, onChange }: DebtListProps) {
             debt={debt}
             onUpdate={(patch) => updateDebt(debt.id, patch)}
             onRemove={() => removeDebt(debt.id)}
+            estimated={estimatedFields?.[debt.id]}
           />
         ))}
       </div>
@@ -73,9 +77,21 @@ interface DebtCardProps {
   debt: Debt;
   onUpdate: (patch: Partial<Debt>) => void;
   onRemove: () => void;
+  estimated?: { principal?: boolean; remainingMonths?: boolean };
 }
 
-function DebtCard({ debt, onUpdate, onRemove }: DebtCardProps) {
+function EstimatedBadge() {
+  return (
+    <span
+      title="此數值由系統依經過的月數自動估算，請確認是否正確"
+      className="ml-1 rounded bg-sky-50 px-1 py-0.5 text-[10px] font-medium text-sky-600"
+    >
+      系統估算
+    </span>
+  );
+}
+
+function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
   const principalInput = useNumberInputText({
     value: debt.principal,
     onChange: (principal) => onUpdate({ principal }),
@@ -133,7 +149,10 @@ function DebtCard({ debt, onUpdate, onRemove }: DebtCardProps) {
 
       <div className="grid grid-cols-3 gap-2">
         <label className="block space-y-1">
-          <span className="text-xs text-slate-500">剩餘本金</span>
+          <span className="text-xs text-slate-500">
+            剩餘本金
+            {estimated?.principal && <EstimatedBadge />}
+          </span>
           <Input
             type="text"
             inputMode="decimal"
@@ -159,7 +178,10 @@ function DebtCard({ debt, onUpdate, onRemove }: DebtCardProps) {
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs text-slate-500">剩餘期數（月）</span>
+          <span className="text-xs text-slate-500">
+            剩餘期數（月）
+            {estimated?.remainingMonths && <EstimatedBadge />}
+          </span>
           <Input
             type="text"
             inputMode="decimal"

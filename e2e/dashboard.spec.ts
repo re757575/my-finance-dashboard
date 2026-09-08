@@ -148,3 +148,60 @@ test("趨勢圖節點可點擊顯示 tooltip，並可全螢幕展開檢視", asy
   await dialog.getByTestId("chart-node-2").click();
   await expect(dialog.getByTestId("chart-tooltip")).toBeVisible();
 });
+
+// PRD 4.2、5.2a 節：負債剩餘本金／期數自動估算
+test("今日草稿自動估算負債剩餘本金與期數，並標示系統估算，手動修改後標記消失", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const now = new Date();
+    const total = now.getFullYear() * 12 + now.getMonth() - 2;
+    const pastYear = Math.floor(total / 12);
+    const pastMonth = (total % 12) + 1;
+    const pastDate = `${pastYear}-${String(pastMonth).padStart(2, "0")}-01`;
+    window.localStorage.setItem(
+      "my_finance_dashboard_data",
+      JSON.stringify({
+        schemaVersion: 4,
+        snapshots: [
+          {
+            date: pastDate,
+            updatedAt: `${pastDate}T09:00:00.000Z`,
+            cashSources: [],
+            twStockValue: 0,
+            usStockValue: 0,
+            usStockCurrency: "USD",
+            exchangeRate: 0,
+            debts: [
+              {
+                id: "d1",
+                name: "房貸",
+                category: "房貸",
+                principal: 3000000,
+                annualRate: 2.4,
+                remainingMonths: 240,
+                repaymentMethod: "amortizing",
+              },
+            ],
+            incomeSources: [],
+            monthlyExpense: 0,
+          },
+        ],
+      })
+    );
+  });
+  await page.reload();
+
+  const principalInput = page.getByLabel("剩餘本金");
+  const monthsInput = page.getByLabel("剩餘還款期數");
+
+  // 3 個月前的快照，經過 2 個曆月，剩餘期數應為 238，本金應小於原始 3,000,000
+  await expect(monthsInput).toHaveValue("238");
+  await expect(principalInput).not.toHaveValue("3000000");
+  await expect(page.getByText("系統估算")).toHaveCount(2);
+
+  await principalInput.fill("2900000");
+
+  // 手動修改本金後，只有本金欄位的估算標記消失，期數欄位仍維持估算標記
+  await expect(page.getByText("系統估算")).toHaveCount(1);
+});
