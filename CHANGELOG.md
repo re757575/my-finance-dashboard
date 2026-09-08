@@ -2,6 +2,22 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.2.0](https://github.com/re757575/my-finance-dashboard/compare/v0.1.0...v0.2.0) (2026-09-08)
+
+### ⚠ BREAKING CHANGES
+
+- **儀表板:** 新增 FIRE／淨資產目標進度
+
+### Features
+
+- **儀表板:** 所有現況卡片新增計算公式說明 icon ([fd92fce](https://github.com/re757575/my-finance-dashboard/commit/fd92fcef89e7f3e2ac177cabe9ad7492ba5b5118))
+- **儀表板:** 新增 FIRE／淨資產目標進度 ([934e363](https://github.com/re757575/my-finance-dashboard/commit/934e363c3d36d4525b718f610218ed9227baa019))
+
+### Bug Fixes
+
+- **儀表板:** 修正卡片標題在寬螢幕被狀態徽章擠到換行的問題 ([fd642da](https://github.com/re757575/my-finance-dashboard/commit/fd642dadc08f6ff4e8bc0b1b7052ecdef54c99a1))
+- **儀表板:** 狀態徽章空間不足時整段換行，不再截斷文字 ([c006527](https://github.com/re757575/my-finance-dashboard/commit/c00652773f1fd2e3ef8496cf6cf2bd38d7fb7019))
+
 ## 0.1.0 (2026-09-08)
 
 ### ⚠ BREAKING CHANGES
