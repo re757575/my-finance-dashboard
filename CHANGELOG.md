@@ -2,6 +2,12 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.1](https://github.com/re757575/my-finance-dashboard/compare/v0.3.0...v0.3.1) (2026-09-08)
+
+### Features
+
+- **儀表板:** 新增 PWA 支援，可安裝到主畫面並離線開啟 ([d303630](https://github.com/re757575/my-finance-dashboard/commit/d30363069b7049fd38b65270a1a07e982b592b4e))
+
 ## [0.3.0](https://github.com/re757575/my-finance-dashboard/compare/v0.2.2...v0.3.0) (2026-09-08)
 
 ### ⚠ BREAKING CHANGES
