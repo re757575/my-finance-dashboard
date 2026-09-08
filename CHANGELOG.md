@@ -2,6 +2,12 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.2](https://github.com/re757575/my-finance-dashboard/compare/v0.3.1...v0.3.2) (2026-09-08)
+
+### Features
+
+- **儀表板:** 趨勢圖全螢幕展開時嘗試自動鎖定橫向 ([257dcae](https://github.com/re757575/my-finance-dashboard/commit/257dcaeeb202a07cf42d348a4cea918a61264ff0))
+
 ## [0.3.1](https://github.com/re757575/my-finance-dashboard/compare/v0.3.0...v0.3.1) (2026-09-08)
 
 ### Features
