@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AssetAllocationBar } from "@/components/AssetAllocationBar";
 import { CashFlowIndicator } from "@/components/CashFlowIndicator";
 import { CashRatioCard } from "@/components/CashRatioCard";
 import { CashSourceList } from "@/components/CashSourceList";
@@ -6,9 +7,11 @@ import { CopyPromptButton } from "@/components/CopyPromptButton";
 import { DataManagement } from "@/components/DataManagement";
 import { DebtList } from "@/components/DebtList";
 import { DebtRatioBar } from "@/components/DebtRatioBar";
+import { EmergencyFundCard } from "@/components/EmergencyFundCard";
 import { ExpenseInput } from "@/components/ExpenseInput";
 import { IncomeSourceList } from "@/components/IncomeSourceList";
 import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
+import { SavingsRateCard } from "@/components/SavingsRateCard";
 import { StockInputs } from "@/components/StockInputs";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TrendSection } from "@/components/TrendSection";
@@ -134,7 +137,7 @@ function App() {
                 />
               </div>
               <SummaryCards metrics={metrics} />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <DebtRatioBar
                   ratio={metrics.debtRatio}
                   status={metrics.debtRatioStatus}
@@ -144,8 +147,23 @@ function App() {
                 <MonthlyDebtPaymentCard
                   amount={metrics.totalMonthlyDebtPayment}
                 />
+                <EmergencyFundCard
+                  months={metrics.emergencyFundMonths}
+                  status={metrics.emergencyFundStatus}
+                />
+                <SavingsRateCard
+                  rate={metrics.savingsRate}
+                  status={metrics.savingsRateStatus}
+                />
               </div>
             </section>
+
+            <AssetAllocationBar
+              cashRatio={metrics.cashRatio}
+              twStockRatio={metrics.twStockRatio}
+              usStockRatio={metrics.usStockRatio}
+              totalAssets={metrics.totalAssets}
+            />
 
             <TrendSection
               visibleSnapshots={visibleSnapshots}

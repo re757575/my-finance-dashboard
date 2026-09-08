@@ -56,6 +56,13 @@ export interface FinanceData {
 export type DebtRatioStatus =
   "debt-free" | "healthy" | "elevated" | "high-risk";
 
+/** 緊急預備金月數健康度（PRD 5.5 節）："no-need" 代表分母為 0（無需求），不屬於風險分級。 */
+export type EmergencyFundStatus =
+  "no-need" | "insufficient" | "basic" | "sufficient";
+
+/** 儲蓄率健康度（PRD 5.6 節）。 */
+export type SavingsRateStatus = "negative" | "low" | "healthy" | "high";
+
 export interface CalculatedMetrics {
   totalCash: number;
   totalStockValue: number;
@@ -65,12 +72,22 @@ export interface CalculatedMetrics {
   debtRatio: number;
   debtRatioStatus: DebtRatioStatus;
   cashRatio: number;
+  /** 台股市值佔總資產比例（PRD 第 5 節資產配置比例公式）。 */
+  twStockRatio: number;
+  /** 美股市值（已換算台幣）佔總資產比例（PRD 第 5 節資產配置比例公式）。 */
+  usStockRatio: number;
   /** 負債清單所有項目「每月應還款金額」加總（PRD 5.2 節）。 */
   totalMonthlyDebtPayment: number;
   /** 多筆每月收入加總。 */
   totalIncome: number;
   /** 現金流 = 總收入 − 本月支出 − 本月應還款總額（PRD 5.3 節，不再手動輸入）。 */
   cashFlow: number;
+  /** 緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）；分母為 0 時為 null，代表「無需求」（PRD 5.5 節）。 */
+  emergencyFundMonths: number | null;
+  emergencyFundStatus: EmergencyFundStatus;
+  /** 儲蓄率 = 現金流 ÷ 總收入 × 100（PRD 5.6 節）。 */
+  savingsRate: number;
+  savingsRateStatus: SavingsRateStatus;
 }
 
 export function createEmptySnapshot(date: string): Snapshot {

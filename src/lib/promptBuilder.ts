@@ -2,8 +2,10 @@ import {
   calculateMetrics,
   calculateMonthlyPayment,
   DEBT_RATIO_STATUS_LABEL,
+  EMERGENCY_FUND_STATUS_LABEL,
+  SAVINGS_RATE_STATUS_LABEL,
 } from "@/lib/calculations";
-import { formatCurrency, formatPercent } from "@/lib/format";
+import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
 import type { CalculatedMetrics, Snapshot } from "@/types/schema";
 
 interface BuildFinancePromptParams {
@@ -40,7 +42,19 @@ export function buildFinancePrompt({
   lines.push(
     `- 本月應還款總額：${formatCurrency(metrics.totalMonthlyDebtPayment)}`
   );
-  lines.push(`- 本月淨現金流：${formatCurrency(metrics.cashFlow)}`, "");
+  lines.push(`- 本月淨現金流：${formatCurrency(metrics.cashFlow)}`);
+  lines.push(
+    `- 緊急預備金月數：${formatMonths(metrics.emergencyFundMonths)}（${EMERGENCY_FUND_STATUS_LABEL[metrics.emergencyFundStatus]}）`
+  );
+  lines.push(
+    `- 儲蓄率：${formatPercent(metrics.savingsRate)}（${SAVINGS_RATE_STATUS_LABEL[metrics.savingsRateStatus]}）`,
+    ""
+  );
+
+  lines.push(
+    `- 資產配置：現金 ${formatPercent(metrics.cashRatio)}／台股 ${formatPercent(metrics.twStockRatio)}／美股 ${formatPercent(metrics.usStockRatio)}`,
+    ""
+  );
 
   lines.push("### 現金來源明細", "");
   if (draft.cashSources.length === 0) {

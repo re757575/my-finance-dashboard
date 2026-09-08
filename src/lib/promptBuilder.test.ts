@@ -87,6 +87,28 @@ describe("buildFinancePrompt", () => {
     expect(prompt).not.toContain("| 日期 |");
   });
 
+  // PRD 第 9 節 #30：新指標納入 AI 分析提示詞的「今日財務總覽」與資產配置摘要
+  it("包含緊急預備金月數、儲蓄率與資產配置比例摘要", () => {
+    const draft = baseSnapshot({
+      cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+      twStockValue: 400000,
+      usStockValue: 250000,
+      usStockCurrency: "TWD",
+      incomeSources: [{ id: "i1", name: "薪資", amount: 68000 }],
+      monthlyExpense: 22000,
+    });
+    const prompt = buildFinancePrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    });
+
+    expect(prompt).toContain("緊急預備金月數：15.9 個月（預備充足）");
+    expect(prompt).toContain("儲蓄率：67.6%（高儲蓄率）");
+    expect(prompt).toContain("資產配置：現金 35.0%／台股 40.0%／美股 25.0%");
+  });
+
   it("有歷史快照時產生 Markdown 趨勢表格，並依各筆資料計算指標", () => {
     const draft = baseSnapshot();
     const history = [

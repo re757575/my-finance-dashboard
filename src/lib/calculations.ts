@@ -4,8 +4,10 @@ import type {
   Debt,
   DebtCategory,
   DebtRatioStatus,
+  EmergencyFundStatus,
   IncomeSource,
   RepaymentMethod,
+  SavingsRateStatus,
   Snapshot,
   StockCurrency,
 } from "@/types/schema";
@@ -144,6 +146,61 @@ export const DEBT_RATIO_STATUS_LABEL: Record<DebtRatioStatus, string> = {
   "high-risk": "財務高風險（請儘速理債）",
 };
 
+/**
+ * 緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）（PRD 5.5 節）。
+ * 分子僅計入現金，不含股票市值（收入中斷期間賤賣股票風險高，不視為即時可動用資金）。
+ * 分母為 0 時回傳 null，代表「無需求」，不套用風險分級。
+ */
+export function calculateEmergencyFundMonths(
+  totalCash: number,
+  monthlyExpense: number,
+  totalMonthlyDebtPayment: number
+): number | null {
+  const denominator = toSafeNumber(monthlyExpense) + totalMonthlyDebtPayment;
+  if (denominator === 0) return null;
+  return totalCash / denominator;
+}
+
+export function calculateEmergencyFundStatus(
+  months: number | null
+): EmergencyFundStatus {
+  if (months === null) return "no-need";
+  if (months < 3) return "insufficient";
+  if (months < 6) return "basic";
+  return "sufficient";
+}
+
+export const EMERGENCY_FUND_STATUS_LABEL: Record<EmergencyFundStatus, string> =
+  {
+    "no-need": "無需求",
+    insufficient: "預備金不足",
+    basic: "基本安全",
+    sufficient: "預備充足",
+  };
+
+/** 儲蓄率 = 現金流 ÷ 總收入 × 100%，總收入為 0 時強制為 0（PRD 5.6 節）。 */
+export function calculateSavingsRate(
+  cashFlow: number,
+  totalIncome: number
+): number {
+  if (totalIncome === 0) return 0;
+  return (cashFlow / totalIncome) * 100;
+}
+
+export function calculateSavingsRateStatus(rate: number): SavingsRateStatus {
+  if (rate < 0) return "negative";
+  if (rate < 10) return "low";
+  if (rate < 20) return "healthy";
+  return "high";
+}
+
+export const SAVINGS_RATE_STATUS_LABEL: Record<SavingsRateStatus, string> = {
+  negative: "入不敷出",
+  low: "儲蓄偏低",
+  healthy: "儲蓄健康",
+  high: "高儲蓄率",
+};
+
 export function calculateMetrics(
   snapshot: Pick<
     Snapshot,
@@ -172,6 +229,13 @@ export function calculateMetrics(
     totalAssets === 0 ? 0 : (totalLiabilities / totalAssets) * 100;
   // 總資產為 0 時現金比例同樣預設為 0%，避免除以零
   const cashRatio = totalAssets === 0 ? 0 : (totalCash / totalAssets) * 100;
+  // 資產配置比例（PRD 第 5 節）：美股佔比以換算後的台幣等值金額（totalStockValue 扣除台股部分）計算
+  const twStockValueSafe = toSafeNumber(snapshot.twStockValue);
+  const usStockValueInTwd = totalStockValue - twStockValueSafe;
+  const twStockRatio =
+    totalAssets === 0 ? 0 : (twStockValueSafe / totalAssets) * 100;
+  const usStockRatio =
+    totalAssets === 0 ? 0 : (usStockValueInTwd / totalAssets) * 100;
   const totalMonthlyDebtPayment = calculateTotalMonthlyDebtPayment(
     snapshot.debts
   );
@@ -181,6 +245,12 @@ export function calculateMetrics(
     totalIncome -
     toSafeNumber(snapshot.monthlyExpense) -
     totalMonthlyDebtPayment;
+  const emergencyFundMonths = calculateEmergencyFundMonths(
+    totalCash,
+    snapshot.monthlyExpense,
+    totalMonthlyDebtPayment
+  );
+  const savingsRate = calculateSavingsRate(cashFlow, totalIncome);
 
   return {
     totalCash,
@@ -191,8 +261,14 @@ export function calculateMetrics(
     debtRatio,
     debtRatioStatus: calculateDebtRatioStatus(debtRatio),
     cashRatio,
+    twStockRatio,
+    usStockRatio,
     totalMonthlyDebtPayment,
     totalIncome,
     cashFlow,
+    emergencyFundMonths,
+    emergencyFundStatus: calculateEmergencyFundStatus(emergencyFundMonths),
+    savingsRate,
+    savingsRateStatus: calculateSavingsRateStatus(savingsRate),
   };
 }

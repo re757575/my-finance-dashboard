@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   advanceDebtByMonths,
+  calculateEmergencyFundMonths,
+  calculateEmergencyFundStatus,
   calculateMetrics,
   calculateMonthlyPayment,
+  calculateSavingsRate,
+  calculateSavingsRateStatus,
   calculateTotalMonthlyDebtPayment,
   toSafeNumber,
 } from "@/lib/calculations";
@@ -214,6 +218,133 @@ describe("calculateMetrics", () => {
     expect(result.totalLiabilities).toBe(0);
     expect(result.totalMonthlyDebtPayment).toBe(0);
     expect(result.debtRatioStatus).toBe("debt-free");
+  });
+
+  // PRD 第 9 節 #29：資產配置比例三類加總為 100%
+  it("資產配置比例：現金/台股/美股佔總資產比例加總為 100%", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+        twStockValue: 400000,
+        usStockValue: 250000,
+        usStockCurrency: "TWD",
+      })
+    );
+    expect(result.cashRatio).toBeCloseTo(35);
+    expect(result.twStockRatio).toBeCloseTo(40);
+    expect(result.usStockRatio).toBeCloseTo(25);
+  });
+
+  // PRD 第 9 節 #29a：總資產為 0 時三類比例皆為 0，不得除以零報錯
+  it("資產配置比例：總資產為 0 時三類比例皆為 0", () => {
+    const result = calculateMetrics(baseSnapshotInput());
+    expect(result.cashRatio).toBe(0);
+    expect(result.twStockRatio).toBe(0);
+    expect(result.usStockRatio).toBe(0);
+  });
+
+  // PRD 第 9 節 #27：緊急預備金月數計算
+  it("緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [{ id: "1", name: "現金", amount: 300000 }],
+        monthlyExpense: 20000,
+        debts: [
+          baseDebt({
+            principal: 500000,
+            annualRate: 2.4,
+            remainingMonths: 12,
+            repaymentMethod: "interestOnly",
+          }),
+        ],
+      })
+    );
+    const totalMonthlyDebtPayment = 500000 * (2.4 / 100 / 12);
+    expect(result.totalMonthlyDebtPayment).toBeCloseTo(totalMonthlyDebtPayment);
+    expect(result.emergencyFundMonths).toBeCloseTo(
+      300000 / (20000 + totalMonthlyDebtPayment)
+    );
+  });
+
+  // PRD 第 9 節 #27a：分母為 0 時，緊急預備金月數為 null（顯示「無需求」），不得除以零報錯
+  it("緊急預備金分母為 0 時，月數為 null（無需求）", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [{ id: "1", name: "現金", amount: 300000 }],
+      })
+    );
+    expect(result.emergencyFundMonths).toBeNull();
+    expect(result.emergencyFundStatus).toBe("no-need");
+  });
+
+  // PRD 第 9 節 #28：儲蓄率計算
+  it("儲蓄率 = 現金流 ÷ 總收入 × 100", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        incomeSources: [{ id: "i1", name: "薪資", amount: 68000 }],
+        monthlyExpense: 22000,
+        debts: [
+          baseDebt({
+            principal: 500000,
+            annualRate: 3.5,
+            remainingMonths: 12,
+            repaymentMethod: "interestOnly",
+          }),
+        ],
+      })
+    );
+    const monthlyDebtPayment = 500000 * (3.5 / 100 / 12);
+    const cashFlow = 68000 - 22000 - monthlyDebtPayment;
+    expect(result.savingsRate).toBeCloseTo((cashFlow / 68000) * 100);
+    expect(result.savingsRateStatus).toBe("high");
+  });
+
+  // PRD 第 9 節 #28a：總收入為 0 時，儲蓄率強制為 0%，不得除以零報錯
+  it("總收入為 0 時，儲蓄率為 0%", () => {
+    const result = calculateMetrics(baseSnapshotInput());
+    expect(result.savingsRate).toBe(0);
+    expect(Number.isFinite(result.savingsRate)).toBe(true);
+  });
+});
+
+describe("calculateEmergencyFundMonths / calculateEmergencyFundStatus", () => {
+  // PRD 第 9 節 #27b：門檻邊界（3 個月整）為「基本安全」，非「預備金不足」
+  it("月數恰為 3 時，狀態為基本安全", () => {
+    expect(calculateEmergencyFundStatus(3)).toBe("basic");
+  });
+
+  // PRD 第 9 節 #27c：門檻邊界（6 個月整）為「預備充足」，非「基本安全」
+  it("月數恰為 6 時，狀態為預備充足", () => {
+    expect(calculateEmergencyFundStatus(6)).toBe("sufficient");
+  });
+
+  it("月數小於 3 時，狀態為預備金不足", () => {
+    expect(calculateEmergencyFundStatus(2.9)).toBe("insufficient");
+  });
+
+  it("分母為 0 時回傳 null", () => {
+    expect(calculateEmergencyFundMonths(100000, 0, 0)).toBeNull();
+  });
+});
+
+describe("calculateSavingsRate / calculateSavingsRateStatus", () => {
+  // PRD 第 9 節 #28b：現金流為負時，狀態為「入不敷出」
+  it("現金流為負時，儲蓄率為負且狀態為入不敷出", () => {
+    const rate = calculateSavingsRate(-5000, 60000);
+    expect(rate).toBeLessThan(0);
+    expect(calculateSavingsRateStatus(rate)).toBe("negative");
+  });
+
+  it("儲蓄率邊界：0% ~ 10% 為儲蓄偏低，10% ~ 20% 為儲蓄健康，20% 以上為高儲蓄率", () => {
+    expect(calculateSavingsRateStatus(0)).toBe("low");
+    expect(calculateSavingsRateStatus(9.99)).toBe("low");
+    expect(calculateSavingsRateStatus(10)).toBe("healthy");
+    expect(calculateSavingsRateStatus(19.99)).toBe("healthy");
+    expect(calculateSavingsRateStatus(20)).toBe("high");
+  });
+
+  it("總收入為 0 時，儲蓄率為 0", () => {
+    expect(calculateSavingsRate(0, 0)).toBe(0);
   });
 });
 
