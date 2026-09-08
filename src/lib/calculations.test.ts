@@ -3,10 +3,12 @@ import {
   advanceDebtByMonths,
   calculateEmergencyFundMonths,
   calculateEmergencyFundStatus,
+  calculateGoalProgress,
   calculateMetrics,
   calculateMonthlyPayment,
   calculateSavingsRate,
   calculateSavingsRateStatus,
+  calculateSuggestedTargetNetWorth,
   calculateTotalMonthlyDebtPayment,
   toSafeNumber,
 } from "@/lib/calculations";
@@ -37,6 +39,7 @@ function baseSnapshotInput(
     debts: [] as Debt[],
     incomeSources: [] as IncomeSource[],
     monthlyExpense: 0,
+    targetNetWorth: 0,
     ...overrides,
   };
 }
@@ -305,6 +308,28 @@ describe("calculateMetrics", () => {
     expect(result.savingsRate).toBe(0);
     expect(Number.isFinite(result.savingsRate)).toBe(true);
   });
+
+  // PRD 第 9 節 #31：FIRE 目標進度計算
+  it("FIRE 目標進度 = 淨資產 ÷ 目標淨資產 × 100", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [{ id: "1", name: "現金", amount: 3500000 }],
+        targetNetWorth: 10000000,
+      })
+    );
+    expect(result.goalProgress).toBeCloseTo(35);
+  });
+
+  // PRD 第 9 節 #31a：目標淨資產為 0（未設定）時，進度為 null，不得除以零報錯
+  it("目標淨資產為 0 時，goalProgress 為 null", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [{ id: "1", name: "現金", amount: 3500000 }],
+        targetNetWorth: 0,
+      })
+    );
+    expect(result.goalProgress).toBeNull();
+  });
 });
 
 describe("calculateEmergencyFundMonths / calculateEmergencyFundStatus", () => {
@@ -345,6 +370,30 @@ describe("calculateSavingsRate / calculateSavingsRateStatus", () => {
 
   it("總收入為 0 時，儲蓄率為 0", () => {
     expect(calculateSavingsRate(0, 0)).toBe(0);
+  });
+});
+
+describe("calculateSuggestedTargetNetWorth / calculateGoalProgress", () => {
+  it("建議目標淨資產 = 本月支出 × 12 × 25（4% 提領法則）", () => {
+    expect(calculateSuggestedTargetNetWorth(30000)).toBe(9000000);
+  });
+
+  it("本月支出為 0 時，建議值為 0", () => {
+    expect(calculateSuggestedTargetNetWorth(0)).toBe(0);
+  });
+
+  it("目標為 0 時，進度為 null", () => {
+    expect(calculateGoalProgress(3500000, 0)).toBeNull();
+  });
+
+  // PRD 第 9 節 #31c：超過目標時不封頂，如實回傳超過 100% 的數字
+  it("淨資產超過目標時，進度可超過 100%", () => {
+    expect(calculateGoalProgress(14200000, 10000000)).toBeCloseTo(142);
+  });
+
+  // PRD 第 9 節 #31d：淨資產為負數時，回傳負數（由 UI 端負責夾住進度條寬度）
+  it("淨資產為負數時，回傳負百分比", () => {
+    expect(calculateGoalProgress(-500000, 10000000)).toBeCloseTo(-5);
   });
 });
 

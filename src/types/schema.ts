@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export interface CashSource {
   id: string;
@@ -46,6 +46,8 @@ export interface Snapshot {
   incomeSources: IncomeSource[];
   /** 本月支出，不含負債清單的每月應還款金額（PRD 5.3 節現金流公式）。 */
   monthlyExpense: number;
+  /** 目標淨資產，選填，0 代表尚未設定（PRD 4.2、5.7 節 FIRE／淨資產目標進度）。 */
+  targetNetWorth: number;
 }
 
 export interface FinanceData {
@@ -88,6 +90,8 @@ export interface CalculatedMetrics {
   /** 儲蓄率 = 現金流 ÷ 總收入 × 100（PRD 5.6 節）。 */
   savingsRate: number;
   savingsRateStatus: SavingsRateStatus;
+  /** FIRE／淨資產目標進度 = 淨資產 ÷ 目標淨資產 × 100；目標為 0（未設定）時為 null（PRD 5.7 節）。 */
+  goalProgress: number | null;
 }
 
 export function createEmptySnapshot(date: string): Snapshot {
@@ -102,5 +106,6 @@ export function createEmptySnapshot(date: string): Snapshot {
     debts: [],
     incomeSources: [],
     monthlyExpense: 0,
+    targetNetWorth: 0,
   };
 }

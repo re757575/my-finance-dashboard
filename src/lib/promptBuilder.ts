@@ -16,6 +16,16 @@ interface BuildFinancePromptParams {
   recentSnapshots: Snapshot[];
 }
 
+/** FIRE／淨資產目標進度的一行摘要文字，未設定目標時給出明確提示，避免 AI 誤以為 0% 是負面訊號。 */
+function formatGoalProgressLine(
+  metrics: CalculatedMetrics,
+  targetNetWorth: number
+): string {
+  if (metrics.goalProgress === null) return "尚未設定目標淨資產";
+  const achievedNote = metrics.goalProgress >= 100 ? "，已達成目標" : "";
+  return `${formatPercent(metrics.goalProgress)}（目標 ${formatCurrency(targetNetWorth)}）${achievedNote}`;
+}
+
 /** 產生給 AI 分析用的財務健康檢查提示詞（Markdown），供「一鍵複製」功能使用。 */
 export function buildFinancePrompt({
   currentDate,
@@ -47,7 +57,10 @@ export function buildFinancePrompt({
     `- 緊急預備金月數：${formatMonths(metrics.emergencyFundMonths)}（${EMERGENCY_FUND_STATUS_LABEL[metrics.emergencyFundStatus]}）`
   );
   lines.push(
-    `- 儲蓄率：${formatPercent(metrics.savingsRate)}（${SAVINGS_RATE_STATUS_LABEL[metrics.savingsRateStatus]}）`,
+    `- 儲蓄率：${formatPercent(metrics.savingsRate)}（${SAVINGS_RATE_STATUS_LABEL[metrics.savingsRateStatus]}）`
+  );
+  lines.push(
+    `- FIRE／淨資產目標進度：${formatGoalProgressLine(metrics, draft.targetNetWorth)}`,
     ""
   );
 

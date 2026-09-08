@@ -15,6 +15,7 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     debts: [],
     incomeSources: [],
     monthlyExpense: 0,
+    targetNetWorth: 0,
     ...overrides,
   };
 }
@@ -107,6 +108,25 @@ describe("buildFinancePrompt", () => {
     expect(prompt).toContain("緊急預備金月數：15.9 個月（預備充足）");
     expect(prompt).toContain("儲蓄率：67.6%（高儲蓄率）");
     expect(prompt).toContain("資產配置：現金 35.0%／台股 40.0%／美股 25.0%");
+    expect(prompt).toContain("FIRE／淨資產目標進度：尚未設定目標淨資產");
+  });
+
+  // PRD 第 9 節 #31：FIRE 目標進度已設定時，包含百分比與目標金額；達成目標時額外註記
+  it("已設定目標淨資產時，包含 FIRE 進度百分比與目標金額", () => {
+    const draft = baseSnapshot({
+      cashSources: [{ id: "1", name: "現金", amount: 14200000 }],
+      targetNetWorth: 10000000,
+    });
+    const prompt = buildFinancePrompt({
+      currentDate: "2026-07-13",
+      draft,
+      metrics: calculateMetrics(draft),
+      recentSnapshots: [],
+    });
+
+    expect(prompt).toContain(
+      "FIRE／淨資產目標進度：142.0%（目標 $10,000,000），已達成目標"
+    );
   });
 
   it("有歷史快照時產生 Markdown 趨勢表格，並依各筆資料計算指標", () => {

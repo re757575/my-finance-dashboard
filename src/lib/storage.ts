@@ -29,9 +29,11 @@ interface RawSnapshotV2 extends RawSnapshotV1 {
   usStockCurrency: "USD" | "TWD";
 }
 
-interface RawSnapshotV3 extends Omit<Snapshot, "date"> {
+interface RawSnapshotV3 extends Omit<Snapshot, "date" | "targetNetWorth"> {
   month: string; // "YYYY-MM"
 }
+
+type RawSnapshotV4 = Omit<Snapshot, "targetNetWorth">;
 
 /** V1（無 usStockCurrency）→ V2：美股市值當時一律以 USD 計價換算，遷移時補上此預設值。 */
 function migrateV1ToV2(raw: { schemaVersion: 1; snapshots: RawSnapshotV1[] }): {
@@ -92,16 +94,30 @@ function migrateV2ToV3(raw: { schemaVersion: 2; snapshots: RawSnapshotV2[] }): {
  * V3（快照顆粒度為「月」，month: "YYYY-MM"）→ V4（顆粒度改為「日」，date: "YYYY-MM-DD"）：
  * date 取自該筆快照 updatedAt 的實際日期（而非統一映射到月初或月底），盡量還原使用者實際存檔當下的日期。
  */
-function migrateV3ToV4(raw: {
-  schemaVersion: 3;
-  snapshots: RawSnapshotV3[];
-}): FinanceData {
+function migrateV3ToV4(raw: { schemaVersion: 3; snapshots: RawSnapshotV3[] }): {
+  schemaVersion: 4;
+  snapshots: RawSnapshotV4[];
+} {
   return {
     schemaVersion: 4,
     snapshots: raw.snapshots.map((s) => {
       const { month: _month, ...rest } = s;
       return { ...rest, date: s.updatedAt.slice(0, 10) };
     }),
+  };
+}
+
+/**
+ * V4（無 targetNetWorth）→ V5：每筆快照補上 targetNetWorth: 0（視為「尚未設定目標」），
+ * 不依該筆快照的 monthlyExpense 臆測回填建議值，避免捏造使用者從未實際設定過的歷史目標。
+ */
+function migrateV4ToV5(raw: {
+  schemaVersion: 4;
+  snapshots: RawSnapshotV4[];
+}): FinanceData {
+  return {
+    schemaVersion: 5,
+    snapshots: raw.snapshots.map((s) => ({ ...s, targetNetWorth: 0 })),
   };
 }
 
@@ -115,17 +131,25 @@ function migrateFinanceData(parsed: {
       parsed as { schemaVersion: 1; snapshots: RawSnapshotV1[] }
     );
     const v3 = migrateV2ToV3(v2);
-    return migrateV3ToV4(v3);
+    const v4 = migrateV3ToV4(v3);
+    return migrateV4ToV5(v4);
   }
   if (parsed.schemaVersion === 2) {
     const v3 = migrateV2ToV3(
       parsed as { schemaVersion: 2; snapshots: RawSnapshotV2[] }
     );
-    return migrateV3ToV4(v3);
+    const v4 = migrateV3ToV4(v3);
+    return migrateV4ToV5(v4);
   }
   if (parsed.schemaVersion === 3) {
-    return migrateV3ToV4(
+    const v4 = migrateV3ToV4(
       parsed as { schemaVersion: 3; snapshots: RawSnapshotV3[] }
+    );
+    return migrateV4ToV5(v4);
+  }
+  if (parsed.schemaVersion === 4) {
+    return migrateV4ToV5(
+      parsed as { schemaVersion: 4; snapshots: RawSnapshotV4[] }
     );
   }
   return null;

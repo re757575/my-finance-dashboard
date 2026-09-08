@@ -10,11 +10,13 @@ import { DebtRatioBar } from "@/components/DebtRatioBar";
 import { EmergencyFundCard } from "@/components/EmergencyFundCard";
 import { ExpenseInput } from "@/components/ExpenseInput";
 import { Footer } from "@/components/Footer";
+import { GoalProgressSection } from "@/components/GoalProgressSection";
 import { IncomeSourceList } from "@/components/IncomeSourceList";
 import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
 import { StockInputs } from "@/components/StockInputs";
 import { SummaryCards } from "@/components/SummaryCards";
+import { TargetNetWorthInput } from "@/components/TargetNetWorthInput";
 import { TrendSection } from "@/components/TrendSection";
 import { Button } from "@/components/ui/button";
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
@@ -97,6 +99,11 @@ function App() {
               value={draft.monthlyExpense}
               onChange={(monthlyExpense) => updateDraft({ monthlyExpense })}
             />
+            <TargetNetWorthInput
+              value={draft.targetNetWorth}
+              monthlyExpense={draft.monthlyExpense}
+              onChange={(targetNetWorth) => updateDraft({ targetNetWorth })}
+            />
 
             <div className="space-y-1">
               <Button
@@ -164,6 +171,14 @@ function App() {
               twStockRatio={metrics.twStockRatio}
               usStockRatio={metrics.usStockRatio}
               totalAssets={metrics.totalAssets}
+            />
+
+            <GoalProgressSection
+              netWorth={metrics.netWorth}
+              targetNetWorth={draft.targetNetWorth}
+              monthlyExpense={draft.monthlyExpense}
+              progress={metrics.goalProgress}
+              onSetTarget={(targetNetWorth) => updateDraft({ targetNetWorth })}
             />
 
             <TrendSection

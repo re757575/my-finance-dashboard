@@ -201,6 +201,27 @@ export const SAVINGS_RATE_STATUS_LABEL: Record<SavingsRateStatus, string> = {
   high: "高儲蓄率",
 };
 
+/** FIRE 建議目標淨資產＝本月支出 × 12 × 25（4% 提領法則），僅供「使用建議值」按鈕帶入（PRD 5.7 節）。 */
+export function calculateSuggestedTargetNetWorth(
+  monthlyExpense: number
+): number {
+  return toSafeNumber(monthlyExpense) * 12 * 25;
+}
+
+/**
+ * FIRE／淨資產目標進度 = 淨資產 ÷ 目標淨資產 × 100（PRD 5.7 節）。
+ * 目標為 0（未設定）時回傳 null。不在此處夾住上下限，封頂/夾底交由 UI 呈現時處理，
+ * 讓呼叫端仍能取得未夾住的真實百分比（例如超標時要如實顯示 142% 而非 100%）。
+ */
+export function calculateGoalProgress(
+  netWorth: number,
+  targetNetWorth: number
+): number | null {
+  const target = toSafeNumber(targetNetWorth);
+  if (target === 0) return null;
+  return (netWorth / target) * 100;
+}
+
 export function calculateMetrics(
   snapshot: Pick<
     Snapshot,
@@ -212,6 +233,7 @@ export function calculateMetrics(
     | "debts"
     | "incomeSources"
     | "monthlyExpense"
+    | "targetNetWorth"
   >
 ): CalculatedMetrics {
   const totalCash = sumCashSources(snapshot.cashSources);
@@ -251,6 +273,7 @@ export function calculateMetrics(
     totalMonthlyDebtPayment
   );
   const savingsRate = calculateSavingsRate(cashFlow, totalIncome);
+  const goalProgress = calculateGoalProgress(netWorth, snapshot.targetNetWorth);
 
   return {
     totalCash,
@@ -270,5 +293,6 @@ export function calculateMetrics(
     emergencyFundStatus: calculateEmergencyFundStatus(emergencyFundMonths),
     savingsRate,
     savingsRateStatus: calculateSavingsRateStatus(savingsRate),
+    goalProgress,
   };
 }
