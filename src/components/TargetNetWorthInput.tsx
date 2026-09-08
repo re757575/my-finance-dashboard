@@ -1,3 +1,4 @@
+import { FormulaInfoButton } from "@/components/FormulaInfoButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
@@ -29,15 +30,24 @@ export function TargetNetWorthInput({
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-slate-700">
-          目標淨資產（選填，FIRE 進度）
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex shrink-0 items-center gap-1">
+          <span className="text-sm font-medium text-slate-700">
+            目標淨資產（選填，FIRE 進度）
+          </span>
+          <FormulaInfoButton
+            title="目標淨資產建議值"
+            formula="建議值 = 本月支出 × 12 × 25（4% 提領法則）"
+            substitution={`${formatCurrency(monthlyExpense)} × 12 × 25 = ${formatCurrency(suggested)}`}
+            note="建議值只在你點擊「使用建議值」按鈕時才會帶入欄位，之後不會隨本月支出變動自動覆寫"
+          />
+        </div>
         {suggested > 0 && (
           <Button
             type="button"
             variant="outline"
             size="sm"
+            className="shrink-0"
             onClick={() => onChange(suggested)}
           >
             使用建議值 {formatCurrency(suggested)}
