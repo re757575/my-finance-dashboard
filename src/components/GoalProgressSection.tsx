@@ -62,7 +62,7 @@ export function GoalProgressSection({
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-1">
           <p className="text-sm text-slate-500">FIRE／淨資產目標進度</p>
           <FormulaInfoButton
@@ -79,7 +79,7 @@ export function GoalProgressSection({
         {achieved && (
           <span
             data-testid="goal-progress-achieved"
-            className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700"
+            className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-emerald-700"
           >
             🎉 已達成目標
           </span>

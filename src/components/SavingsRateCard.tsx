@@ -30,7 +30,7 @@ export function SavingsRateCard({
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-1">
           <p className="text-sm text-slate-500">儲蓄率</p>
           <FormulaInfoButton
@@ -42,7 +42,7 @@ export function SavingsRateCard({
         </div>
         <span
           data-testid="savings-rate-status"
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${style.badge}`}
         >
           {SAVINGS_RATE_STATUS_LABEL[status]}
         </span>

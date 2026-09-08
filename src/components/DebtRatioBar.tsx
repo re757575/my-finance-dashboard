@@ -35,7 +35,7 @@ export function DebtRatioBar({
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-1">
           <p className="text-sm text-slate-500">負債比</p>
           <FormulaInfoButton
@@ -47,7 +47,7 @@ export function DebtRatioBar({
         </div>
         <span
           data-testid="debt-ratio-status"
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${style.badge}`}
         >
           {DEBT_RATIO_STATUS_LABEL[status]}
         </span>
