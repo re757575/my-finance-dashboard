@@ -174,5 +174,57 @@ describe("TrendLineChart", () => {
         within(dialog).getByText("▲ $30,000 (+25.0%)")
       ).toBeInTheDocument();
     });
+
+    it("點擊非最後一筆的節點時，tooltip 額外顯示與最新一筆比對的增減", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+          showDelta
+        />
+      );
+
+      fireEvent.click(screen.getAllByTestId("chart-node-1")[0]);
+
+      const tooltip = screen.getByTestId("chart-tooltip");
+      expect(tooltip.textContent).toBe(
+        "2026-07-12 $120,000距今 ▲ $30,000 (+25.0%)"
+      );
+    });
+
+    it("點擊最後一筆節點時，tooltip 不顯示與最新一筆比對的增減（同一天）", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+          showDelta
+        />
+      );
+
+      fireEvent.click(screen.getAllByTestId("chart-node-2")[0]);
+
+      expect(screen.getByTestId("chart-tooltip").textContent).toBe(
+        "2026-07-13 $150,000"
+      );
+      expect(screen.queryByText(/距今/)).not.toBeInTheDocument();
+    });
+
+    it("未開啟 showDelta 時，節點 tooltip 不顯示與最新一筆比對的增減", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+        />
+      );
+
+      fireEvent.click(screen.getAllByTestId("chart-node-1")[0]);
+
+      expect(screen.getByTestId("chart-tooltip").textContent).toBe(
+        "2026-07-12 $120,000"
+      );
+    });
   });
 });

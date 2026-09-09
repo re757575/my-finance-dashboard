@@ -31,6 +31,37 @@ interface LineChartSvgProps {
   showDelta?: boolean;
 }
 
+/** 計算兩個數值之間的差額與百分比；基準值（base）≤ 0 時百分比不具比較意義，回傳 null（PRD 4.2 節）。 */
+function computeDelta(base: number, current: number) {
+  const delta = current - base;
+  const percent = base > 0 ? (delta / base) * 100 : null;
+  return { delta, percent };
+}
+
+/** 增減比對的文字呈現：增加以 rose 紅色＋▲、減少以 emerald 綠色＋▼ 表示（沿用台股漲跌配色慣例），數值相同時顯示中性文字「持平」。 */
+function DeltaText({
+  delta,
+  percent,
+  formatValue,
+}: {
+  delta: number;
+  percent: number | null;
+  formatValue: (value: number) => string;
+}) {
+  if (delta === 0) {
+    return <span className="text-slate-400">持平</span>;
+  }
+
+  const isUp = delta > 0;
+  return (
+    <span className={isUp ? "text-rose-600" : "text-emerald-600"}>
+      {isUp ? "▲" : "▼"} {formatValue(Math.abs(delta))}
+      {percent !== null &&
+        ` (${isUp ? "+" : "-"}${Math.abs(percent).toFixed(1)}%)`}
+    </span>
+  );
+}
+
 /** 淨資產趨勢圖專用：與篩選範圍內倒數第二個節點比較增減（PRD 4.2 節「淨資產趨勢圖增減比對」）。 */
 function DeltaSummary({
   points,
@@ -43,22 +74,12 @@ function DeltaSummary({
 }) {
   const last = points.at(-1)!;
   const prev = points.at(-2)!;
-  const delta = last.value - prev.value;
-  const percent = prev.value > 0 ? (delta / prev.value) * 100 : null;
+  const { delta, percent } = computeDelta(prev.value, last.value);
   const alignClassName = align === "right" ? "text-right" : "text-left";
 
-  if (delta === 0) {
-    return <p className={`${alignClassName} text-xs text-slate-400`}>持平</p>;
-  }
-
-  const isUp = delta > 0;
   return (
-    <p
-      className={`${alignClassName} text-xs ${isUp ? "text-rose-600" : "text-emerald-600"}`}
-    >
-      {isUp ? "▲" : "▼"} {formatValue(Math.abs(delta))}
-      {percent !== null &&
-        ` (${isUp ? "+" : "-"}${Math.abs(percent).toFixed(1)}%)`}
+    <p className={`${alignClassName} text-xs`}>
+      <DeltaText delta={delta} percent={percent} formatValue={formatValue} />
     </p>
   );
 }
@@ -159,7 +180,18 @@ function LineChartSvg({
             width={width}
             height={totalHeight}
           >
-            {active.date} {formatValue(active.value)}
+            <p>
+              {active.date} {formatValue(active.value)}
+            </p>
+            {showDelta && activeIndex !== points.length - 1 && (
+              <p>
+                距今{" "}
+                <DeltaText
+                  {...computeDelta(active.value, points.at(-1)!.value)}
+                  formatValue={formatValue}
+                />
+              </p>
+            )}
           </ChartTooltip>
         )}
       </div>
@@ -217,6 +249,7 @@ export function TrendLineChart({
               formatValue={formatValue}
               colorClassName={colorClassName}
               variant="fullscreen"
+              showDelta={showDelta}
             />
           </ChartExpandButton>
         </div>
