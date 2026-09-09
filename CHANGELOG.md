@@ -2,6 +2,13 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.4](https://github.com/re757575/my-finance-dashboard/compare/v0.3.3...v0.3.4) (2026-09-09)
+
+### Features
+
+- **儀表板:** 淨資產趨勢圖新增目標淨資產參考線 ([f8af138](https://github.com/re757575/my-finance-dashboard/commit/f8af13838c0ed9e5122fbf22283d812e9c684e41))
+- **儀表板:** 趨勢圖全螢幕檢視新增 Y 軸金額刻度 ([64f8eab](https://github.com/re757575/my-finance-dashboard/commit/64f8eab00bbc043a9cd33e8dddf7156893ff7966))
+
 ## [0.3.3](https://github.com/re757575/my-finance-dashboard/compare/v0.3.2...v0.3.3) (2026-09-09)
 
 ### Features
