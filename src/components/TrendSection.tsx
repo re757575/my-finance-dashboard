@@ -61,6 +61,7 @@ export function TrendSection({
           points={points.map((p) => ({ date: p.date, value: p.netWorth }))}
           formatValue={formatCurrency}
           colorClassName="text-blue-500"
+          showDelta
         />
         <TrendLineChart
           title="負債比趨勢"

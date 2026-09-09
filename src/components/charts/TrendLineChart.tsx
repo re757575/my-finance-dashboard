@@ -9,6 +9,7 @@ interface TrendLineChartProps {
   points: { date: string; value: number }[];
   formatValue?: (value: number) => string;
   colorClassName?: string;
+  showDelta?: boolean;
 }
 
 const COMPACT_WIDTH = 320;
@@ -27,6 +28,60 @@ interface LineChartSvgProps {
   formatValue: (value: number) => string;
   colorClassName: string;
   variant: "compact" | "fullscreen";
+  showDelta?: boolean;
+}
+
+/** 計算兩個數值之間的差額與百分比；基準值（base）≤ 0 時百分比不具比較意義，回傳 null（PRD 4.2 節）。 */
+function computeDelta(base: number, current: number) {
+  const delta = current - base;
+  const percent = base > 0 ? (delta / base) * 100 : null;
+  return { delta, percent };
+}
+
+/** 增減比對的文字呈現：增加以 rose 紅色＋▲、減少以 emerald 綠色＋▼ 表示（沿用台股漲跌配色慣例），數值相同時顯示中性文字「持平」。 */
+function DeltaText({
+  delta,
+  percent,
+  formatValue,
+}: {
+  delta: number;
+  percent: number | null;
+  formatValue: (value: number) => string;
+}) {
+  if (delta === 0) {
+    return <span className="text-slate-400">持平</span>;
+  }
+
+  const isUp = delta > 0;
+  return (
+    <span className={isUp ? "text-rose-600" : "text-emerald-600"}>
+      {isUp ? "▲" : "▼"} {formatValue(Math.abs(delta))}
+      {percent !== null &&
+        ` (${isUp ? "+" : "-"}${Math.abs(percent).toFixed(1)}%)`}
+    </span>
+  );
+}
+
+/** 淨資產趨勢圖專用：與篩選範圍內倒數第二個節點比較增減（PRD 4.2 節「淨資產趨勢圖增減比對」）。 */
+function DeltaSummary({
+  points,
+  formatValue,
+  align = "right",
+}: {
+  points: { date: string; value: number }[];
+  formatValue: (value: number) => string;
+  align?: "left" | "right";
+}) {
+  const last = points.at(-1)!;
+  const prev = points.at(-2)!;
+  const { delta, percent } = computeDelta(prev.value, last.value);
+  const alignClassName = align === "right" ? "text-right" : "text-left";
+
+  return (
+    <p className={`${alignClassName} text-xs`}>
+      <DeltaText delta={delta} percent={percent} formatValue={formatValue} />
+    </p>
+  );
 }
 
 /** 手刻 SVG 折線圖本體：compact 為響應式縮放、fullscreen 為固定節點間距＋橫向捲動（PRD 4.2、8 節）。 */
@@ -36,6 +91,7 @@ function LineChartSvg({
   formatValue,
   colorClassName,
   variant,
+  showDelta,
 }: LineChartSvgProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const isFullscreen = variant === "fullscreen";
@@ -64,7 +120,10 @@ function LineChartSvg({
   const activeCoord = activeIndex !== null ? coords[activeIndex] : null;
 
   return (
-    <div className={isFullscreen ? "overflow-x-auto" : undefined}>
+    <div
+      className={isFullscreen ? "overflow-x-auto" : undefined}
+      data-chart-scroll={isFullscreen || undefined}
+    >
       <div className="relative" style={isFullscreen ? { width } : undefined}>
         <svg
           viewBox={`0 0 ${width} ${totalHeight}`}
@@ -123,16 +182,33 @@ function LineChartSvg({
             y={activeCoord.y}
             width={width}
             height={totalHeight}
+            clampToBounds={isFullscreen}
           >
-            {active.date} {formatValue(active.value)}
+            <p>
+              {active.date} {formatValue(active.value)}
+            </p>
+            {showDelta && activeIndex !== points.length - 1 && (
+              <p>
+                距今{" "}
+                <DeltaText
+                  {...computeDelta(active.value, points.at(-1)!.value)}
+                  formatValue={formatValue}
+                />
+              </p>
+            )}
           </ChartTooltip>
         )}
       </div>
       {!isFullscreen && (
-        <div className="mt-1 flex justify-between text-xs text-slate-400">
-          <span>{points[0].date}</span>
-          <span>{points.at(-1)?.date}</span>
-        </div>
+        <>
+          {showDelta && (
+            <DeltaSummary points={points} formatValue={formatValue} />
+          )}
+          <div className="mt-1 flex justify-between text-xs text-slate-400">
+            <span>{points[0].date}</span>
+            <span>{points.at(-1)?.date}</span>
+          </div>
+        </>
       )}
     </div>
   );
@@ -144,6 +220,7 @@ export function TrendLineChart({
   points,
   formatValue = String,
   colorClassName = "text-blue-500",
+  showDelta = false,
 }: TrendLineChartProps) {
   if (points.length < 2) {
     return <EmptyTrendCard title={title} />;
@@ -163,12 +240,20 @@ export function TrendLineChart({
             <p className="text-sm text-slate-500">
               最新：{formatValue(last.value)}
             </p>
+            {showDelta && (
+              <DeltaSummary
+                points={points}
+                formatValue={formatValue}
+                align="left"
+              />
+            )}
             <LineChartSvg
               title={title}
               points={points}
               formatValue={formatValue}
               colorClassName={colorClassName}
               variant="fullscreen"
+              showDelta={showDelta}
             />
           </ChartExpandButton>
         </div>
@@ -180,6 +265,7 @@ export function TrendLineChart({
           formatValue={formatValue}
           colorClassName={colorClassName}
           variant="compact"
+          showDelta={showDelta}
         />
       </div>
     </div>
