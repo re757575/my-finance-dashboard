@@ -120,7 +120,10 @@ function LineChartSvg({
   const activeCoord = activeIndex !== null ? coords[activeIndex] : null;
 
   return (
-    <div className={isFullscreen ? "overflow-x-auto" : undefined}>
+    <div
+      className={isFullscreen ? "overflow-x-auto" : undefined}
+      data-chart-scroll={isFullscreen || undefined}
+    >
       <div className="relative" style={isFullscreen ? { width } : undefined}>
         <svg
           viewBox={`0 0 ${width} ${totalHeight}`}
@@ -179,6 +182,7 @@ function LineChartSvg({
             y={activeCoord.y}
             width={width}
             height={totalHeight}
+            clampToBounds={isFullscreen}
           >
             <p>
               {active.date} {formatValue(active.value)}

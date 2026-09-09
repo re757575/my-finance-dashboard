@@ -43,7 +43,10 @@ function BarChartSvg({ points, variant }: BarChartSvgProps) {
   const active = activeIndex !== null ? points[activeIndex] : null;
 
   return (
-    <div className={isFullscreen ? "overflow-x-auto" : undefined}>
+    <div
+      className={isFullscreen ? "overflow-x-auto" : undefined}
+      data-chart-scroll={isFullscreen || undefined}
+    >
       <div className="relative" style={isFullscreen ? { width } : undefined}>
         <svg
           viewBox={`0 0 ${width} ${totalHeight}`}
@@ -113,6 +116,7 @@ function BarChartSvg({ points, variant }: BarChartSvgProps) {
             y={padding}
             width={width}
             height={totalHeight}
+            clampToBounds={isFullscreen}
           >
             {active.date} 資產 {formatCurrency(active.assets)} ／ 負債{" "}
             {formatCurrency(active.liabilities)}
