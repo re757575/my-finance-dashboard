@@ -227,4 +227,61 @@ describe("TrendLineChart", () => {
       );
     });
   });
+
+  // PRD 4.2 節：淨資產趨勢圖目標參考線
+  describe("targetValue", () => {
+    it("未提供 targetValue 時不顯示目標參考線", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+        />
+      );
+
+      expect(screen.queryByText(/^目標/)).not.toBeInTheDocument();
+    });
+
+    it("targetValue 為 0（未設定）時不顯示目標參考線", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+          targetValue={0}
+        />
+      );
+
+      expect(screen.queryByText(/^目標/)).not.toBeInTheDocument();
+    });
+
+    it("提供正數 targetValue 時顯示目標參考線與數值", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+          targetValue={200000}
+        />
+      );
+
+      expect(screen.getByText("目標 $200,000")).toBeInTheDocument();
+    });
+
+    it("全螢幕展開檢視也同步顯示目標參考線", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+          targetValue={200000}
+        />
+      );
+
+      fireEvent.click(screen.getByLabelText("淨資產趨勢全螢幕檢視"));
+
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("目標 $200,000")).toBeInTheDocument();
+    });
+  });
 });

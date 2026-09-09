@@ -10,6 +10,8 @@ interface TrendLineChartProps {
   formatValue?: (value: number) => string;
   colorClassName?: string;
   showDelta?: boolean;
+  /** 目標參考線數值；0 或未提供代表尚未設定目標，不畫出參考線（PRD 4.2 節）。 */
+  targetValue?: number;
 }
 
 const COMPACT_WIDTH = 320;
@@ -29,6 +31,7 @@ interface LineChartSvgProps {
   colorClassName: string;
   variant: "compact" | "fullscreen";
   showDelta?: boolean;
+  targetValue?: number;
 }
 
 /** 計算兩個數值之間的差額與百分比；基準值（base）≤ 0 時百分比不具比較意義，回傳 null（PRD 4.2 節）。 */
@@ -92,6 +95,7 @@ function LineChartSvg({
   colorClassName,
   variant,
   showDelta,
+  targetValue,
 }: LineChartSvgProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const isFullscreen = variant === "fullscreen";
@@ -104,20 +108,25 @@ function LineChartSvg({
   const padding = isFullscreen ? FULLSCREEN_PADDING : COMPACT_PADDING;
 
   const values = points.map((p) => p.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  // 目標值也納入 min/max 範圍計算，確保參考線一定落在可視區域內，不會被畫到圖表外。
+  const valuesWithTarget = targetValue ? [...values, targetValue] : values;
+  const min = Math.min(...valuesWithTarget);
+  const max = Math.max(...valuesWithTarget);
   const range = max - min || 1;
   const stepX = (width - padding * 2) / (points.length - 1);
+  const toY = (value: number) =>
+    padding + (1 - (value - min) / range) * (chartHeight - padding * 2);
 
   const coords = points.map((p, i) => ({
     x: padding + i * stepX,
-    y: padding + (1 - (p.value - min) / range) * (chartHeight - padding * 2),
+    y: toY(p.value),
   }));
   const path = coords
     .map((c, i) => `${i === 0 ? "M" : "L"} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`)
     .join(" ");
   const active = activeIndex !== null ? points[activeIndex] : null;
   const activeCoord = activeIndex !== null ? coords[activeIndex] : null;
+  const targetY = targetValue ? toY(targetValue) : null;
 
   return (
     <div
@@ -129,11 +138,37 @@ function LineChartSvg({
           viewBox={`0 0 ${width} ${totalHeight}`}
           width={isFullscreen ? width : undefined}
           height={isFullscreen ? totalHeight : undefined}
-          className={isFullscreen ? colorClassName : `w-full ${colorClassName}`}
+          className={
+            isFullscreen
+              ? `overflow-visible ${colorClassName}`
+              : `w-full overflow-visible ${colorClassName}`
+          }
           role="img"
           aria-label={`${title}折線圖，共 ${points.length} 筆資料${isFullscreen ? "（全螢幕）" : ""}`}
           onClick={() => setActiveIndex(null)}
         >
+          {targetY !== null && (
+            <>
+              <line
+                x1={padding}
+                y1={targetY}
+                x2={width - padding}
+                y2={targetY}
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+                className="text-slate-300"
+              />
+              <text
+                x={padding}
+                y={targetY - 4}
+                textAnchor="start"
+                className="fill-slate-400 text-[9px]"
+              >
+                目標 {formatValue(targetValue!)}
+              </text>
+            </>
+          )}
           <path
             d={path}
             fill="none"
@@ -221,6 +256,7 @@ export function TrendLineChart({
   formatValue = String,
   colorClassName = "text-blue-500",
   showDelta = false,
+  targetValue,
 }: TrendLineChartProps) {
   if (points.length < 2) {
     return <EmptyTrendCard title={title} />;
@@ -254,6 +290,7 @@ export function TrendLineChart({
               colorClassName={colorClassName}
               variant="fullscreen"
               showDelta={showDelta}
+              targetValue={targetValue}
             />
           </ChartExpandButton>
         </div>
@@ -266,6 +303,7 @@ export function TrendLineChart({
           colorClassName={colorClassName}
           variant="compact"
           showDelta={showDelta}
+          targetValue={targetValue}
         />
       </div>
     </div>
