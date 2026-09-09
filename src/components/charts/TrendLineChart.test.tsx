@@ -284,4 +284,59 @@ describe("TrendLineChart", () => {
       expect(within(dialog).getByText("目標 $200,000")).toBeInTheDocument();
     });
   });
+
+  // PRD 4.2 節：Y 軸金額刻度
+  describe("Y 軸刻度", () => {
+    it("compact 卡片不顯示 Y 軸刻度", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+        />
+      );
+
+      expect(screen.queryByText("$100,000")).not.toBeInTheDocument();
+      expect(screen.queryByText("$140,000")).not.toBeInTheDocument();
+    });
+
+    // min=100,000／max=150,000 依「nice numbers」演算法擴展為 20,000 一階，
+    // 刻度落在 100,000／120,000／140,000／160,000 這種整數階梯上（而非線性內插的 116,667）。
+    it("全螢幕檢視顯示落在整數階梯上的 Y 軸刻度", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+        />
+      );
+
+      fireEvent.click(screen.getByLabelText("淨資產趨勢全螢幕檢視"));
+
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("$100,000")).toBeInTheDocument();
+      expect(within(dialog).getByText("$120,000")).toBeInTheDocument();
+      expect(within(dialog).getByText("$140,000")).toBeInTheDocument();
+      expect(within(dialog).getByText("$160,000")).toBeInTheDocument();
+    });
+
+    it("所有數值皆相同時，全螢幕檢視只顯示單一刻度，不產生虛假刻度區間", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={[
+            { date: "2026-07-11", value: 100000 },
+            { date: "2026-07-12", value: 100000 },
+          ]}
+          formatValue={formatCurrency}
+        />
+      );
+
+      fireEvent.click(screen.getByLabelText("淨資產趨勢全螢幕檢視"));
+
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getAllByText("$100,000").length).toBeGreaterThan(0);
+      expect(within(dialog).queryByText("$100,001")).not.toBeInTheDocument();
+    });
+  });
 });
