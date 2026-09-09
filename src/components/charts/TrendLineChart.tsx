@@ -9,6 +9,7 @@ interface TrendLineChartProps {
   points: { date: string; value: number }[];
   formatValue?: (value: number) => string;
   colorClassName?: string;
+  showDelta?: boolean;
 }
 
 const COMPACT_WIDTH = 320;
@@ -27,6 +28,39 @@ interface LineChartSvgProps {
   formatValue: (value: number) => string;
   colorClassName: string;
   variant: "compact" | "fullscreen";
+  showDelta?: boolean;
+}
+
+/** 淨資產趨勢圖專用：與篩選範圍內倒數第二個節點比較增減（PRD 4.2 節「淨資產趨勢圖增減比對」）。 */
+function DeltaSummary({
+  points,
+  formatValue,
+  align = "right",
+}: {
+  points: { date: string; value: number }[];
+  formatValue: (value: number) => string;
+  align?: "left" | "right";
+}) {
+  const last = points.at(-1)!;
+  const prev = points.at(-2)!;
+  const delta = last.value - prev.value;
+  const percent = prev.value > 0 ? (delta / prev.value) * 100 : null;
+  const alignClassName = align === "right" ? "text-right" : "text-left";
+
+  if (delta === 0) {
+    return <p className={`${alignClassName} text-xs text-slate-400`}>持平</p>;
+  }
+
+  const isUp = delta > 0;
+  return (
+    <p
+      className={`${alignClassName} text-xs ${isUp ? "text-rose-600" : "text-emerald-600"}`}
+    >
+      {isUp ? "▲" : "▼"} {formatValue(Math.abs(delta))}
+      {percent !== null &&
+        ` (${isUp ? "+" : "-"}${Math.abs(percent).toFixed(1)}%)`}
+    </p>
+  );
 }
 
 /** 手刻 SVG 折線圖本體：compact 為響應式縮放、fullscreen 為固定節點間距＋橫向捲動（PRD 4.2、8 節）。 */
@@ -36,6 +70,7 @@ function LineChartSvg({
   formatValue,
   colorClassName,
   variant,
+  showDelta,
 }: LineChartSvgProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const isFullscreen = variant === "fullscreen";
@@ -129,10 +164,15 @@ function LineChartSvg({
         )}
       </div>
       {!isFullscreen && (
-        <div className="mt-1 flex justify-between text-xs text-slate-400">
-          <span>{points[0].date}</span>
-          <span>{points.at(-1)?.date}</span>
-        </div>
+        <>
+          {showDelta && (
+            <DeltaSummary points={points} formatValue={formatValue} />
+          )}
+          <div className="mt-1 flex justify-between text-xs text-slate-400">
+            <span>{points[0].date}</span>
+            <span>{points.at(-1)?.date}</span>
+          </div>
+        </>
       )}
     </div>
   );
@@ -144,6 +184,7 @@ export function TrendLineChart({
   points,
   formatValue = String,
   colorClassName = "text-blue-500",
+  showDelta = false,
 }: TrendLineChartProps) {
   if (points.length < 2) {
     return <EmptyTrendCard title={title} />;
@@ -163,6 +204,13 @@ export function TrendLineChart({
             <p className="text-sm text-slate-500">
               最新：{formatValue(last.value)}
             </p>
+            {showDelta && (
+              <DeltaSummary
+                points={points}
+                formatValue={formatValue}
+                align="left"
+              />
+            )}
             <LineChartSvg
               title={title}
               points={points}
@@ -180,6 +228,7 @@ export function TrendLineChart({
           formatValue={formatValue}
           colorClassName={colorClassName}
           variant="compact"
+          showDelta={showDelta}
         />
       </div>
     </div>

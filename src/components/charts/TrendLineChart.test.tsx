@@ -75,4 +75,104 @@ describe("TrendLineChart", () => {
       "2026-07-12 $120,000"
     );
   });
+
+  // PRD 4.2 節：淨資產趨勢圖增減比對
+  describe("showDelta", () => {
+    it("預設不顯示增減比對，維持原本的日期範圍列", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+        />
+      );
+
+      expect(screen.getByText("2026-07-11")).toBeInTheDocument();
+      expect(screen.queryByText(/▲|▼|持平/)).not.toBeInTheDocument();
+    });
+
+    it("數值上升時在日期範圍列上方顯示紅色增加金額與百分比", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+          showDelta
+        />
+      );
+
+      const delta = screen.getByText("▲ $30,000 (+25.0%)");
+      expect(delta).toHaveClass("text-rose-600");
+      // 日期範圍列（首/末日期）維持顯示
+      expect(screen.getByText("2026-07-11")).toBeInTheDocument();
+      expect(screen.getByText("2026-07-13")).toBeInTheDocument();
+    });
+
+    it("數值下降時顯示綠色減少金額與百分比", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={[
+            { date: "2026-07-11", value: 100000 },
+            { date: "2026-07-12", value: 80000 },
+          ]}
+          formatValue={formatCurrency}
+          showDelta
+        />
+      );
+
+      const delta = screen.getByText("▼ $20,000 (-20.0%)");
+      expect(delta).toHaveClass("text-emerald-600");
+    });
+
+    it("與上一筆數值相同時顯示中性文字「持平」", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={[
+            { date: "2026-07-11", value: 100000 },
+            { date: "2026-07-12", value: 100000 },
+          ]}
+          formatValue={formatCurrency}
+          showDelta
+        />
+      );
+
+      expect(screen.getByText("持平")).toBeInTheDocument();
+    });
+
+    it("上一筆數值為 0 以下時只顯示金額，不顯示百分比", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={[
+            { date: "2026-07-11", value: -50000 },
+            { date: "2026-07-12", value: 20000 },
+          ]}
+          formatValue={formatCurrency}
+          showDelta
+        />
+      );
+
+      expect(screen.getByText("▲ $70,000")).toBeInTheDocument();
+    });
+
+    it("全螢幕展開檢視也同步顯示增減比對", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+          showDelta
+        />
+      );
+
+      fireEvent.click(screen.getByLabelText("淨資產趨勢全螢幕檢視"));
+
+      const dialog = screen.getByRole("dialog");
+      expect(
+        within(dialog).getByText("▲ $30,000 (+25.0%)")
+      ).toBeInTheDocument();
+    });
+  });
 });
