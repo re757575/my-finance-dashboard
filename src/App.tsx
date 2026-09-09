@@ -212,6 +212,7 @@ function App() {
               snapshotCount={snapshotCount}
               trendRange={trendRange}
               onRangeChange={setTrendRange}
+              targetNetWorth={draft.targetNetWorth}
             />
           </div>
         </div>

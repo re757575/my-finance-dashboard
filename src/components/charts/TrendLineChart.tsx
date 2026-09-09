@@ -10,6 +10,8 @@ interface TrendLineChartProps {
   formatValue?: (value: number) => string;
   colorClassName?: string;
   showDelta?: boolean;
+  /** 目標參考線數值；0 或未提供代表尚未設定目標，不畫出參考線（PRD 4.2 節）。 */
+  targetValue?: number;
 }
 
 const COMPACT_WIDTH = 320;
@@ -21,6 +23,9 @@ const FULLSCREEN_LABEL_HEIGHT = 28;
 const FULLSCREEN_HEIGHT = FULLSCREEN_CHART_HEIGHT + FULLSCREEN_LABEL_HEIGHT;
 const FULLSCREEN_PADDING = 32;
 const FULLSCREEN_POINT_SPACING = 40;
+/** 全螢幕檢視左側保留給 Y 軸金額刻度的寬度；compact 卡片空間有限不顯示刻度。 */
+const FULLSCREEN_Y_AXIS_WIDTH = 56;
+const Y_AXIS_TICK_COUNT = 4;
 
 interface LineChartSvgProps {
   title: string;
@@ -29,6 +34,32 @@ interface LineChartSvgProps {
   colorClassName: string;
   variant: "compact" | "fullscreen";
   showDelta?: boolean;
+  targetValue?: number;
+}
+
+/**
+ * 「Nice numbers」刻度演算法（沿用一般圖表軟體／股票 K 線圖慣例）：把 min/max 往外
+ * 擴到最接近的整數階梯（step 為 1/2/5 乘上 10 的冪次），刻度落在乾淨的整數上（如
+ * $100,000／$150,000），而不是對原始 min/max 線性內插出 $116,667 這種不易讀的數字。
+ */
+function getNiceTickStep(rawStep: number): number {
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const normalized = rawStep / magnitude;
+  if (normalized <= 1) return magnitude;
+  if (normalized <= 2) return 2 * magnitude;
+  if (normalized <= 5) return 5 * magnitude;
+  return 10 * magnitude;
+}
+
+function getNiceTicks(rawMin: number, rawMax: number, tickCount: number) {
+  const step = getNiceTickStep((rawMax - rawMin) / (tickCount - 1));
+  const min = Math.floor(rawMin / step) * step;
+  const max = Math.ceil(rawMax / step) * step;
+  const values: number[] = [];
+  for (let value = min; value <= max + step / 2; value += step) {
+    values.push(value);
+  }
+  return { min, max, values };
 }
 
 /** 計算兩個數值之間的差額與百分比；基準值（base）≤ 0 時百分比不具比較意義，回傳 null（PRD 4.2 節）。 */
@@ -92,32 +123,56 @@ function LineChartSvg({
   colorClassName,
   variant,
   showDelta,
+  targetValue,
 }: LineChartSvgProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const isFullscreen = variant === "fullscreen";
 
+  const yAxisWidth = isFullscreen ? FULLSCREEN_Y_AXIS_WIDTH : 0;
   const width = isFullscreen
-    ? FULLSCREEN_PADDING * 2 + (points.length - 1) * FULLSCREEN_POINT_SPACING
+    ? yAxisWidth +
+      FULLSCREEN_PADDING * 2 +
+      (points.length - 1) * FULLSCREEN_POINT_SPACING
     : COMPACT_WIDTH;
   const totalHeight = isFullscreen ? FULLSCREEN_HEIGHT : COMPACT_HEIGHT;
   const chartHeight = isFullscreen ? FULLSCREEN_CHART_HEIGHT : COMPACT_HEIGHT;
   const padding = isFullscreen ? FULLSCREEN_PADDING : COMPACT_PADDING;
+  const leftInset = padding + yAxisWidth;
 
   const values = points.map((p) => p.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  // 目標值也納入 min/max 範圍計算，確保參考線一定落在可視區域內，不會被畫到圖表外。
+  const valuesWithTarget = targetValue ? [...values, targetValue] : values;
+  const rawMin = Math.min(...valuesWithTarget);
+  const rawMax = Math.max(...valuesWithTarget);
+  const isFlat = rawMax === rawMin;
+  // 數值範圍往外擴到「nice numbers」整數階梯，讓 Y 軸刻度落在乾淨的整數上；
+  // 所有數值都相同時沒有階梯可言，直接用該數值本身當唯一刻度。
+  const {
+    min,
+    max,
+    values: tickValues,
+  } = isFlat
+    ? { min: rawMin, max: rawMax, values: [rawMin] }
+    : getNiceTicks(rawMin, rawMax, Y_AXIS_TICK_COUNT);
   const range = max - min || 1;
-  const stepX = (width - padding * 2) / (points.length - 1);
+  const stepX = (width - leftInset - padding) / (points.length - 1);
+  const toY = (value: number) =>
+    padding + (1 - (value - min) / range) * (chartHeight - padding * 2);
 
   const coords = points.map((p, i) => ({
-    x: padding + i * stepX,
-    y: padding + (1 - (p.value - min) / range) * (chartHeight - padding * 2),
+    x: leftInset + i * stepX,
+    y: toY(p.value),
   }));
   const path = coords
     .map((c, i) => `${i === 0 ? "M" : "L"} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`)
     .join(" ");
   const active = activeIndex !== null ? points[activeIndex] : null;
   const activeCoord = activeIndex !== null ? coords[activeIndex] : null;
+  const targetY = targetValue ? toY(targetValue) : null;
+  // Y 軸金額刻度：僅全螢幕檢視顯示，數值來自上面「nice numbers」擴展後的整數階梯。
+  const yAxisTicks = isFullscreen
+    ? tickValues.map((value) => ({ value, y: toY(value) }))
+    : [];
 
   return (
     <div
@@ -129,11 +184,59 @@ function LineChartSvg({
           viewBox={`0 0 ${width} ${totalHeight}`}
           width={isFullscreen ? width : undefined}
           height={isFullscreen ? totalHeight : undefined}
-          className={isFullscreen ? colorClassName : `w-full ${colorClassName}`}
+          className={
+            isFullscreen
+              ? `overflow-visible ${colorClassName}`
+              : `w-full overflow-visible ${colorClassName}`
+          }
           role="img"
           aria-label={`${title}折線圖，共 ${points.length} 筆資料${isFullscreen ? "（全螢幕）" : ""}`}
           onClick={() => setActiveIndex(null)}
         >
+          {yAxisTicks.map((tick) => (
+            <g key={tick.value}>
+              <line
+                x1={leftInset}
+                y1={tick.y}
+                x2={width - padding}
+                y2={tick.y}
+                stroke="currentColor"
+                strokeWidth={1}
+                className="text-slate-100"
+              />
+              <text
+                x={leftInset - 8}
+                y={tick.y}
+                dy="0.32em"
+                textAnchor="end"
+                className="fill-slate-400 text-[9px]"
+              >
+                {formatValue(tick.value)}
+              </text>
+            </g>
+          ))}
+          {targetY !== null && (
+            <>
+              <line
+                x1={leftInset}
+                y1={targetY}
+                x2={width - padding}
+                y2={targetY}
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+                className="text-slate-300"
+              />
+              <text
+                x={leftInset}
+                y={targetY - 4}
+                textAnchor="start"
+                className="fill-slate-400 text-[9px]"
+              >
+                目標 {formatValue(targetValue!)}
+              </text>
+            </>
+          )}
           <path
             d={path}
             fill="none"
@@ -221,6 +324,7 @@ export function TrendLineChart({
   formatValue = String,
   colorClassName = "text-blue-500",
   showDelta = false,
+  targetValue,
 }: TrendLineChartProps) {
   if (points.length < 2) {
     return <EmptyTrendCard title={title} />;
@@ -254,6 +358,7 @@ export function TrendLineChart({
               colorClassName={colorClassName}
               variant="fullscreen"
               showDelta={showDelta}
+              targetValue={targetValue}
             />
           </ChartExpandButton>
         </div>
@@ -266,6 +371,7 @@ export function TrendLineChart({
           colorClassName={colorClassName}
           variant="compact"
           showDelta={showDelta}
+          targetValue={targetValue}
         />
       </div>
     </div>

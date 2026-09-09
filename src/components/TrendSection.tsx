@@ -10,6 +10,8 @@ interface TrendSectionProps {
   snapshotCount: number;
   trendRange: TrendRange;
   onRangeChange: (next: TrendRange) => void;
+  /** 目標淨資產，0 代表尚未設定；用於淨資產趨勢圖的目標參考線（PRD 4.2 節）。 */
+  targetNetWorth: number;
 }
 
 const RANGE_OPTIONS: { value: TrendRange; label: string }[] = [
@@ -25,6 +27,7 @@ export function TrendSection({
   snapshotCount,
   trendRange,
   onRangeChange,
+  targetNetWorth,
 }: TrendSectionProps) {
   const points = visibleSnapshots.map((s) => ({
     date: s.date,
@@ -62,6 +65,7 @@ export function TrendSection({
           formatValue={formatCurrency}
           colorClassName="text-blue-500"
           showDelta
+          targetValue={targetNetWorth}
         />
         <TrendLineChart
           title="負債比趨勢"
