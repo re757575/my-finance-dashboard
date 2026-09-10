@@ -2,6 +2,24 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.4](https://github.com/re757575/my-finance-dashboard/compare/v0.3.3...v0.3.4) (2026-09-09)
+
+### Features
+
+- **儀表板:** 淨資產趨勢圖新增目標淨資產參考線 ([f8af138](https://github.com/re757575/my-finance-dashboard/commit/f8af13838c0ed9e5122fbf22283d812e9c684e41))
+- **儀表板:** 趨勢圖全螢幕檢視新增 Y 軸金額刻度 ([64f8eab](https://github.com/re757575/my-finance-dashboard/commit/64f8eab00bbc043a9cd33e8dddf7156893ff7966))
+
+## [0.3.3](https://github.com/re757575/my-finance-dashboard/compare/v0.3.2...v0.3.3) (2026-09-09)
+
+### Features
+
+- **儀表板:** 淨資產趨勢圖新增與上一筆比對增減 ([3b1108d](https://github.com/re757575/my-finance-dashboard/commit/3b1108d44ab2bd7efbf4f6392931d8b99f890050))
+- **儀表板:** 淨資產趨勢圖節點新增與最新一筆比對的增減 ([3151a74](https://github.com/re757575/my-finance-dashboard/commit/3151a74274ed66f8e9a612c2bd413a343ff074bd))
+
+### Bug Fixes
+
+- **儀表板:** 修正全螢幕趨勢圖節點 tooltip 被裁切的問題 ([51ac524](https://github.com/re757575/my-finance-dashboard/commit/51ac524784f2cd39db972a30c1aa2ab94f0d423c))
+
 ## [0.3.2](https://github.com/re757575/my-finance-dashboard/compare/v0.3.1...v0.3.2) (2026-09-08)
 
 ### Features
