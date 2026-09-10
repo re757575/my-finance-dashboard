@@ -33,7 +33,7 @@ npx playwright install --with-deps chromium   # 首次執行 e2e 測試前，安
 npm run test:e2e           # 執行 e2e 測試（Playwright，會自動啟動 dev server）
 ```
 
-Commit 時會自動觸發 `.husky/pre-commit`：依序執行 `lint-staged`（Prettier 格式化）、`typecheck`、`test`（單元/元件測試）。e2e 測試因啟動較慢，不包含在 pre-commit 內，建議在推送前或 CI 中執行。
+Commit 時會自動觸發 `.husky/pre-commit`：依序執行 `lint-staged`（Prettier 格式化）、`typecheck`、`test`（單元/元件測試）。e2e 測試因啟動較慢，不包含在 pre-commit 內，push 到 `main` 時會由 CI（`.github/workflows/deploy.yml`）自動執行。
 
 ## 版本發布
 
@@ -56,7 +56,7 @@ git push --follow-tags origin main
 
 ## 部署到 GitHub Pages
 
-專案已內建 `.github/workflows/deploy.yml`，push 到 `main` 分支時會自動：typecheck → 跑單元測試 → 建置 → 部署到 GitHub Pages。首次啟用需要在 GitHub 網站上手動設定一次：
+專案已內建 `.github/workflows/deploy.yml`，push 到 `main` 分支時會自動：typecheck → 跑單元測試 → 跑 e2e 測試 → 建置 → 部署到 GitHub Pages。首次啟用需要在 GitHub 網站上手動設定一次：
 
 1. 到 repository 的 **Settings → Pages**
 2. **Source** 選擇 **GitHub Actions**（不要選 "Deploy from a branch"）

@@ -84,4 +84,4 @@ npm run release:major    # 強制升 major
 
 ## Deployment
 
-`.github/workflows/deploy.yml`：push 到 `main` 會自動 typecheck → 單元測試 → build → 部署到 GitHub Pages（`actions/deploy-pages@v4`）。GitHub Pages 需為 **Public repo**（或 GitHub Pro/Team 以上）且 repo Settings → Pages → Source 設為 **GitHub Actions** 才能成功部署，否則 deploy 步驟會以 404 失敗（詳細排解步驟見 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)）。`vite.config.ts` 使用 `base: "./"` 相對路徑，因此不需因 repo 名稱而修改設定。
+`.github/workflows/deploy.yml`：push 到 `main` 會自動 typecheck → 單元測試 → e2e 測試 → build → 部署到 GitHub Pages（`actions/deploy-pages@v4`）。GitHub Pages 需為 **Public repo**（或 GitHub Pro/Team 以上）且 repo Settings → Pages → Source 設為 **GitHub Actions** 才能成功部署，否則 deploy 步驟會以 404 失敗（詳細排解步驟見 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)）。`vite.config.ts` 使用 `base: "./"` 相對路徑，因此不需因 repo 名稱而修改設定。
