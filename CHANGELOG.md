@@ -2,6 +2,12 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.5](https://github.com/re757575/my-finance-dashboard/compare/v0.3.4...v0.3.5) (2026-09-10)
+
+### Features
+
+- **儀表板:** 歷史趨勢圖新增現金趨勢與股票趨勢卡片 ([8e5d1d7](https://github.com/re757575/my-finance-dashboard/commit/8e5d1d7486f3177cb12ca5b07bbb6da1fbdf7226))
+
 ## [0.3.4](https://github.com/re757575/my-finance-dashboard/compare/v0.3.3...v0.3.4) (2026-09-09)
 
 ### Features
