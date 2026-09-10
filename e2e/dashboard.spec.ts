@@ -121,7 +121,7 @@ test("趨勢圖節點可點擊顯示 tooltip，並可全螢幕展開檢視", asy
       date,
       updatedAt: `${date}T09:00:00.000Z`,
       cashSources: [{ id: `c${i}`, name: "現金", amount: 100000 + i * 10000 }],
-      twStockValue: 0,
+      twStockValue: 200000 + i * 5000,
       usStockValue: 0,
       usStockCurrency: "USD",
       exchangeRate: 0,
@@ -147,6 +147,41 @@ test("趨勢圖節點可點擊顯示 tooltip，並可全螢幕展開檢視", asy
 
   await dialog.getByTestId("chart-node-2").click();
   await expect(dialog.getByTestId("chart-tooltip")).toBeVisible();
+});
+
+// 歷史趨勢區新增的現金趨勢／股票趨勢卡片，各自反映最新一筆快照的現金／股票市值總額
+test("現金趨勢與股票趨勢卡片顯示最新一筆快照的對應總額", async ({ page }) => {
+  await page.evaluate(() => {
+    const dates = Array.from({ length: 3 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (2 - i));
+      return d.toISOString().slice(0, 10);
+    });
+    const snapshots = dates.map((date, i) => ({
+      date,
+      updatedAt: `${date}T09:00:00.000Z`,
+      cashSources: [{ id: `c${i}`, name: "現金", amount: 100000 + i * 10000 }],
+      twStockValue: 200000 + i * 5000,
+      usStockValue: 0,
+      usStockCurrency: "USD",
+      exchangeRate: 0,
+      debts: [],
+      incomeSources: [],
+      monthlyExpense: 0,
+    }));
+    window.localStorage.setItem(
+      "my_finance_dashboard_data",
+      JSON.stringify({ schemaVersion: 4, snapshots })
+    );
+  });
+  await page.reload();
+
+  // 最新一筆（第 3 筆，i=2）：現金 120,000、台股市值 210,000
+  const cashCard = page.locator("text=現金趨勢").locator("..").locator("..");
+  await expect(cashCard.getByText("$120,000")).toBeVisible();
+
+  const stockCard = page.locator("text=股票趨勢").locator("..").locator("..");
+  await expect(stockCard.getByText("$210,000")).toBeVisible();
 });
 
 // PRD 4.2、5.2a 節：負債剩餘本金／期數自動估算
