@@ -21,7 +21,7 @@ const RANGE_OPTIONS: { value: TrendRange; label: string }[] = [
   { value: "all", label: "全部" },
 ];
 
-/** 歷史趨勢圖區：淨資產／負債比／資產負債對比三張獨立卡片（PRD 4.2、6 節）。 */
+/** 歷史趨勢圖區：淨資產／現金／股票／負債比／資產負債對比五張獨立卡片；現金、股票趨勢排在淨資產旁，方便對照淨資產變化是現金減少還是轉為股票（PRD 4.2、6 節）。 */
 export function TrendSection({
   visibleSnapshots,
   snapshotCount,
@@ -66,6 +66,23 @@ export function TrendSection({
           colorClassName="text-blue-500"
           showDelta
           targetValue={targetNetWorth}
+        />
+        <TrendLineChart
+          title="現金趨勢"
+          points={points.map((p) => ({ date: p.date, value: p.totalCash }))}
+          formatValue={formatCurrency}
+          colorClassName="text-teal-500"
+          showDelta
+        />
+        <TrendLineChart
+          title="股票趨勢"
+          points={points.map((p) => ({
+            date: p.date,
+            value: p.totalStockValue,
+          }))}
+          formatValue={formatCurrency}
+          colorClassName="text-violet-500"
+          showDelta
         />
         <TrendLineChart
           title="負債比趨勢"
