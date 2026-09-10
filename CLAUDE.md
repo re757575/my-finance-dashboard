@@ -65,6 +65,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 - 單元/元件測試（Vitest + Testing Library + jsdom）與被測檔案同目錄、`*.test.ts(x)` 命名，測試環境設定在 `src/test/setup.ts`。
 - e2e（Playwright，`e2e/*.spec.ts`）以 `data-testid`（如 `total-assets`、`save-button`）與 `getByRole`/`getByLabel` 定位；每個測試在 `beforeEach` 用 `page.evaluate(() => localStorage.clear())` 重置狀態（注意：故意不用 `addInitScript`，否則測試中的 `page.reload()` 也會被清空）。新增有財務語意的行為時，優先在 `calculations.test.ts` 或對應 hook 測試中覆蓋，UI 互動流程用 e2e 驗證。
+- **每次新增／修改功能後**，檢查單元/元件測試（`*.test.ts(x)`）與 `e2e/*.spec.ts` 是否需要跟著新增或調整測試案例（新元件、新看板卡片、新輸入欄位、新計算邏輯等，即使部分已有其他層級測試覆蓋，仍缺乏對應案例時要一併補上），避免功能與測試覆蓋範圍脫節。發現需要異動單元測試或 e2e 測試時，先向使用者說明本次功能異動內容並詢問是否確認無誤，待使用者確認後才動手修改測試。
 
 ## Release
 
