@@ -2,6 +2,14 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.8](https://github.com/re757575/my-finance-dashboard/compare/v0.3.7...v0.3.8) (2026-09-30)
+
+### Features
+
+- **儀表板:** 新增不可動用現金、不動產市值與質押整戶維持率 ([1275065](https://github.com/re757575/my-finance-dashboard/commit/1275065bb2d4f90abb86c5c4c93489c9160c1553))
+- **儀表板:** 新增備份加密、備份提醒與資料新鮮度提示 ([70dc931](https://github.com/re757575/my-finance-dashboard/commit/70dc93122b5980bdf3856cd3acbce2e96b29c4c3))
+- **儀表板:** 新增股票壓力測試卡 ([62888bd](https://github.com/re757575/my-finance-dashboard/commit/62888bdf32e6fa2898fa3ed5e6b73909c8ff8ee3))
+
 ## [0.3.7](https://github.com/re757575/my-finance-dashboard/compare/v0.3.6...v0.3.7) (2026-09-30)
 
 ### Features
