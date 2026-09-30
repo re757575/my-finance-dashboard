@@ -7,6 +7,8 @@ import {
 } from "@/types/schema";
 
 export const STORAGE_KEY = "my_finance_dashboard_data";
+/** 上次備份時間（ISO 8601），獨立於快照 schema，不隨備份匯出（PRD 6.2 節）。 */
+export const LAST_BACKUP_KEY = "my_finance_dashboard_last_backup";
 
 export type LoadResult =
   | { status: "empty" }
@@ -265,6 +267,24 @@ export function persistFinanceData(data: FinanceData): void {
 
 export function clearFinanceData(): void {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+/** 讀取上次備份時間；鍵不存在或不是合法日期字串一律視為「從未備份」（回傳 null）。 */
+export function loadLastBackupAt(): string | null {
+  const raw = localStorage.getItem(LAST_BACKUP_KEY);
+  if (raw === null || Number.isNaN(new Date(raw).getTime())) return null;
+  return raw;
+}
+
+/** 記錄「現在」為上次備份時間，回傳寫入的 ISO 字串。 */
+export function recordBackupNow(now: Date = new Date()): string {
+  const iso = now.toISOString();
+  localStorage.setItem(LAST_BACKUP_KEY, iso);
+  return iso;
+}
+
+export function clearLastBackupAt(): void {
+  localStorage.removeItem(LAST_BACKUP_KEY);
 }
 
 export function createEmptyFinanceData(): FinanceData {

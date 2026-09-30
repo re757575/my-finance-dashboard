@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { AssetAllocationBar } from "@/components/AssetAllocationBar";
+import { BackupReminderBanner } from "@/components/BackupReminderBanner";
 import { CashFlowIndicator } from "@/components/CashFlowIndicator";
 import { CashRatioCard } from "@/components/CashRatioCard";
 import { CashSourceList } from "@/components/CashSourceList";
 import { CopyPromptButton } from "@/components/CopyPromptButton";
+import { DataFreshnessNotice } from "@/components/DataFreshnessNotice";
 import { DataManagement } from "@/components/DataManagement";
 import { DebtList } from "@/components/DebtList";
 import { DebtRatioBar } from "@/components/DebtRatioBar";
@@ -25,6 +27,8 @@ import { TargetNetWorthInput } from "@/components/TargetNetWorthInput";
 import { TrendSection } from "@/components/TrendSection";
 import { Button } from "@/components/ui/button";
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
+import { getBackupReminder, getDataFreshness } from "@/lib/dataFreshness";
+import { getCurrentDate } from "@/lib/storage";
 
 function App() {
   const {
@@ -38,8 +42,12 @@ function App() {
     updateDebts,
     save,
     exportBackup,
+    exportEncryptedBackup,
     importBackup,
     clearAllData,
+    lastBackupAt,
+    earliestSnapshotDate,
+    latestSnapshotDate,
     snapshotCount,
     visibleSnapshots,
     trendRange,
@@ -47,6 +55,16 @@ function App() {
   } = useLocalSnapshots();
 
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // 資料新鮮度與備份提醒（PRD 4.2）：只看已存檔快照，與今日草稿是否有未存檔異動無關
+  const freshness = getDataFreshness(latestSnapshotDate, currentDate);
+  const backupReminder = getBackupReminder({
+    lastBackupDate: lastBackupAt
+      ? getCurrentDate(new Date(lastBackupAt))
+      : null,
+    earliestSnapshotDate,
+    currentDate,
+  });
 
   function handleSave() {
     const result = save();
@@ -64,7 +82,10 @@ function App() {
             個人資產負債儀表板
           </h1>
           <p className="text-sm text-slate-500">目前檢視日期：{currentDate}</p>
+          <DataFreshnessNotice freshness={freshness} />
         </header>
+
+        <BackupReminderBanner reminder={backupReminder} />
 
         {loadStatus === "corrupted" && (
           <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
@@ -140,7 +161,9 @@ function App() {
 
             <DataManagement
               onExport={exportBackup}
+              onExportEncrypted={exportEncryptedBackup}
               onImport={importBackup}
+              backupStatus={{ lastBackupAt, currentDate }}
               onClearConfirmed={clearAllData}
             />
           </div>

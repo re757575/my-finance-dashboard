@@ -2,18 +2,26 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { advanceDebtsByMonths, calculateMetrics } from "@/lib/calculations";
 import {
   clearFinanceData,
+  clearLastBackupAt,
   createEmptyFinanceData,
   getCurrentDate,
   getLatestSnapshot,
   getSnapshotForDate,
   getSnapshotsInRange,
   loadFinanceData,
+  loadLastBackupAt,
   monthsBetweenDates,
   persistFinanceData,
+  recordBackupNow,
   upsertSnapshot,
   type LoadResult,
 } from "@/lib/storage";
-import { downloadBackup, parseBackupFile } from "@/lib/backup";
+import {
+  downloadBackup,
+  downloadEncryptedBackup,
+  parseBackupFile,
+} from "@/lib/backup";
+import { CryptoUnavailableError } from "@/lib/backupCrypto";
 import {
   createEmptySnapshot,
   type CalculatedMetrics,
@@ -91,6 +99,8 @@ export function useLocalSnapshots() {
   const [estimatedDebtFields, setEstimatedDebtFields] =
     useState<EstimatedDebtFields>({});
   const [trendRange, setTrendRange] = useState<TrendRange>(DEFAULT_TREND_RANGE);
+  /** 上次備份時間（ISO 8601），獨立於快照 schema（PRD 6.2 節）；從未備份為 null。 */
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
 
   useEffect(() => {
     const result = loadFinanceData();
@@ -102,6 +112,7 @@ export function useLocalSnapshots() {
     const { snapshot, estimatedFields } = buildInitialDraft(data, currentDate);
     setDraft(snapshot);
     setEstimatedDebtFields(estimatedFields);
+    setLastBackupAt(loadLastBackupAt());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -172,14 +183,52 @@ export function useLocalSnapshots() {
     return { ok: true };
   }, [draft, financeData, currentDate, loadStatus]);
 
+  /** 明文匯出；成功後記錄上次備份時間（PRD 4.2「備份提醒」）。 */
   const exportBackup = useCallback(() => {
     downloadBackup(financeData);
+    setLastBackupAt(recordBackupNow());
   }, [financeData]);
+
+  /** 加密匯出（PRD 4.2）；加密失敗時不下載、不記錄上次備份時間。密碼只經由參數傳入，不保存。 */
+  const exportEncryptedBackup = useCallback(
+    async (password: string): Promise<{ ok: boolean; reason?: string }> => {
+      try {
+        await downloadEncryptedBackup(financeData, password);
+      } catch (error) {
+        return {
+          ok: false,
+          reason:
+            error instanceof CryptoUnavailableError
+              ? error.message
+              : "加密匯出失敗，請重試。",
+        };
+      }
+      setLastBackupAt(recordBackupNow());
+      return { ok: true };
+    },
+    [financeData]
+  );
 
   /** 匯入前的二次確認由呼叫端（UI Dialog）負責，這裡只處理實際覆蓋動作。 */
   const importBackup = useCallback(
-    async (file: File): Promise<{ ok: boolean; reason?: string }> => {
-      const result = await parseBackupFile(file);
+    async (
+      file: File,
+      password?: string
+    ): Promise<{ ok: boolean; reason?: string; needsPassword?: boolean }> => {
+      const result = await parseBackupFile(file, password);
+      if (result.status === "encrypted") {
+        return {
+          ok: false,
+          needsPassword: true,
+          reason: "此備份檔已加密，請輸入密碼。",
+        };
+      }
+      if (result.status === "wrong-password") {
+        return { ok: false, reason: "密碼錯誤或備份檔已損毀，匯入已取消。" };
+      }
+      if (result.status === "crypto-unavailable") {
+        return { ok: false, reason: "此環境不支援加密（需要 HTTPS）。" };
+      }
       if (result.status !== "ok") {
         return {
           ok: false,
@@ -203,6 +252,8 @@ export function useLocalSnapshots() {
   /** 清空前必須先由 UI 呼叫 exportBackup() 強制備份，才能呼叫本函式（PRD 4.2 節）。 */
   const clearAllData = useCallback(() => {
     clearFinanceData();
+    clearLastBackupAt();
+    setLastBackupAt(null);
     const empty = createEmptyFinanceData();
     setFinanceData(empty);
     setDraft(createEmptySnapshot(currentDate));
@@ -235,8 +286,13 @@ export function useLocalSnapshots() {
     updateDebts,
     save,
     exportBackup,
+    exportEncryptedBackup,
     importBackup,
     clearAllData,
+    lastBackupAt,
+    /** 已存檔快照中最早／最近一筆的日期，供備份提醒與資料新鮮度使用（PRD 4.2）。 */
+    earliestSnapshotDate: allSnapshots[0]?.date,
+    latestSnapshotDate: allSnapshots.at(-1)?.date,
     snapshotCount: allSnapshots.length,
     visibleSnapshots,
     trendRange,

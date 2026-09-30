@@ -39,6 +39,9 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 - **當日表單自動帶入最近一筆資料**：`buildInitialDraft` 在當天尚無快照時，複製最近一筆快照的數值作為初始 draft（日期/時間戳改為今天）。負債清單會額外呼叫 `advanceDebtsByMonths` 依曆月差自動攤還本息、遞減剩餘期數（本息平均攤還會重算剩餘本金，只計息只減期數），並回傳 `estimatedFields` 標記哪些欄位是系統估算；使用者手動修改該筆負債的本金或期數後，`updateDebts` 會清除該筆的估算標記。
 - **讀取狀態機**：`parseFinanceData`（`src/lib/storage.ts`）回傳 `LoadResult`（`empty` / `ok` / `corrupted` / `version-mismatch`），從不拋出例外。`version-mismatch` 時 UI 會暫停顯示與存檔功能，避免覆蓋使用者既有但版本不相容的資料——修改此邏輯要格外小心，因為它是防止資料遺失的最後防線。
 - **備份／還原**（`src/lib/backup.ts`）：匯出用 Blob + `<a download>` 純前端觸發下載；匯入透過 `parseBackupFile` 走與 LocalStorage 讀取相同的 `parseFinanceData` 驗證規則。清空全部資料前，UI 層必須強制先呼叫 `exportBackup()`，`clearAllData()` 本身不做備份。
+  - **加密匯出**（`src/lib/backupCrypto.ts`）：WebCrypto PBKDF2-SHA256（600,000 次）＋AES-GCM，輸出 JSON 信封（`.enc.json`，格式見 PRD 6.2 節）；`parseBackupFile(file, password?)` 偵測到信封時，未給密碼回 `encrypted`、密碼錯誤或被竄改回 `wrong-password`，解密後仍走同一個 `parseFinanceData`。密碼只經參數傳遞，絕不寫入任何儲存位置；清空前的強制備份維持明文匯出。
+  - **上次備份時間**存在獨立的 LocalStorage 鍵 `my_finance_dashboard_last_backup`（`storage.ts` 的 `recordBackupNow`／`loadLastBackupAt`），不屬於快照 schema、不隨備份匯出；匯入還原不更新它，清空資料時一併清除。
+  - **備份提醒與資料新鮮度**的純函式在 `src/lib/dataFreshness.ts`（`getBackupReminder` 超過 30 天提醒、`getDataFreshness` 超過 14 天標示過期，門檻為固定常數），只看已存檔快照，不看今日草稿。
 - **PWA**（`vite-plugin-pwa`）：`registerType: "prompt"` 只快取建置產出的同源靜態檔案，不新增任何對外網路請求，符合零伺服器傳輸原則；更新提示 UI 見 `src/components/PwaUpdatePrompt.tsx`。
 
 ### 財務計算（`src/lib/calculations.ts`）

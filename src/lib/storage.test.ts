@@ -5,8 +5,12 @@ import {
   getLatestSnapshot,
   getSnapshotForDate,
   getSnapshotsInRange,
+  clearLastBackupAt,
+  LAST_BACKUP_KEY,
+  loadLastBackupAt,
   monthsBetweenDates,
   parseFinanceData,
+  recordBackupNow,
   upsertSnapshot,
 } from "@/lib/storage";
 import { createEmptySnapshot, CURRENT_SCHEMA_VERSION } from "@/types/schema";
@@ -408,6 +412,58 @@ describe("monthsBetweenDates", () => {
 
   it("結束日期早於起始日期時，不回傳負數", () => {
     expect(monthsBetweenDates("2026-06-01", "2026-05-01")).toBe(0);
+  });
+});
+
+// PRD 6.2 節：上次備份時間存在獨立的 LocalStorage 鍵，不屬於快照 schema
+describe("上次備份時間", () => {
+  it("使用獨立的鍵 my_finance_dashboard_last_backup，不同於快照資料的鍵", () => {
+    expect(LAST_BACKUP_KEY).toBe("my_finance_dashboard_last_backup");
+  });
+
+  it("從未記錄過時回傳 null", () => {
+    expect(loadLastBackupAt()).toBeNull();
+  });
+
+  it("recordBackupNow 寫入並回傳 ISO 字串，loadLastBackupAt 可讀回", () => {
+    const now = new Date("2026-09-30T08:30:00.000Z");
+
+    const iso = recordBackupNow(now);
+
+    expect(iso).toBe("2026-09-30T08:30:00.000Z");
+    expect(localStorage.getItem(LAST_BACKUP_KEY)).toBe(iso);
+    expect(loadLastBackupAt()).toBe(iso);
+  });
+
+  it("後一次記錄會覆蓋前一次", () => {
+    recordBackupNow(new Date("2026-09-01T00:00:00.000Z"));
+    recordBackupNow(new Date("2026-09-30T00:00:00.000Z"));
+
+    expect(loadLastBackupAt()).toBe("2026-09-30T00:00:00.000Z");
+  });
+
+  it("內容不是合法日期時，視為從未備份（回傳 null），不拋錯", () => {
+    localStorage.setItem(LAST_BACKUP_KEY, "not a date");
+    expect(loadLastBackupAt()).toBeNull();
+
+    localStorage.setItem(LAST_BACKUP_KEY, "");
+    expect(loadLastBackupAt()).toBeNull();
+  });
+
+  it("clearLastBackupAt 移除紀錄", () => {
+    recordBackupNow();
+    clearLastBackupAt();
+
+    expect(localStorage.getItem(LAST_BACKUP_KEY)).toBeNull();
+    expect(loadLastBackupAt()).toBeNull();
+  });
+
+  it("不影響快照資料所在的鍵", () => {
+    localStorage.setItem("my_finance_dashboard_data", "{}");
+    recordBackupNow();
+    clearLastBackupAt();
+
+    expect(localStorage.getItem("my_finance_dashboard_data")).toBe("{}");
   });
 });
 

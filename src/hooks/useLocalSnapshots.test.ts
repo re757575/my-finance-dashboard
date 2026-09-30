@@ -9,11 +9,18 @@ import {
 
 vi.mock("@/lib/backup", () => ({
   downloadBackup: vi.fn(),
+  downloadEncryptedBackup: vi.fn(),
   parseBackupFile: vi.fn(),
 }));
 
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
-import { downloadBackup, parseBackupFile } from "@/lib/backup";
+import {
+  downloadBackup,
+  downloadEncryptedBackup,
+  parseBackupFile,
+} from "@/lib/backup";
+import { CryptoUnavailableError } from "@/lib/backupCrypto";
+import { LAST_BACKUP_KEY } from "@/lib/storage";
 import { createEmptySnapshot, type Debt } from "@/types/schema";
 
 function oneDebt(principal: number): Debt {
@@ -369,6 +376,258 @@ describe("useLocalSnapshots", () => {
 
       expect(result.current.draft.debts[0].principal).toBe(100000);
       expect(result.current.estimatedDebtFields).toEqual({});
+    });
+  });
+});
+
+// PRD 4.2「備份提醒」「加密匯出備份」「資料新鮮度提示」
+describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
+  function saveSnapshotOn(date: string) {
+    persistFinanceData({
+      schemaVersion: 7,
+      snapshots: [createEmptySnapshot(date)],
+    });
+  }
+
+  it("從未備份過時 lastBackupAt 為 null", () => {
+    const { result } = renderHook(() => useLocalSnapshots());
+    expect(result.current.lastBackupAt).toBeNull();
+  });
+
+  it("載入時讀回先前記錄的上次備份時間", () => {
+    localStorage.setItem(LAST_BACKUP_KEY, "2026-09-01T00:00:00.000Z");
+    const { result } = renderHook(() => useLocalSnapshots());
+    expect(result.current.lastBackupAt).toBe("2026-09-01T00:00:00.000Z");
+  });
+
+  // PRD 第 9 節 #46c
+  it("exportBackup 成功後記錄上次備份時間，並寫入 LocalStorage", () => {
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    act(() => {
+      result.current.exportBackup();
+    });
+
+    expect(result.current.lastBackupAt).not.toBeNull();
+    expect(localStorage.getItem(LAST_BACKUP_KEY)).toBe(
+      result.current.lastBackupAt
+    );
+  });
+
+  it("exportEncryptedBackup 成功：以目前資料與密碼呼叫下載，並記錄上次備份時間", async () => {
+    vi.mocked(downloadEncryptedBackup).mockResolvedValue(undefined);
+    saveSnapshotOn(getCurrentDate());
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    let response: { ok: boolean; reason?: string } | undefined;
+    await act(async () => {
+      response = await result.current.exportEncryptedBackup("correct-horse");
+    });
+
+    expect(response).toEqual({ ok: true });
+    expect(downloadEncryptedBackup).toHaveBeenCalledTimes(1);
+    const [data, password] = vi.mocked(downloadEncryptedBackup).mock.calls[0];
+    expect(password).toBe("correct-horse");
+    expect(data.snapshots).toHaveLength(1);
+    expect(result.current.lastBackupAt).not.toBeNull();
+  });
+
+  // PRD 第 9 節 #45h
+  it("exportEncryptedBackup 遇到環境不支援時回傳原因，且不記錄上次備份時間", async () => {
+    vi.mocked(downloadEncryptedBackup).mockRejectedValue(
+      new CryptoUnavailableError()
+    );
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    let response: { ok: boolean; reason?: string } | undefined;
+    await act(async () => {
+      response = await result.current.exportEncryptedBackup("correct-horse");
+    });
+
+    expect(response).toEqual({
+      ok: false,
+      reason: "此環境不支援加密（需要 HTTPS）",
+    });
+    expect(result.current.lastBackupAt).toBeNull();
+    expect(localStorage.getItem(LAST_BACKUP_KEY)).toBeNull();
+  });
+
+  it("exportEncryptedBackup 遇到其他錯誤時回傳通用失敗訊息，且不記錄上次備份時間", async () => {
+    vi.mocked(downloadEncryptedBackup).mockRejectedValue(new Error("boom"));
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    let response: { ok: boolean; reason?: string } | undefined;
+    await act(async () => {
+      response = await result.current.exportEncryptedBackup("correct-horse");
+    });
+
+    expect(response?.ok).toBe(false);
+    expect(response?.reason).toBe("加密匯出失敗，請重試。");
+    expect(result.current.lastBackupAt).toBeNull();
+  });
+
+  it("密碼不會被存進 LocalStorage", async () => {
+    vi.mocked(downloadEncryptedBackup).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    await act(async () => {
+      await result.current.exportEncryptedBackup("super-secret-pw");
+    });
+
+    const stored = JSON.stringify({ ...localStorage });
+    expect(stored).not.toContain("super-secret-pw");
+  });
+
+  // PRD 第 9 節 #46d
+  it("importBackup 成功不會更新上次備份時間", async () => {
+    localStorage.setItem(LAST_BACKUP_KEY, "2026-08-01T00:00:00.000Z");
+    vi.mocked(parseBackupFile).mockResolvedValue({
+      status: "ok",
+      data: {
+        schemaVersion: 7,
+        snapshots: [createEmptySnapshot("2026-01-01")],
+      },
+    });
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    await act(async () => {
+      await result.current.importBackup(new File(["x"], "backup.json"));
+    });
+
+    expect(result.current.lastBackupAt).toBe("2026-08-01T00:00:00.000Z");
+    expect(localStorage.getItem(LAST_BACKUP_KEY)).toBe(
+      "2026-08-01T00:00:00.000Z"
+    );
+  });
+
+  // PRD 第 9 節 #46e
+  it("clearAllData 一併清除上次備份時間", () => {
+    localStorage.setItem(LAST_BACKUP_KEY, "2026-09-01T00:00:00.000Z");
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    act(() => {
+      result.current.clearAllData();
+    });
+
+    expect(result.current.lastBackupAt).toBeNull();
+    expect(localStorage.getItem(LAST_BACKUP_KEY)).toBeNull();
+  });
+
+  describe("importBackup：加密備份", () => {
+    it("備份檔已加密且尚未提供密碼：回傳 needsPassword，不覆蓋資料", async () => {
+      vi.mocked(parseBackupFile).mockResolvedValue({ status: "encrypted" });
+      saveSnapshotOn("2026-01-01");
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      let response:
+        { ok: boolean; reason?: string; needsPassword?: boolean } | undefined;
+      await act(async () => {
+        response = await result.current.importBackup(new File(["x"], "b.json"));
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(response?.needsPassword).toBe(true);
+      expect(result.current.snapshotCount).toBe(1);
+    });
+
+    it("把密碼傳給 parseBackupFile", async () => {
+      vi.mocked(parseBackupFile).mockResolvedValue({
+        status: "ok",
+        data: {
+          schemaVersion: 7,
+          snapshots: [createEmptySnapshot("2026-01-01")],
+        },
+      });
+      const { result } = renderHook(() => useLocalSnapshots());
+      const file = new File(["x"], "b.json");
+
+      let response: { ok: boolean } | undefined;
+      await act(async () => {
+        response = await result.current.importBackup(file, "correct-horse");
+      });
+
+      expect(parseBackupFile).toHaveBeenCalledWith(file, "correct-horse");
+      expect(response?.ok).toBe(true);
+    });
+
+    it("密碼錯誤：回傳錯誤原因，不覆蓋現有資料", async () => {
+      vi.mocked(parseBackupFile).mockResolvedValue({
+        status: "wrong-password",
+      });
+      saveSnapshotOn("2026-01-01");
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      let response:
+        { ok: boolean; reason?: string; needsPassword?: boolean } | undefined;
+      await act(async () => {
+        response = await result.current.importBackup(
+          new File(["x"], "b.json"),
+          "wrong"
+        );
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(response?.needsPassword).toBeUndefined();
+      expect(response?.reason).toContain("密碼錯誤或備份檔已損毀");
+      expect(result.current.snapshotCount).toBe(1);
+    });
+
+    it("環境不支援 WebCrypto：回傳對應原因", async () => {
+      vi.mocked(parseBackupFile).mockResolvedValue({
+        status: "crypto-unavailable",
+      });
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      let response: { ok: boolean; reason?: string } | undefined;
+      await act(async () => {
+        response = await result.current.importBackup(
+          new File(["x"], "b.json"),
+          "pw"
+        );
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(response?.reason).toContain("此環境不支援加密");
+    });
+  });
+
+  // PRD 4.2「備份提醒」「資料新鮮度提示」需要的快照日期
+  describe("最早／最近一筆快照日期", () => {
+    it("沒有快照時為 undefined", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      expect(result.current.earliestSnapshotDate).toBeUndefined();
+      expect(result.current.latestSnapshotDate).toBeUndefined();
+    });
+
+    it("依日期排序取最早與最近，與寫入順序無關", () => {
+      persistFinanceData({
+        schemaVersion: 7,
+        snapshots: [
+          createEmptySnapshot("2026-03-01"),
+          createEmptySnapshot("2026-01-15"),
+          createEmptySnapshot("2026-02-10"),
+        ],
+      });
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.earliestSnapshotDate).toBe("2026-01-15");
+      expect(result.current.latestSnapshotDate).toBe("2026-03-01");
+    });
+
+    it("尚未存檔的今日草稿不算快照；按下存檔後 latestSnapshotDate 變為今天", () => {
+      saveSnapshotOn("2026-01-01");
+      const { result } = renderHook(() => useLocalSnapshots());
+      expect(result.current.latestSnapshotDate).toBe("2026-01-01");
+
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 1 });
+      });
+      expect(result.current.latestSnapshotDate).toBe("2026-01-01");
+
+      act(() => {
+        result.current.save();
+      });
+      expect(result.current.latestSnapshotDate).toBe(getCurrentDate());
     });
   });
 });
