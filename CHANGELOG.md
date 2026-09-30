@@ -2,6 +2,12 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.7](https://github.com/re757575/my-finance-dashboard/compare/v0.3.6...v0.3.7) (2026-09-30)
+
+### Features
+
+- **儀表板:** 現金來源清單新增複製按鈕 ([1be98f2](https://github.com/re757575/my-finance-dashboard/commit/1be98f2c658c5d1b867a644ace05864073f62519))
+
 ## [0.3.6](https://github.com/re757575/my-finance-dashboard/compare/v0.3.5...v0.3.6) (2026-09-10)
 
 ## [0.3.5](https://github.com/re757575/my-finance-dashboard/compare/v0.3.4...v0.3.5) (2026-09-10)
