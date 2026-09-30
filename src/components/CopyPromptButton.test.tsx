@@ -7,7 +7,7 @@ import { createEmptySnapshot } from "@/types/schema";
 function setup() {
   const draft = {
     ...createEmptySnapshot("2026-07-13"),
-    cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+    cashSources: [{ id: "1", name: "現金", amount: 350000, restricted: false }],
     twStockValue: 400000,
   };
   render(

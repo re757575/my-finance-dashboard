@@ -15,7 +15,8 @@ describe("EmergencyFundCard", () => {
       <EmergencyFundCard
         months={5}
         status={status}
-        totalCash={150000}
+        liquidCash={150000}
+        restrictedCash={0}
         monthlyExpense={20000}
         totalMonthlyDebtPayment={10000}
       />
@@ -30,7 +31,8 @@ describe("EmergencyFundCard", () => {
       <EmergencyFundCard
         months={5.34}
         status="basic"
-        totalCash={160200}
+        liquidCash={160200}
+        restrictedCash={0}
         monthlyExpense={20000}
         totalMonthlyDebtPayment={10000}
       />
@@ -46,7 +48,8 @@ describe("EmergencyFundCard", () => {
       <EmergencyFundCard
         months={null}
         status="no-need"
-        totalCash={300000}
+        liquidCash={300000}
+        restrictedCash={0}
         monthlyExpense={0}
         totalMonthlyDebtPayment={0}
       />
@@ -59,7 +62,8 @@ describe("EmergencyFundCard", () => {
       <EmergencyFundCard
         months={5}
         status="basic"
-        totalCash={150000}
+        liquidCash={150000}
+        restrictedCash={0}
         monthlyExpense={20000}
         totalMonthlyDebtPayment={10000}
       />
@@ -77,7 +81,8 @@ describe("EmergencyFundCard", () => {
       <EmergencyFundCard
         months={null}
         status="no-need"
-        totalCash={300000}
+        liquidCash={300000}
+        restrictedCash={0}
         monthlyExpense={0}
         totalMonthlyDebtPayment={0}
       />
@@ -88,5 +93,55 @@ describe("EmergencyFundCard", () => {
     expect(screen.getByTestId("formula-info-content")).toHaveTextContent(
       "$300,000 ÷ $0 = ∞（無需求）"
     );
+  });
+
+  // PRD 第 9 節 #40：不可動用現金不計入分子，卡片以小字註記
+  it("存在不可動用現金時，顯示註記；為 0 時不顯示", () => {
+    const { rerender } = render(
+      <EmergencyFundCard
+        months={6.7}
+        status="sufficient"
+        liquidCash={200000}
+        restrictedCash={100000}
+        monthlyExpense={20000}
+        totalMonthlyDebtPayment={10000}
+      />
+    );
+    expect(
+      screen.getByTestId("emergency-fund-restricted-note")
+    ).toHaveTextContent("不含不可動用現金 $100,000");
+
+    rerender(
+      <EmergencyFundCard
+        months={6.7}
+        status="sufficient"
+        liquidCash={200000}
+        restrictedCash={0}
+        monthlyExpense={20000}
+        totalMonthlyDebtPayment={10000}
+      />
+    );
+    expect(
+      screen.queryByTestId("emergency-fund-restricted-note")
+    ).not.toBeInTheDocument();
+  });
+
+  it("公式說明的分子為可動用現金", () => {
+    render(
+      <EmergencyFundCard
+        months={6.7}
+        status="sufficient"
+        liquidCash={200000}
+        restrictedCash={100000}
+        monthlyExpense={20000}
+        totalMonthlyDebtPayment={10000}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("緊急預備金月數計算公式說明"));
+
+    const content = screen.getByTestId("formula-info-content");
+    expect(content).toHaveTextContent("可動用現金 ÷");
+    expect(content).toHaveTextContent("$200,000 ÷ ($20,000 + $10,000)");
   });
 });

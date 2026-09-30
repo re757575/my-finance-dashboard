@@ -3,15 +3,17 @@ import { formatCurrency, formatPercent } from "@/lib/format";
 
 interface CashRatioCardProps {
   ratio: number;
-  totalCash: number;
-  totalAssets: number;
+  /** 可動用現金（不含不可動用來源）。 */
+  liquidCash: number;
+  /** 金融資產＝現金＋股票，不含不動產（PRD 第 5 節）。 */
+  financialAssets: number;
 }
 
-/** 現金比例卡：呈現現金占總資產比例，搭配動態進度條（比照負債比卡樣式）。 */
+/** 現金比例卡：呈現可動用現金占金融資產比例，搭配動態進度條（比照負債比卡樣式）。 */
 export function CashRatioCard({
   ratio,
-  totalCash,
-  totalAssets,
+  liquidCash,
+  financialAssets,
 }: CashRatioCardProps) {
   const width = Math.min(100, Math.max(0, ratio));
 
@@ -21,9 +23,9 @@ export function CashRatioCard({
         <p className="text-sm text-slate-500">現金比例</p>
         <FormulaInfoButton
           title="現金比例"
-          formula="現金比例 = 總流動現金 ÷ 總資產 × 100%"
-          substitution={`${formatCurrency(totalCash)} ÷ ${formatCurrency(totalAssets)} × 100% = ${formatPercent(ratio)}`}
-          note="總資產為 0 時強制為 0%，避免除以零"
+          formula="現金比例 = 可動用現金 ÷ 金融資產 × 100%"
+          substitution={`${formatCurrency(liquidCash)} ÷ ${formatCurrency(financialAssets)} × 100% = ${formatPercent(ratio)}`}
+          note="金融資產＝現金＋股票（不含不動產）；不含標記為「不可動用」的現金來源；金融資產為 0 時強制為 0%，避免除以零"
         />
       </div>
       <p

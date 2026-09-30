@@ -19,13 +19,15 @@ describe("CashSourceList", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     const next = onChange.mock.calls[0][0] as CashSource[];
     expect(next).toHaveLength(1);
-    expect(next[0]).toMatchObject({ name: "", amount: 0 });
+    expect(next[0]).toMatchObject({ name: "", amount: 0, restricted: false });
     expect(next[0].id).toBeTruthy();
   });
 
   // PRD 第 9 節 #7：現金來源金額允許負數（透支帳戶）
   it("允許輸入負數金額", () => {
-    const value: CashSource[] = [{ id: "1", name: "透支戶", amount: 0 }];
+    const value: CashSource[] = [
+      { id: "1", name: "透支戶", amount: 0, restricted: false },
+    ];
     const onChange = vi.fn();
     render(<CashSourceList value={value} onChange={onChange} />);
 
@@ -34,14 +36,14 @@ describe("CashSourceList", () => {
     });
 
     expect(onChange).toHaveBeenCalledWith([
-      { id: "1", name: "透支戶", amount: -2000 },
+      { id: "1", name: "透支戶", amount: -2000, restricted: false },
     ]);
   });
 
   it("點擊刪除按鈕會移除該筆現金來源", () => {
     const value: CashSource[] = [
-      { id: "1", name: "手邊現金", amount: 1000 },
-      { id: "2", name: "中國信託", amount: 2000 },
+      { id: "1", name: "手邊現金", amount: 1000, restricted: false },
+      { id: "2", name: "中國信託", amount: 2000, restricted: false },
     ];
     const onChange = vi.fn();
     render(<CashSourceList value={value} onChange={onChange} />);
@@ -49,14 +51,14 @@ describe("CashSourceList", () => {
     fireEvent.click(screen.getByLabelText("刪除 手邊現金"));
 
     expect(onChange).toHaveBeenCalledWith([
-      { id: "2", name: "中國信託", amount: 2000 },
+      { id: "2", name: "中國信託", amount: 2000, restricted: false },
     ]);
   });
 
   it("顯示現金合計，套用千分位格式", () => {
     const value: CashSource[] = [
-      { id: "1", name: "A", amount: 100000 },
-      { id: "2", name: "B", amount: -20000 },
+      { id: "1", name: "A", amount: 100000, restricted: false },
+      { id: "2", name: "B", amount: -20000, restricted: false },
     ];
     render(<CashSourceList value={value} onChange={vi.fn()} />);
     expect(screen.getByText("現金合計：$80,000")).toBeInTheDocument();
@@ -66,8 +68,8 @@ describe("CashSourceList", () => {
   describe("複製現金來源", () => {
     it("在原列正下方插入同名、金額歸零、新 id 的來源，其餘列順序不變", () => {
       const value: CashSource[] = [
-        { id: "1", name: "富邦", amount: 100000 },
-        { id: "2", name: "國泰", amount: 2000 },
+        { id: "1", name: "富邦", amount: 100000, restricted: false },
+        { id: "2", name: "國泰", amount: 2000, restricted: false },
       ];
       const onChange = vi.fn();
       render(<CashSourceList value={value} onChange={onChange} />);
@@ -84,7 +86,9 @@ describe("CashSourceList", () => {
     });
 
     it("名稱為空時，複製按鈕以「此筆現金來源」作為無障礙標籤", () => {
-      const value: CashSource[] = [{ id: "1", name: "", amount: 0 }];
+      const value: CashSource[] = [
+        { id: "1", name: "", amount: 0, restricted: false },
+      ];
       render(<CashSourceList value={value} onChange={vi.fn()} />);
 
       expect(screen.getByLabelText("複製 此筆現金來源")).toBeInTheDocument();
@@ -93,7 +97,7 @@ describe("CashSourceList", () => {
     it("複製後焦點移到新列的金額欄，現金合計不變", () => {
       function Harness() {
         const [value, setValue] = useState<CashSource[]>([
-          { id: "1", name: "富邦", amount: 100000 },
+          { id: "1", name: "富邦", amount: 100000, restricted: false },
         ]);
         return <CashSourceList value={value} onChange={setValue} />;
       }
@@ -105,6 +109,96 @@ describe("CashSourceList", () => {
       expect(amountInputs).toHaveLength(2);
       expect(amountInputs[1]).toHaveFocus();
       expect(screen.getByText("現金合計：$100,000")).toBeInTheDocument();
+    });
+  });
+
+  // PRD 4.2「多來源現金清單」：不可動用切換
+  describe("不可動用標記", () => {
+    it("點擊 🔒 鈕會切換該筆來源的不可動用狀態，且 aria-pressed 反映目前狀態", () => {
+      const value: CashSource[] = [
+        { id: "1", name: "期貨保證金", amount: 100000, restricted: false },
+      ];
+      const onChange = vi.fn();
+      render(<CashSourceList value={value} onChange={onChange} />);
+
+      const toggle = screen.getByLabelText("標記 期貨保證金 為不可動用");
+      expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+      fireEvent.click(toggle);
+
+      expect(onChange).toHaveBeenCalledWith([
+        { id: "1", name: "期貨保證金", amount: 100000, restricted: true },
+      ]);
+    });
+
+    it("已標記為不可動用的來源，aria-pressed 為 true，再點一次會改回可動用", () => {
+      const value: CashSource[] = [
+        { id: "1", name: "期貨保證金", amount: 100000, restricted: true },
+      ];
+      const onChange = vi.fn();
+      render(<CashSourceList value={value} onChange={onChange} />);
+
+      const toggle = screen.getByLabelText("標記 期貨保證金 為不可動用");
+      expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+      fireEvent.click(toggle);
+
+      expect(onChange.mock.calls[0][0][0].restricted).toBe(false);
+    });
+
+    it("名稱為空時，切換鈕以「此筆現金來源」作為無障礙標籤", () => {
+      const value: CashSource[] = [
+        { id: "1", name: "", amount: 0, restricted: false },
+      ];
+      render(<CashSourceList value={value} onChange={vi.fn()} />);
+
+      expect(
+        screen.getByLabelText("標記 此筆現金來源 為不可動用")
+      ).toBeInTheDocument();
+    });
+
+    it("存在不可動用來源時，現金合計後方補充顯示不可動用金額；沒有時不顯示", () => {
+      const { rerender } = render(
+        <CashSourceList
+          value={[
+            { id: "1", name: "A", amount: 200000, restricted: false },
+            { id: "2", name: "B", amount: 100000, restricted: true },
+          ]}
+          onChange={vi.fn()}
+        />
+      );
+      expect(screen.getByText(/現金合計：\$300,000/)).toBeInTheDocument();
+      expect(screen.getByTestId("restricted-cash-total")).toHaveTextContent(
+        "（其中不可動用 $100,000）"
+      );
+
+      rerender(
+        <CashSourceList
+          value={[{ id: "1", name: "A", amount: 200000, restricted: false }]}
+          onChange={vi.fn()}
+        />
+      );
+      expect(
+        screen.queryByTestId("restricted-cash-total")
+      ).not.toBeInTheDocument();
+    });
+
+    // PRD 第 9 節 #40b：複製時沿用「不可動用」狀態
+    it("複製不可動用的來源時，新來源沿用不可動用狀態", () => {
+      const value: CashSource[] = [
+        { id: "1", name: "期貨保證金", amount: 100000, restricted: true },
+      ];
+      const onChange = vi.fn();
+      render(<CashSourceList value={value} onChange={onChange} />);
+
+      fireEvent.click(screen.getByLabelText("複製 期貨保證金"));
+
+      const next = onChange.mock.calls[0][0] as CashSource[];
+      expect(next[1]).toMatchObject({
+        name: "期貨保證金",
+        amount: 0,
+        restricted: true,
+      });
     });
   });
 });

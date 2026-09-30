@@ -12,6 +12,7 @@ function baseDebt(overrides: Partial<Debt> = {}): Debt {
     annualRate: 0,
     remainingMonths: 0,
     repaymentMethod: "amortizing",
+    collateralValue: 0,
     ...overrides,
   };
 }

@@ -9,7 +9,7 @@
 ## 專案架構
 
 - **資料流：** 所有資料集中在單一 LocalStorage 快照陣列（`src/hooks/useLocalSnapshots.ts`），每筆快照以「日」為顆粒度，使用者按下「更新儀表板」才會真正寫入，重新整理頁面會遺失未存檔的編輯內容（刻意設計）。
-- **財務計算：** 所有公式集中在 `src/lib/calculations.ts`，包含總資產/負債、負債比、緊急預備金月數、儲蓄率、資產配置比例、FIRE／淨資產目標進度等健康指標，公式定義見 [docs/PRD.md](./docs/PRD.md) 第 5 節。
+- **財務計算：** 所有公式集中在 `src/lib/calculations.ts`，包含總資產/負債、負債比、緊急預備金月數、儲蓄率、資產配置比例、質押整戶維持率、FIRE／淨資產目標進度等健康指標，公式定義見 [docs/PRD.md](./docs/PRD.md) 第 5 節。
 - **圖表：** `src/components/charts/` 為手刻 SVG（未引入圖表庫），理由見 [docs/TECH_STACK.md](./docs/TECH_STACK.md)。
 - **AI 分析：** `src/lib/promptBuilder.ts` 產生五種模式的分析提示詞，使用者一鍵複製後自行貼到外部 AI 工具，App 本身不對外發送任何請求。
 - **PWA：** 透過 `vite-plugin-pwa` 只快取同源靜態檔案，可安裝到主畫面並離線開啟，不違反零網路請求原則。

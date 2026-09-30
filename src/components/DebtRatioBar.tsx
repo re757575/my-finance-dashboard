@@ -42,7 +42,7 @@ export function DebtRatioBar({
             title="負債比"
             formula="負債比 = 總負債 ÷ 總資產 × 100%"
             substitution={`${formatCurrency(totalLiabilities)} ÷ ${formatCurrency(totalAssets)} × 100% = ${formatPercent(ratio)}`}
-            note="總資產為 0 時強制為 0%，避免除以零"
+            note="總資產含不動產市值；總資產為 0 時強制為 0%，避免除以零"
           />
         </div>
         <span

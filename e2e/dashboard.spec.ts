@@ -262,3 +262,122 @@ test("今日草稿自動估算負債剩餘本金與期數，並標示系統估�
   // 手動修改本金後，只有本金欄位的估算標記消失，期數欄位仍維持估算標記
   await expect(page.getByText("系統估算")).toHaveCount(1);
 });
+
+// PRD 第 9 節 #40／#40a：不可動用現金不計入緊急預備金月數與現金比例，仍計入總資產
+test("標記現金來源為不可動用後，緊急預備金月數與現金比例排除該筆，總資產不變", async ({
+  page,
+}) => {
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByLabel("來源名稱").nth(0).fill("活存");
+  await page.getByLabel("金額").nth(0).fill("200000");
+  await page.getByLabel("來源名稱").nth(1).fill("期貨保證金");
+  await page.getByLabel("金額").nth(1).fill("100000");
+  await page.locator('label:has-text("本月支出") input').fill("30000");
+
+  // 尚未標記：全部 300,000 都算預備金 → 10.0 個月
+  await expect(page.getByTestId("total-assets")).toHaveText("$300,000");
+  await expect(page.getByTestId("emergency-fund-value")).toHaveText(
+    "10.0 個月"
+  );
+
+  await page
+    .getByRole("button", { name: "標記 期貨保證金 為不可動用" })
+    .click();
+
+  await expect(page.getByTestId("total-assets")).toHaveText("$300,000");
+  await expect(page.getByTestId("emergency-fund-value")).toHaveText("6.7 個月");
+  await expect(page.getByTestId("emergency-fund-restricted-note")).toHaveText(
+    "不含不可動用現金 $100,000"
+  );
+  await expect(page.getByTestId("restricted-cash-total")).toContainText(
+    "$100,000"
+  );
+  // 現金比例＝可動用現金 ÷ 金融資產 = 200,000 ÷ 300,000
+  await expect(page.getByTestId("cash-ratio-value")).toHaveText("66.7%");
+  await expect(
+    page.getByTestId("asset-allocation-segment-restrictedCash")
+  ).toBeVisible();
+
+  // 「不可動用」狀態隨快照存檔，重新整理後仍在
+  await page.getByTestId("save-button").click();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "標記 期貨保證金 為不可動用" })
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("emergency-fund-value")).toHaveText("6.7 個月");
+});
+
+// PRD 第 9 節 #41／#41a：不動產計入總資產與淨資產，但不影響配置比例分母
+test("填入不動產市值後，總資產與淨資產增加，負債比下降，配置比例不受影響", async ({
+  page,
+}) => {
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByLabel("金額").fill("200000");
+  await page.getByText("+ 新增負債").click();
+  await page.getByLabel("剩餘本金").fill("6000000");
+
+  // 沒有不動產：負債比 = 6,000,000 ÷ 200,000 = 3000%
+  await expect(page.getByTestId("debt-ratio-status")).toHaveText(
+    "財務高風險（請儘速理債）"
+  );
+
+  await page.getByLabel(/不動產市值/).fill("10000000");
+
+  await expect(page.getByTestId("total-assets")).toHaveText("$10,200,000");
+  await expect(page.getByTestId("net-worth")).toHaveText("$4,200,000");
+  await expect(page.getByTestId("debt-ratio-value")).toHaveText("58.8%");
+  // 現金比例分母是金融資產（不含不動產），仍為 100%
+  await expect(page.getByTestId("cash-ratio-value")).toHaveText("100.0%");
+  await expect(
+    page.getByTestId("asset-allocation-real-estate-note")
+  ).toContainText("不動產 $10,000,000");
+});
+
+// PRD 第 9 節 #42／#42c／#42d／#42e：質押整戶維持率
+test("質押負債填入質押股票市值後，顯示整戶維持率與距追繳線的下跌空間", async ({
+  page,
+}) => {
+  // 沒有質押負債時不顯示維持率卡
+  await expect(page.getByTestId("pledge-maintenance-value")).toHaveCount(0);
+  await expect(page.getByTestId("pledge-maintenance-unset")).toHaveCount(0);
+
+  await page.getByText("+ 新增負債").click();
+  // 預設類別為信貸，不顯示質押股票市值欄位
+  await expect(page.getByLabel("質押股票市值")).toHaveCount(0);
+
+  await page.getByLabel("負債類別").selectOption("質押");
+  await page.getByLabel("剩餘本金").fill("500000");
+
+  // 已有質押負債但尚未填質押股票市值：只顯示引導文字
+  await expect(page.getByTestId("pledge-maintenance-unset")).toHaveText(
+    "尚未填寫質押股票市值"
+  );
+
+  await page.getByLabel("質押股票市值").fill("800000");
+
+  await expect(page.getByTestId("pledge-maintenance-value")).toHaveText(
+    "160.0%"
+  );
+  await expect(page.getByTestId("pledge-maintenance-status")).toHaveText(
+    "維持率安全"
+  );
+  await expect(page.getByTestId("pledge-maintenance-drop")).toContainText(
+    "擔保品再下跌 18.8% 將觸及 130% 追繳線"
+  );
+  await expect(page.getByTestId("debt-maintenance-ratio")).toHaveText("160.0%");
+
+  // 股價下跌、質押股票市值低於追繳線
+  await page.getByLabel("質押股票市值").fill("600000");
+  await expect(page.getByTestId("pledge-maintenance-status")).toHaveText(
+    "低於追繳線"
+  );
+  await expect(page.getByTestId("pledge-maintenance-drop")).toContainText(
+    "已低於追繳線"
+  );
+
+  // 改成房貸：欄位隱藏，維持率卡消失
+  await page.getByLabel("負債類別").selectOption("房貸");
+  await expect(page.getByLabel("質押股票市值")).toHaveCount(0);
+  await expect(page.getByTestId("pledge-maintenance-value")).toHaveCount(0);
+});

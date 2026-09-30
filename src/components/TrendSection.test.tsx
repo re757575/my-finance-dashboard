@@ -12,6 +12,7 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     usStockValue: 0,
     usStockCurrency: "USD",
     exchangeRate: 0,
+    realEstateValue: 0,
     debts: [],
     incomeSources: [],
     monthlyExpense: 0,
@@ -50,12 +51,16 @@ describe("TrendSection", () => {
     const snapshots: Snapshot[] = [
       baseSnapshot({
         date: "2026-01-01",
-        cashSources: [{ id: "c1", name: "現金", amount: 100000 }],
+        cashSources: [
+          { id: "c1", name: "現金", amount: 100000, restricted: false },
+        ],
         twStockValue: 50000,
       }),
       baseSnapshot({
         date: "2026-01-02",
-        cashSources: [{ id: "c1", name: "現金", amount: 120000 }],
+        cashSources: [
+          { id: "c1", name: "現金", amount: 120000, restricted: false },
+        ],
         twStockValue: 80000,
         debts: [
           {
@@ -66,6 +71,7 @@ describe("TrendSection", () => {
             annualRate: 0,
             remainingMonths: 12,
             repaymentMethod: "amortizing",
+            collateralValue: 0,
           },
         ],
       }),

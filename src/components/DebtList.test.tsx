@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DebtList } from "@/components/DebtList";
@@ -11,6 +12,7 @@ const debt: Debt = {
   annualRate: 2.4,
   remainingMonths: 120,
   repaymentMethod: "amortizing",
+  collateralValue: 0,
 };
 
 describe("DebtList", () => {
@@ -35,6 +37,7 @@ describe("DebtList", () => {
       annualRate: 0,
       remainingMonths: 0,
       repaymentMethod: "amortizing",
+      collateralValue: 0,
     });
     expect(next[0].id).toBeTruthy();
   });
@@ -114,5 +117,89 @@ describe("DebtList", () => {
     expect(onChange).toHaveBeenCalledWith([
       { ...debt, repaymentMethod: "interestOnly" },
     ]);
+  });
+
+  // PRD 4.2「負債清單（類別化）」第 7 點：質押類別才顯示質押股票市值欄位
+  describe("質押股票市值", () => {
+    const pledge: Debt = {
+      ...debt,
+      id: "p1",
+      name: "股票質押",
+      category: "質押",
+      principal: 500000,
+      annualRate: 3.5,
+      remainingMonths: 12,
+      repaymentMethod: "interestOnly",
+      collateralValue: 800000,
+    };
+
+    it("非質押類別不顯示質押股票市值欄位", () => {
+      render(<DebtList value={[debt]} onChange={vi.fn()} />);
+      expect(screen.queryByLabelText("質押股票市值")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("debt-maintenance-ratio")
+      ).not.toBeInTheDocument();
+    });
+
+    it("質押類別顯示質押股票市值欄位與該筆維持率", () => {
+      render(<DebtList value={[pledge]} onChange={vi.fn()} />);
+      expect(screen.getByLabelText("質押股票市值")).toHaveValue("800000");
+      expect(screen.getByTestId("debt-maintenance-ratio")).toHaveTextContent(
+        "160.0%"
+      );
+    });
+
+    it("質押股票市值為 0 時，該筆維持率顯示「—」", () => {
+      render(
+        <DebtList
+          value={[{ ...pledge, collateralValue: 0 }]}
+          onChange={vi.fn()}
+        />
+      );
+      expect(screen.getByTestId("debt-maintenance-ratio")).toHaveTextContent(
+        "—"
+      );
+    });
+
+    it("修改質押股票市值會透過 onChange 更新該筆負債", () => {
+      const onChange = vi.fn();
+      render(<DebtList value={[pledge]} onChange={onChange} />);
+
+      fireEvent.change(screen.getByLabelText("質押股票市值"), {
+        target: { value: "700000" },
+      });
+
+      expect(onChange).toHaveBeenCalledWith([
+        { ...pledge, collateralValue: 700000 },
+      ]);
+    });
+
+    it("質押股票市值不接受負數", () => {
+      const onChange = vi.fn();
+      render(<DebtList value={[pledge]} onChange={onChange} />);
+
+      fireEvent.change(screen.getByLabelText("質押股票市值"), {
+        target: { value: "-500" },
+      });
+
+      expect(onChange).toHaveBeenCalledWith([
+        { ...pledge, collateralValue: 500 },
+      ]);
+    });
+
+    it("切換類別為質押後，欄位出現", () => {
+      function Harness() {
+        const [value, setValue] = useState<Debt[]>([debt]);
+        return <DebtList value={value} onChange={setValue} />;
+      }
+      render(<Harness />);
+      expect(screen.queryByLabelText("質押股票市值")).not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText("負債類別"), {
+        target: { value: "質押" },
+      });
+
+      expect(screen.getByLabelText("質押股票市值")).toBeInTheDocument();
+    });
   });
 });

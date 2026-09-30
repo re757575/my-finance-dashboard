@@ -19,6 +19,7 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     usStockValue: 0,
     usStockCurrency: "USD",
     exchangeRate: 0,
+    realEstateValue: 0,
     debts: [],
     incomeSources: [],
     monthlyExpense: 0,
@@ -31,7 +32,9 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
 describe("buildFinancePrompt", () => {
   it("包含今日標題與核心財務指標", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "國泰活期", amount: 100000 }],
+      cashSources: [
+        { id: "1", name: "國泰活期", amount: 100000, restricted: false },
+      ],
       debts: [
         {
           id: "d1",
@@ -41,6 +44,7 @@ describe("buildFinancePrompt", () => {
           annualRate: 0,
           remainingMonths: 0,
           repaymentMethod: "amortizing",
+          collateralValue: 0,
         },
       ],
     });
@@ -59,7 +63,9 @@ describe("buildFinancePrompt", () => {
 
   it("包含現金來源名稱明細", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "緊急備用金", amount: 50000 }],
+      cashSources: [
+        { id: "1", name: "緊急備用金", amount: 50000, restricted: false },
+      ],
     });
     const prompt = buildFinancePrompt({
       currentDate: "2026-07-13",
@@ -99,7 +105,9 @@ describe("buildFinancePrompt", () => {
   // PRD 第 9 節 #30：新指標納入 AI 分析提示詞的「今日財務總覽」與資產配置摘要
   it("包含緊急預備金月數、儲蓄率與資產配置比例摘要", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+      cashSources: [
+        { id: "1", name: "現金", amount: 350000, restricted: false },
+      ],
       twStockValue: 400000,
       usStockValue: 250000,
       usStockCurrency: "TWD",
@@ -122,7 +130,9 @@ describe("buildFinancePrompt", () => {
   // PRD 第 9 節 #31：FIRE 目標進度已設定時，包含百分比與目標金額；達成目標時額外註記
   it("已設定目標淨資產時，包含 FIRE 進度百分比與目標金額", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "現金", amount: 14200000 }],
+      cashSources: [
+        { id: "1", name: "現金", amount: 14200000, restricted: false },
+      ],
       targetNetWorth: 10000000,
     });
     const prompt = buildFinancePrompt({
@@ -142,11 +152,15 @@ describe("buildFinancePrompt", () => {
     const history = [
       baseSnapshot({
         date: "2026-07-11",
-        cashSources: [{ id: "1", name: "現金", amount: 100000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 100000, restricted: false },
+        ],
       }),
       baseSnapshot({
         date: "2026-07-12",
-        cashSources: [{ id: "1", name: "現金", amount: 120000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 120000, restricted: false },
+        ],
       }),
     ];
     const prompt = buildFinancePrompt({
@@ -167,7 +181,9 @@ describe("buildFinancePrompt", () => {
 describe("buildInvestmentDirectionPrompt", () => {
   it("包含標題、股票資產、資產配置與槓桿狀況，並指示 AI 考量外部市場因素", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+      cashSources: [
+        { id: "1", name: "現金", amount: 350000, restricted: false },
+      ],
       twStockValue: 400000,
       usStockValue: 250000,
       usStockCurrency: "TWD",
@@ -180,6 +196,7 @@ describe("buildInvestmentDirectionPrompt", () => {
           annualRate: 0,
           remainingMonths: 0,
           repaymentMethod: "amortizing",
+          collateralValue: 0,
         },
       ],
     });
@@ -226,6 +243,7 @@ describe("buildInvestmentDirectionPrompt", () => {
           annualRate: 2.1,
           remainingMonths: 240,
           repaymentMethod: "amortizing",
+          collateralValue: 0,
         },
       ],
       incomeSources: [{ id: "i1", name: "薪資", amount: 68000 }],
@@ -250,7 +268,9 @@ describe("buildInvestmentDirectionPrompt", () => {
     const history = [
       baseSnapshot({
         date: "2026-07-11",
-        cashSources: [{ id: "1", name: "現金", amount: 300000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 300000, restricted: false },
+        ],
         twStockValue: 700000,
       }),
     ];
@@ -349,7 +369,9 @@ describe("buildPromptForMode", () => {
 describe("buildDebtPayoffPrompt", () => {
   it("列出每筆負債明細、每月應還款總額與現金狀況", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "現金", amount: 300000 }],
+      cashSources: [
+        { id: "1", name: "現金", amount: 300000, restricted: false },
+      ],
       monthlyExpense: 20000,
       debts: [
         {
@@ -360,6 +382,7 @@ describe("buildDebtPayoffPrompt", () => {
           annualRate: 8,
           remainingMonths: 24,
           repaymentMethod: "amortizing",
+          collateralValue: 0,
         },
         {
           id: "d2",
@@ -369,6 +392,7 @@ describe("buildDebtPayoffPrompt", () => {
           annualRate: 2.1,
           remainingMonths: 240,
           repaymentMethod: "amortizing",
+          collateralValue: 0,
         },
       ],
     });
@@ -419,11 +443,15 @@ describe("buildPeriodicReviewPrompt", () => {
     const history = [
       baseSnapshot({
         date: "2026-06-01",
-        cashSources: [{ id: "1", name: "現金", amount: 500000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 500000, restricted: false },
+        ],
       }),
       baseSnapshot({
         date: "2026-07-01",
-        cashSources: [{ id: "1", name: "現金", amount: 600000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 600000, restricted: false },
+        ],
       }),
     ];
     const prompt = buildPeriodicReviewPrompt({
@@ -448,7 +476,9 @@ describe("buildAssetRebalancingPrompt", () => {
   // 目標未設定時，改請 AI 自行建議合理的目標配置
   it("目標現金比例未設定時，指示 AI 自行建議合理配置", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+      cashSources: [
+        { id: "1", name: "現金", amount: 350000, restricted: false },
+      ],
       twStockValue: 650000,
       targetCashRatio: 0,
     });
@@ -465,7 +495,9 @@ describe("buildAssetRebalancingPrompt", () => {
 
   it("已設定目標現金比例時，計算落差百分比與金額", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+      cashSources: [
+        { id: "1", name: "現金", amount: 350000, restricted: false },
+      ],
       twStockValue: 650000,
       targetCashRatio: 20,
     });
@@ -482,7 +514,9 @@ describe("buildAssetRebalancingPrompt", () => {
 
   it("現金低配（股票超配）時，落差顯示為負且註明現金低配", () => {
     const draft = baseSnapshot({
-      cashSources: [{ id: "1", name: "現金", amount: 100000 }],
+      cashSources: [
+        { id: "1", name: "現金", amount: 100000, restricted: false },
+      ],
       twStockValue: 900000,
       targetCashRatio: 30,
     });
@@ -495,6 +529,174 @@ describe("buildAssetRebalancingPrompt", () => {
 
     expect(prompt).toContain(
       "現金落差：-20.0%（現金低配（股票超配），約 $200,000）"
+    );
+  });
+});
+
+// PRD 4.2「AI 分析提示詞多模式」第 9 點：V2.6 新增資料（不動產、不可動用現金、質押維持率）
+describe("提示詞：不動產／不可動用現金／質押維持率", () => {
+  const params = (draft: ReturnType<typeof baseSnapshot>) => ({
+    currentDate: "2026-07-13",
+    draft,
+    metrics: calculateMetrics(draft),
+    recentSnapshots: [],
+  });
+
+  const richDraft = baseSnapshot({
+    cashSources: [
+      { id: "1", name: "活存", amount: 200000, restricted: false },
+      { id: "2", name: "期貨保證金", amount: 100000, restricted: true },
+    ],
+    twStockValue: 400000,
+    usStockValue: 300000,
+    usStockCurrency: "TWD",
+    realEstateValue: 5000000,
+    debts: [
+      {
+        id: "d1",
+        name: "股票質押",
+        category: "質押",
+        principal: 500000,
+        annualRate: 3.5,
+        remainingMonths: 12,
+        repaymentMethod: "interestOnly",
+        collateralValue: 800000,
+      },
+    ],
+  });
+
+  it("財務健康檢查：列出不動產、不可動用現金、質押維持率，並在現金來源標註不可動用", () => {
+    const prompt = buildFinancePrompt(params(richDraft));
+
+    expect(prompt).toContain("其中不動產市值：$5,000,000");
+    expect(prompt).toContain("不可動用現金：$100,000");
+    expect(prompt).toContain("期貨保證金：$100,000（不可動用）");
+    expect(prompt).not.toContain("活存：$200,000（不可動用）");
+    expect(prompt).toContain(
+      "質押整戶維持率：160.0%（維持率安全，擔保品再下跌 18.8% 將觸及 130% 追繳線）"
+    );
+    expect(prompt).toContain("質押股票市值 $800,000（維持率 160.0%）");
+    expect(prompt).toContain(
+      "資產配置：現金 20.0%／不可動用現金 10.0%／台股 40.0%／美股 30.0%"
+    );
+  });
+
+  it("沒有不動產、不可動用現金、質押負債時，不出現相關行", () => {
+    const draft = baseSnapshot({
+      cashSources: [
+        { id: "1", name: "現金", amount: 100000, restricted: false },
+      ],
+    });
+    const prompt = buildFinancePrompt(params(draft));
+
+    expect(prompt).not.toContain("不動產");
+    expect(prompt).not.toContain("不可動用");
+    expect(prompt).not.toContain("質押整戶維持率");
+  });
+
+  it("尚未填寫質押股票市值時，明確說明尚未填寫，不顯示百分比", () => {
+    const draft = baseSnapshot({
+      debts: [
+        {
+          id: "d1",
+          name: "股票質押",
+          category: "質押",
+          principal: 500000,
+          annualRate: 3.5,
+          remainingMonths: 12,
+          repaymentMethod: "interestOnly",
+          collateralValue: 0,
+        },
+      ],
+    });
+    const prompt = buildFinancePrompt(params(draft));
+
+    expect(prompt).toContain(
+      "質押整戶維持率：尚未填寫質押股票市值（質押負債本金 $500,000）"
+    );
+    expect(prompt).toContain("質押股票市值尚未填寫");
+  });
+
+  it("低於追繳線時，摘要註明已低於追繳線", () => {
+    const draft = baseSnapshot({
+      debts: [
+        {
+          id: "d1",
+          name: "股票質押",
+          category: "質押",
+          principal: 500000,
+          annualRate: 3.5,
+          remainingMonths: 12,
+          repaymentMethod: "interestOnly",
+          collateralValue: 600000,
+        },
+      ],
+    });
+    const prompt = buildFinancePrompt(params(draft));
+
+    expect(prompt).toContain(
+      "質押整戶維持率：120.0%（低於追繳線，已低於追繳線）"
+    );
+  });
+
+  it("投資方向評估：列出不可動用現金與質押維持率，股票比例為台股＋美股（不含不可動用現金）", () => {
+    const prompt = buildInvestmentDirectionPrompt({
+      ...params(richDraft),
+      recentSnapshots: [richDraft],
+    });
+
+    expect(prompt).toContain("不可動用現金：$100,000");
+    expect(prompt).toContain("質押整戶維持率：160.0%");
+    // 趨勢表格的股票比例應為 40% + 30% = 70%，而非 100% − 現金比例 20% = 80%
+    expect(prompt).toContain("| 2026-07-13 | $5,500,000 | 20.0% | 70.0% |");
+  });
+
+  it("負債清償策略：質押負債列出質押股票市值與維持率", () => {
+    const prompt = buildDebtPayoffPrompt(params(richDraft));
+
+    expect(prompt).toContain("質押股票市值 $800,000（維持率 160.0%）");
+    expect(prompt).toContain("質押整戶維持率：160.0%");
+  });
+
+  it("資產配置再平衡：落差金額以金融資產為基準，並說明不動產不計入", () => {
+    const draft = baseSnapshot({
+      cashSources: [
+        { id: "1", name: "現金", amount: 350000, restricted: false },
+      ],
+      twStockValue: 650000,
+      realEstateValue: 9000000,
+      targetCashRatio: 20,
+    });
+    const prompt = buildAssetRebalancingPrompt(params(draft));
+
+    expect(prompt).toContain("金融資產（現金＋股票）：$1,000,000");
+    expect(prompt).toContain(
+      "另有不動產：$9,000,000（不計入配置比例，無法用於再平衡）"
+    );
+    // 現金 35% 對目標 20%，落差 15% × 金融資產 1,000,000 = 150,000（不受不動產影響）
+    expect(prompt).toContain("現金落差：+15.0%（現金超配，約 $150,000）");
+  });
+
+  it("定期回顧報告：現金／股票比例不因不可動用現金而被誤算", () => {
+    const first = baseSnapshot({
+      date: "2026-06-01",
+      cashSources: [
+        { id: "1", name: "活存", amount: 200000, restricted: false },
+        { id: "2", name: "保證金", amount: 100000, restricted: true },
+      ],
+      twStockValue: 700000,
+    });
+    const last = { ...first, date: "2026-07-01" };
+    const prompt = buildPeriodicReviewPrompt({
+      currentDate: "2026-07-13",
+      draft: last,
+      metrics: calculateMetrics(last),
+      recentSnapshots: [first, last],
+    });
+
+    // 現金 20%、股票 70%（不是 100% − 20% = 80%）
+    expect(prompt).toContain(
+      "資產配置（現金／股票）：20.0%／70.0% → 20.0%／70.0%"
     );
   });
 });

@@ -6,6 +6,7 @@ import type {
   DebtRatioStatus,
   EmergencyFundStatus,
   IncomeSource,
+  PledgeMaintenanceStatus,
   RepaymentMethod,
   SavingsRateStatus,
   Snapshot,
@@ -21,6 +22,15 @@ export function toSafeNumber(value: unknown): number {
 export function sumCashSources(cashSources: CashSource[]): number {
   return cashSources.reduce(
     (sum, source) => sum + toSafeNumber(source.amount),
+    0
+  );
+}
+
+/** 標記為「不可動用」的現金來源加總（如期貨保證金）；缺少 restricted 欄位視為可動用（PRD 第 5 節）。 */
+export function sumRestrictedCashSources(cashSources: CashSource[]): number {
+  return cashSources.reduce(
+    (sum, source) =>
+      source.restricted ? sum + toSafeNumber(source.amount) : sum,
     0
   );
 }
@@ -147,18 +157,19 @@ export const DEBT_RATIO_STATUS_LABEL: Record<DebtRatioStatus, string> = {
 };
 
 /**
- * 緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）（PRD 5.5 節）。
- * 分子僅計入現金，不含股票市值（收入中斷期間賤賣股票風險高，不視為即時可動用資金）。
+ * 緊急預備金月數 = 可動用現金 ÷（本月支出 + 本月應還款總額）（PRD 5.5 節）。
+ * 分子僅計入可動用現金（不含標記為「不可動用」的來源，如期貨保證金），也不含股票市值
+ * （收入中斷期間賤賣股票風險高，不視為即時可動用資金）。
  * 分母為 0 時回傳 null，代表「無需求」，不套用風險分級。
  */
 export function calculateEmergencyFundMonths(
-  totalCash: number,
+  liquidCash: number,
   monthlyExpense: number,
   totalMonthlyDebtPayment: number
 ): number | null {
   const denominator = toSafeNumber(monthlyExpense) + totalMonthlyDebtPayment;
   if (denominator === 0) return null;
-  return totalCash / denominator;
+  return liquidCash / denominator;
 }
 
 export function calculateEmergencyFundStatus(
@@ -222,6 +233,81 @@ export function calculateGoalProgress(
   return (netWorth / target) * 100;
 }
 
+/** 質押追繳線（%）：採台灣股票質借常見的 130%，各機構標準不同，僅作參考（PRD 5.8 節）。 */
+export const PLEDGE_MARGIN_CALL_RATIO = 130;
+
+export function calculatePledgeMaintenanceStatus(
+  ratio: number
+): Exclude<PledgeMaintenanceStatus, "none" | "unset"> {
+  if (ratio >= 160) return "safe";
+  if (ratio >= 140) return "watch";
+  if (ratio >= PLEDGE_MARGIN_CALL_RATIO) return "warning";
+  return "margin-call";
+}
+
+export const PLEDGE_MAINTENANCE_STATUS_LABEL: Record<
+  Exclude<PledgeMaintenanceStatus, "none" | "unset">,
+  string
+> = {
+  safe: "維持率安全",
+  watch: "維持率留意",
+  warning: "接近追繳線",
+  "margin-call": "低於追繳線",
+};
+
+/**
+ * 質押整戶維持率 = 所有質押負債的質押股票市值合計 ÷ 質押負債剩餘本金合計 × 100%（PRD 5.8 節）。
+ * 無質押本金 → "none"（不顯示卡片）；質押股票市值合計為 0 → "unset"（只顯示引導文字，避免誤導）。
+ * dropToMarginCall 為擔保品整體同比例下跌、本金不變的前提下，距追繳線的下跌空間（%）；
+ * 已低於追繳線時為 null。
+ */
+export function calculatePledgeMaintenance(debts: Debt[]): {
+  principal: number;
+  collateralValue: number;
+  ratio: number | null;
+  status: PledgeMaintenanceStatus;
+  dropToMarginCall: number | null;
+} {
+  const pledgeDebts = debts.filter((debt) => debt.category === "質押");
+  const principal = sumDebtPrincipal(pledgeDebts);
+  const collateralValue = pledgeDebts.reduce(
+    (sum, debt) => sum + toSafeNumber(debt.collateralValue),
+    0
+  );
+
+  if (principal <= 0) {
+    return {
+      principal,
+      collateralValue,
+      ratio: null,
+      status: "none",
+      dropToMarginCall: null,
+    };
+  }
+  if (collateralValue <= 0) {
+    return {
+      principal,
+      collateralValue,
+      ratio: null,
+      status: "unset",
+      dropToMarginCall: null,
+    };
+  }
+
+  const ratio = (collateralValue / principal) * 100;
+  const status = calculatePledgeMaintenanceStatus(ratio);
+  return {
+    principal,
+    collateralValue,
+    ratio,
+    status,
+    dropToMarginCall:
+      ratio >= PLEDGE_MARGIN_CALL_RATIO
+        ? (1 - PLEDGE_MARGIN_CALL_RATIO / ratio) * 100
+        : null,
+  };
+}
+
 export function calculateMetrics(
   snapshot: Pick<
     Snapshot,
@@ -230,6 +316,7 @@ export function calculateMetrics(
     | "usStockValue"
     | "usStockCurrency"
     | "exchangeRate"
+    | "realEstateValue"
     | "debts"
     | "incomeSources"
     | "monthlyExpense"
@@ -237,27 +324,34 @@ export function calculateMetrics(
   >
 ): CalculatedMetrics {
   const totalCash = sumCashSources(snapshot.cashSources);
+  // 不可動用現金（如期貨保證金）仍計入總資產，但不算可動用現金（PRD 第 5 節）
+  const restrictedCash = sumRestrictedCashSources(snapshot.cashSources);
+  const liquidCash = totalCash - restrictedCash;
   const totalStockValue = calculateTotalStockValue(
     snapshot.twStockValue,
     snapshot.usStockValue,
     snapshot.exchangeRate,
     snapshot.usStockCurrency
   );
-  const totalAssets = totalCash + totalStockValue;
+  // 金融資產（現金＋股票）為現金比例與資產配置比例的分母；總資產再加上不動產市值（PRD 第 5 節）
+  const financialAssets = totalCash + totalStockValue;
+  const realEstateValue = toSafeNumber(snapshot.realEstateValue);
+  const totalAssets = financialAssets + realEstateValue;
   const totalLiabilities = sumDebtPrincipal(snapshot.debts);
   const netWorth = totalAssets - totalLiabilities;
   // 總資產為 0 時負債比預設為 0%，避免除以零（PRD 第 5 節）
   const debtRatio =
     totalAssets === 0 ? 0 : (totalLiabilities / totalAssets) * 100;
-  // 總資產為 0 時現金比例同樣預設為 0%，避免除以零
-  const cashRatio = totalAssets === 0 ? 0 : (totalCash / totalAssets) * 100;
+  // 現金比例與資產配置比例以金融資產為分母；金融資產為 0 時同樣預設為 0%，避免除以零
+  const ratioOfFinancialAssets = (amount: number) =>
+    financialAssets === 0 ? 0 : (amount / financialAssets) * 100;
+  const cashRatio = ratioOfFinancialAssets(liquidCash);
+  const restrictedCashRatio = ratioOfFinancialAssets(restrictedCash);
   // 資產配置比例（PRD 第 5 節）：美股佔比以換算後的台幣等值金額（totalStockValue 扣除台股部分）計算
   const twStockValueSafe = toSafeNumber(snapshot.twStockValue);
   const usStockValueInTwd = totalStockValue - twStockValueSafe;
-  const twStockRatio =
-    totalAssets === 0 ? 0 : (twStockValueSafe / totalAssets) * 100;
-  const usStockRatio =
-    totalAssets === 0 ? 0 : (usStockValueInTwd / totalAssets) * 100;
+  const twStockRatio = ratioOfFinancialAssets(twStockValueSafe);
+  const usStockRatio = ratioOfFinancialAssets(usStockValueInTwd);
   const totalMonthlyDebtPayment = calculateTotalMonthlyDebtPayment(
     snapshot.debts
   );
@@ -268,12 +362,13 @@ export function calculateMetrics(
     toSafeNumber(snapshot.monthlyExpense) -
     totalMonthlyDebtPayment;
   const emergencyFundMonths = calculateEmergencyFundMonths(
-    totalCash,
+    liquidCash,
     snapshot.monthlyExpense,
     totalMonthlyDebtPayment
   );
   const savingsRate = calculateSavingsRate(cashFlow, totalIncome);
   const goalProgress = calculateGoalProgress(netWorth, snapshot.targetNetWorth);
+  const pledge = calculatePledgeMaintenance(snapshot.debts);
 
   return {
     totalCash,
@@ -284,6 +379,11 @@ export function calculateMetrics(
     debtRatio,
     debtRatioStatus: calculateDebtRatioStatus(debtRatio),
     cashRatio,
+    liquidCash,
+    restrictedCash,
+    restrictedCashRatio,
+    financialAssets,
+    realEstateValue,
     twStockValue: twStockValueSafe,
     usStockValueInTwd,
     twStockRatio,
@@ -296,5 +396,10 @@ export function calculateMetrics(
     savingsRate,
     savingsRateStatus: calculateSavingsRateStatus(savingsRate),
     goalProgress,
+    pledgePrincipal: pledge.principal,
+    pledgeCollateralValue: pledge.collateralValue,
+    pledgeMaintenanceRatio: pledge.ratio,
+    pledgeMaintenanceStatus: pledge.status,
+    pledgeDropToMarginCall: pledge.dropToMarginCall,
   };
 }

@@ -3,10 +3,12 @@ import {
   calculateMonthlyPayment,
   DEBT_RATIO_STATUS_LABEL,
   EMERGENCY_FUND_STATUS_LABEL,
+  PLEDGE_MAINTENANCE_STATUS_LABEL,
+  PLEDGE_MARGIN_CALL_RATIO,
   SAVINGS_RATE_STATUS_LABEL,
 } from "@/lib/calculations";
 import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
-import type { CalculatedMetrics, Snapshot } from "@/types/schema";
+import type { CalculatedMetrics, Debt, Snapshot } from "@/types/schema";
 
 interface BuildFinancePromptParams {
   currentDate: string;
@@ -42,6 +44,43 @@ function formatGoalProgressLine(
   return `${formatPercent(metrics.goalProgress)}（目標 ${formatCurrency(targetNetWorth)}）${achievedNote}`;
 }
 
+/**
+ * 質押整戶維持率的一行摘要（PRD 5.8 節）；無質押負債時回傳 null，呼叫端不輸出該行。
+ * 尚未填寫質押股票市值時明確說明，避免 AI 把「沒有資料」誤判成「沒有風險」。
+ */
+function formatPledgeMaintenanceLine(
+  metrics: CalculatedMetrics
+): string | null {
+  const status = metrics.pledgeMaintenanceStatus;
+  if (status === "none") return null;
+  if (status === "unset" || metrics.pledgeMaintenanceRatio === null) {
+    return `- 質押整戶維持率：尚未填寫質押股票市值（質押負債本金 ${formatCurrency(metrics.pledgePrincipal)}）`;
+  }
+  const drop =
+    metrics.pledgeDropToMarginCall === null
+      ? "已低於追繳線"
+      : `擔保品再下跌 ${formatPercent(metrics.pledgeDropToMarginCall)} 將觸及 ${PLEDGE_MARGIN_CALL_RATIO}% 追繳線`;
+  return `- 質押整戶維持率：${formatPercent(metrics.pledgeMaintenanceRatio)}（${PLEDGE_MAINTENANCE_STATUS_LABEL[status]}，${drop}）`;
+}
+
+/** 資產配置一行摘要：可動用現金／（不可動用現金）／台股／美股，皆為占金融資產（現金＋股票）的比例。 */
+function formatAllocation(metrics: CalculatedMetrics): string {
+  const restricted =
+    metrics.restrictedCash !== 0
+      ? `／不可動用現金 ${formatPercent(metrics.restrictedCashRatio)}`
+      : "";
+  return `現金 ${formatPercent(metrics.cashRatio)}${restricted}／台股 ${formatPercent(metrics.twStockRatio)}／美股 ${formatPercent(metrics.usStockRatio)}`;
+}
+
+/** 質押負債明細後綴：質押股票市值與該筆維持率；非質押類別不附加。 */
+function formatCollateralNote(debt: Debt): string {
+  if (debt.category !== "質押") return "";
+  if (!(debt.collateralValue > 0)) return "，質押股票市值尚未填寫";
+  const ratio =
+    debt.principal > 0 ? (debt.collateralValue / debt.principal) * 100 : null;
+  return `，質押股票市值 ${formatCurrency(debt.collateralValue)}${ratio === null ? "" : `（維持率 ${formatPercent(ratio)}）`}`;
+}
+
 /** 產生給 AI 分析用的財務健康檢查提示詞（Markdown），供「一鍵複製」功能使用。 */
 export function buildFinancePrompt({
   currentDate,
@@ -59,12 +98,24 @@ export function buildFinancePrompt({
 
   lines.push(`## 今日財務總覽（${currentDate}）`, "");
   lines.push(`- 總資產：${formatCurrency(metrics.totalAssets)}`);
+  if (metrics.realEstateValue !== 0) {
+    lines.push(
+      `- 其中不動產市值：${formatCurrency(metrics.realEstateValue)}（不計入現金比例與資產配置比例）`
+    );
+  }
   lines.push(`- 總負債：${formatCurrency(metrics.totalLiabilities)}`);
   lines.push(`- 個人淨資產：${formatCurrency(metrics.netWorth)}`);
   lines.push(
     `- 負債比：${formatPercent(metrics.debtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.debtRatioStatus]}）`
   );
-  lines.push(`- 現金比例：${formatPercent(metrics.cashRatio)}`);
+  lines.push(`- 現金比例：${formatPercent(metrics.cashRatio)}（可動用現金）`);
+  if (metrics.restrictedCash !== 0) {
+    lines.push(
+      `- 不可動用現金：${formatCurrency(metrics.restrictedCash)}（如期貨保證金，不計入緊急預備金與現金比例）`
+    );
+  }
+  const pledgeLine = formatPledgeMaintenanceLine(metrics);
+  if (pledgeLine) lines.push(pledgeLine);
   lines.push(
     `- 本月應還款總額：${formatCurrency(metrics.totalMonthlyDebtPayment)}`
   );
@@ -80,10 +131,7 @@ export function buildFinancePrompt({
     ""
   );
 
-  lines.push(
-    `- 資產配置：現金 ${formatPercent(metrics.cashRatio)}／台股 ${formatPercent(metrics.twStockRatio)}／美股 ${formatPercent(metrics.usStockRatio)}`,
-    ""
-  );
+  lines.push(`- 資產配置：${formatAllocation(metrics)}`, "");
 
   lines.push("### 現金來源明細", "");
   if (draft.cashSources.length === 0) {
@@ -91,7 +139,7 @@ export function buildFinancePrompt({
   } else {
     for (const source of draft.cashSources) {
       lines.push(
-        `- ${source.name || "未命名"}：${formatCurrency(source.amount)}`
+        `- ${source.name || "未命名"}：${formatCurrency(source.amount)}${source.restricted ? "（不可動用）" : ""}`
       );
     }
   }
@@ -112,7 +160,7 @@ export function buildFinancePrompt({
       const methodLabel =
         debt.repaymentMethod === "interestOnly" ? "只計息" : "本息平均攤還";
       lines.push(
-        `- ${debt.name || "未命名"}（${debt.category}）：本金 ${formatCurrency(debt.principal)}，年利率 ${debt.annualRate}%，剩餘 ${debt.remainingMonths} 期，${methodLabel}，每月應還 ${formatCurrency(calculateMonthlyPayment(debt))}`
+        `- ${debt.name || "未命名"}（${debt.category}）：本金 ${formatCurrency(debt.principal)}，年利率 ${debt.annualRate}%，剩餘 ${debt.remainingMonths} 期，${methodLabel}，每月應還 ${formatCurrency(calculateMonthlyPayment(debt))}${formatCollateralNote(debt)}`
       );
     }
   }
@@ -177,16 +225,21 @@ export function buildInvestmentDirectionPrompt({
     `- 美股市值：${formatCurrency(draft.usStockValue)}（計價幣別：${draft.usStockCurrency}，匯率：${draft.exchangeRate}）`
   );
   lines.push(`- 股票市值合計：${formatCurrency(metrics.totalStockValue)}`);
-  lines.push(
-    `- 資產配置：現金 ${formatPercent(metrics.cashRatio)}／台股 ${formatPercent(metrics.twStockRatio)}／美股 ${formatPercent(metrics.usStockRatio)}`
-  );
+  lines.push(`- 資產配置：${formatAllocation(metrics)}`);
   lines.push(
     `- 現金比例：${formatPercent(metrics.cashRatio)}（可動用資金水位）`
   );
+  if (metrics.restrictedCash !== 0) {
+    lines.push(
+      `- 不可動用現金：${formatCurrency(metrics.restrictedCash)}（如期貨保證金，無法用來加碼）`
+    );
+  }
   lines.push(
-    `- 負債比：${formatPercent(metrics.debtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.debtRatioStatus]}，財務槓桿狀況）`,
-    ""
+    `- 負債比：${formatPercent(metrics.debtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.debtRatioStatus]}，財務槓桿狀況）`
   );
+  const investmentPledgeLine = formatPledgeMaintenanceLine(metrics);
+  if (investmentPledgeLine) lines.push(investmentPledgeLine);
+  lines.push("");
 
   if (recentSnapshots.length > 0) {
     lines.push(
@@ -197,7 +250,7 @@ export function buildInvestmentDirectionPrompt({
     lines.push("|---|---|---|---|");
     for (const snapshot of recentSnapshots) {
       const m = calculateMetrics(snapshot);
-      const stockRatio = 100 - m.cashRatio;
+      const stockRatio = m.twStockRatio + m.usStockRatio;
       lines.push(
         `| ${snapshot.date} | ${formatCurrency(m.netWorth)} | ${formatPercent(m.cashRatio)} | ${formatPercent(stockRatio)} |`
       );
@@ -247,12 +300,14 @@ export function buildDebtPayoffPrompt({
       const methodLabel =
         debt.repaymentMethod === "interestOnly" ? "只計息" : "本息平均攤還";
       lines.push(
-        `- ${debt.name || "未命名"}（${debt.category}）：剩餘本金 ${formatCurrency(debt.principal)}，年利率 ${debt.annualRate}%，剩餘 ${debt.remainingMonths} 期，${methodLabel}，每月應還 ${formatCurrency(calculateMonthlyPayment(debt))}`
+        `- ${debt.name || "未命名"}（${debt.category}）：剩餘本金 ${formatCurrency(debt.principal)}，年利率 ${debt.annualRate}%，剩餘 ${debt.remainingMonths} 期，${methodLabel}，每月應還 ${formatCurrency(calculateMonthlyPayment(debt))}${formatCollateralNote(debt)}`
       );
     }
     lines.push(
       `- 本月應還款總額：${formatCurrency(metrics.totalMonthlyDebtPayment)}`
     );
+    const debtPledgeLine = formatPledgeMaintenanceLine(metrics);
+    if (debtPledgeLine) lines.push(debtPledgeLine);
   }
   lines.push("");
 
@@ -344,7 +399,7 @@ export function buildPeriodicReviewPrompt({
     `- 儲蓄率：${formatPercent(firstMetrics.savingsRate)} → ${formatPercent(lastMetrics.savingsRate)}`
   );
   lines.push(
-    `- 資產配置（現金／股票）：${formatPercent(firstMetrics.cashRatio)}／${formatPercent(100 - firstMetrics.cashRatio)} → ${formatPercent(lastMetrics.cashRatio)}／${formatPercent(100 - lastMetrics.cashRatio)}`,
+    `- 資產配置（現金／股票）：${formatPercent(firstMetrics.cashRatio)}／${formatPercent(firstMetrics.twStockRatio + firstMetrics.usStockRatio)} → ${formatPercent(lastMetrics.cashRatio)}／${formatPercent(lastMetrics.twStockRatio + lastMetrics.usStockRatio)}`,
     ""
   );
 
@@ -387,11 +442,15 @@ export function buildAssetRebalancingPrompt({
   );
 
   lines.push(`## 目前資產配置（${currentDate}）`, "");
-  lines.push(`- 總資產：${formatCurrency(metrics.totalAssets)}`);
   lines.push(
-    `- 目前配置：現金 ${formatPercent(metrics.cashRatio)}／台股 ${formatPercent(metrics.twStockRatio)}／美股 ${formatPercent(metrics.usStockRatio)}`,
-    ""
+    `- 金融資產（現金＋股票）：${formatCurrency(metrics.financialAssets)}`
   );
+  if (metrics.realEstateValue !== 0) {
+    lines.push(
+      `- 另有不動產：${formatCurrency(metrics.realEstateValue)}（不計入配置比例，無法用於再平衡）`
+    );
+  }
+  lines.push(`- 目前配置：${formatAllocation(metrics)}`, "");
 
   lines.push("## 目標配置", "");
   if (draft.targetCashRatio === 0) {
@@ -402,7 +461,7 @@ export function buildAssetRebalancingPrompt({
   } else {
     const targetStockRatio = 100 - draft.targetCashRatio;
     const cashGap = metrics.cashRatio - draft.targetCashRatio;
-    const cashGapAmount = (cashGap / 100) * metrics.totalAssets;
+    const cashGapAmount = (cashGap / 100) * metrics.financialAssets;
     lines.push(
       `- 目標配置：現金 ${formatPercent(draft.targetCashRatio)}／股票（不分台美股）${formatPercent(targetStockRatio)}`
     );

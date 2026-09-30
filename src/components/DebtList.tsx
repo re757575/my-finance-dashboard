@@ -6,7 +6,7 @@ import {
   calculateMonthlyPayment,
   DEFAULT_REPAYMENT_METHOD_BY_CATEGORY,
 } from "@/lib/calculations";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Debt, DebtCategory, RepaymentMethod } from "@/types/schema";
 
@@ -33,6 +33,7 @@ export function DebtList({ value, onChange, estimatedFields }: DebtListProps) {
         annualRate: 0,
         remainingMonths: 0,
         repaymentMethod: DEFAULT_REPAYMENT_METHOD_BY_CATEGORY[category],
+        collateralValue: 0,
       },
     ]);
   }
@@ -107,7 +108,18 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
     onChange: (remainingMonths) => onUpdate({ remainingMonths }),
     min: 0,
   });
+  const collateralInput = useNumberInputText({
+    value: debt.collateralValue,
+    onChange: (collateralValue) => onUpdate({ collateralValue }),
+    min: 0,
+  });
   const monthlyPayment = calculateMonthlyPayment(debt);
+  const isPledge = debt.category === "質押";
+  // 該筆維持率＝質押股票市值 ÷ 剩餘本金；兩者任一為 0 時不顯示百分比（PRD 5.8 節）
+  const maintenanceRatio =
+    debt.principal > 0 && debt.collateralValue > 0
+      ? (debt.collateralValue / debt.principal) * 100
+      : null;
 
   return (
     <div className="space-y-2 rounded-lg border border-slate-200 p-3">
@@ -194,6 +206,35 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
           />
         </label>
       </div>
+
+      {isPledge && (
+        <div className="grid grid-cols-3 items-end gap-2">
+          <label className="col-span-2 block space-y-1">
+            <span className="text-xs text-slate-500">質押股票市值</span>
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder="0"
+              value={collateralInput.text}
+              onChange={collateralInput.handleChange}
+              onFocus={collateralInput.handleFocus}
+              onBlur={collateralInput.handleBlur}
+              aria-label="質押股票市值"
+            />
+          </label>
+          <p className="pb-2 text-right text-xs text-slate-500">
+            維持率：
+            <span
+              data-testid="debt-maintenance-ratio"
+              className="font-medium text-slate-900"
+            >
+              {maintenanceRatio === null
+                ? "—"
+                : formatPercent(maintenanceRatio)}
+            </span>
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <RepaymentMethodToggle

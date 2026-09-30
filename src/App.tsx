@@ -13,7 +13,9 @@ import { Footer } from "@/components/Footer";
 import { GoalProgressSection } from "@/components/GoalProgressSection";
 import { IncomeSourceList } from "@/components/IncomeSourceList";
 import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
+import { PledgeMaintenanceCard } from "@/components/PledgeMaintenanceCard";
 import { PwaUpdatePrompt } from "@/components/PwaUpdatePrompt";
+import { RealEstateInput } from "@/components/RealEstateInput";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
 import { StockInputs } from "@/components/StockInputs";
 import { SummaryCards } from "@/components/SummaryCards";
@@ -88,6 +90,10 @@ function App() {
               exchangeRate={draft.exchangeRate}
               onChange={updateDraft}
             />
+            <RealEstateInput
+              value={draft.realEstateValue}
+              onChange={(realEstateValue) => updateDraft({ realEstateValue })}
+            />
             <DebtList
               value={draft.debts}
               onChange={updateDebts}
@@ -160,8 +166,8 @@ function App() {
                 />
                 <CashRatioCard
                   ratio={metrics.cashRatio}
-                  totalCash={metrics.totalCash}
-                  totalAssets={metrics.totalAssets}
+                  liquidCash={metrics.liquidCash}
+                  financialAssets={metrics.financialAssets}
                 />
                 <CashFlowIndicator
                   cashFlow={metrics.cashFlow}
@@ -176,7 +182,8 @@ function App() {
                 <EmergencyFundCard
                   months={metrics.emergencyFundMonths}
                   status={metrics.emergencyFundStatus}
-                  totalCash={metrics.totalCash}
+                  liquidCash={metrics.liquidCash}
+                  restrictedCash={metrics.restrictedCash}
                   monthlyExpense={draft.monthlyExpense}
                   totalMonthlyDebtPayment={metrics.totalMonthlyDebtPayment}
                 />
@@ -186,17 +193,27 @@ function App() {
                   cashFlow={metrics.cashFlow}
                   totalIncome={metrics.totalIncome}
                 />
+                <PledgeMaintenanceCard
+                  ratio={metrics.pledgeMaintenanceRatio}
+                  status={metrics.pledgeMaintenanceStatus}
+                  pledgePrincipal={metrics.pledgePrincipal}
+                  pledgeCollateralValue={metrics.pledgeCollateralValue}
+                  dropToMarginCall={metrics.pledgeDropToMarginCall}
+                />
               </div>
             </section>
 
             <AssetAllocationBar
               cashRatio={metrics.cashRatio}
+              restrictedCashRatio={metrics.restrictedCashRatio}
               twStockRatio={metrics.twStockRatio}
               usStockRatio={metrics.usStockRatio}
-              totalAssets={metrics.totalAssets}
-              totalCash={metrics.totalCash}
+              financialAssets={metrics.financialAssets}
+              liquidCash={metrics.liquidCash}
+              restrictedCash={metrics.restrictedCash}
               twStockValue={metrics.twStockValue}
               usStockValueInTwd={metrics.usStockValueInTwd}
+              realEstateValue={metrics.realEstateValue}
             />
 
             <GoalProgressSection

@@ -6,6 +6,8 @@ import {
   calculateGoalProgress,
   calculateMetrics,
   calculateMonthlyPayment,
+  calculatePledgeMaintenance,
+  calculatePledgeMaintenanceStatus,
   calculateSavingsRate,
   calculateSavingsRateStatus,
   calculateSuggestedTargetNetWorth,
@@ -23,6 +25,7 @@ function baseDebt(overrides: Partial<Debt> = {}): Debt {
     annualRate: 0,
     remainingMonths: 0,
     repaymentMethod: "amortizing",
+    collateralValue: 0,
     ...overrides,
   };
 }
@@ -36,6 +39,7 @@ function baseSnapshotInput(
     usStockValue: 0,
     usStockCurrency: "USD" as const,
     exchangeRate: 0,
+    realEstateValue: 0,
     debts: [] as Debt[],
     incomeSources: [] as IncomeSource[],
     monthlyExpense: 0,
@@ -57,7 +61,9 @@ describe("calculateMetrics", () => {
   it("無負債時，燈號為完美無債", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
-        cashSources: [{ id: "1", name: "現金", amount: 100000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 100000, restricted: false },
+        ],
       })
     );
     expect(result.debtRatio).toBe(0);
@@ -76,7 +82,9 @@ describe("calculateMetrics", () => {
     const totalLiabilities = (ratio / 100) * totalAssets;
     const result = calculateMetrics(
       baseSnapshotInput({
-        cashSources: [{ id: "1", name: "現金", amount: totalAssets }],
+        cashSources: [
+          { id: "1", name: "現金", amount: totalAssets, restricted: false },
+        ],
         debts: [baseDebt({ principal: totalLiabilities })],
       })
     );
@@ -88,8 +96,8 @@ describe("calculateMetrics", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
         cashSources: [
-          { id: "1", name: "薪轉戶", amount: 50000 },
-          { id: "2", name: "信用卡透支戶", amount: -20000 },
+          { id: "1", name: "薪轉戶", amount: 50000, restricted: false },
+          { id: "2", name: "信用卡透支戶", amount: -20000, restricted: false },
         ],
       })
     );
@@ -108,7 +116,12 @@ describe("calculateMetrics", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
         cashSources: [
-          { id: "1", name: "現金", amount: "abc" as unknown as number },
+          {
+            id: "1",
+            name: "現金",
+            amount: "abc" as unknown as number,
+            restricted: false,
+          },
         ],
         debts: [baseDebt({ principal: "abc" as unknown as number })],
       })
@@ -152,7 +165,9 @@ describe("calculateMetrics", () => {
   it("現金比例 = 總現金 / 總資產 × 100", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
-        cashSources: [{ id: "1", name: "現金", amount: 30000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 30000, restricted: false },
+        ],
         twStockValue: 70000,
       })
     );
@@ -163,8 +178,8 @@ describe("calculateMetrics", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
         cashSources: [
-          { id: "1", name: "手邊現金", amount: 12000 },
-          { id: "2", name: "中國信託", amount: 150000 },
+          { id: "1", name: "手邊現金", amount: 12000, restricted: false },
+          { id: "2", name: "中國信託", amount: 150000, restricted: false },
         ],
         twStockValue: 320000,
         usStockValue: 9000,
@@ -227,7 +242,9 @@ describe("calculateMetrics", () => {
   it("資產配置比例：現金/台股/美股佔總資產比例加總為 100%", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
-        cashSources: [{ id: "1", name: "現金", amount: 350000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 350000, restricted: false },
+        ],
         twStockValue: 400000,
         usStockValue: 250000,
         usStockCurrency: "TWD",
@@ -250,7 +267,9 @@ describe("calculateMetrics", () => {
   it("緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
-        cashSources: [{ id: "1", name: "現金", amount: 300000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 300000, restricted: false },
+        ],
         monthlyExpense: 20000,
         debts: [
           baseDebt({
@@ -273,7 +292,9 @@ describe("calculateMetrics", () => {
   it("緊急預備金分母為 0 時，月數為 null（無需求）", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
-        cashSources: [{ id: "1", name: "現金", amount: 300000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 300000, restricted: false },
+        ],
       })
     );
     expect(result.emergencyFundMonths).toBeNull();
@@ -313,7 +334,9 @@ describe("calculateMetrics", () => {
   it("FIRE 目標進度 = 淨資產 ÷ 目標淨資產 × 100", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
-        cashSources: [{ id: "1", name: "現金", amount: 3500000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 3500000, restricted: false },
+        ],
         targetNetWorth: 10000000,
       })
     );
@@ -324,7 +347,9 @@ describe("calculateMetrics", () => {
   it("目標淨資產為 0 時，goalProgress 為 null", () => {
     const result = calculateMetrics(
       baseSnapshotInput({
-        cashSources: [{ id: "1", name: "現金", amount: 3500000 }],
+        cashSources: [
+          { id: "1", name: "現金", amount: 3500000, restricted: false },
+        ],
         targetNetWorth: 0,
       })
     );
@@ -549,5 +574,250 @@ describe("advanceDebtByMonths", () => {
     const advanced = advanceDebtByMonths(debt, 12);
     expect(advanced.remainingMonths).toBe(0);
     expect(advanced.principal).toBe(500000);
+  });
+});
+
+// PRD 第 9 節 #40／#40a／#40c：不可動用現金（如期貨保證金）
+describe("calculateMetrics：不可動用現金", () => {
+  const cash = (
+    id: string,
+    amount: number,
+    restricted = false
+  ): CashSource => ({
+    id,
+    name: id,
+    amount,
+    restricted,
+  });
+
+  it("不可動用現金仍計入總現金與總資產，但不計入可動用現金", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [cash("一般", 200000), cash("期貨保證金", 100000, true)],
+      })
+    );
+    expect(result.totalCash).toBe(300000);
+    expect(result.liquidCash).toBe(200000);
+    expect(result.restrictedCash).toBe(100000);
+    expect(result.totalAssets).toBe(300000);
+  });
+
+  it("緊急預備金月數的分子只計可動用現金", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [cash("一般", 200000), cash("期貨保證金", 100000, true)],
+        monthlyExpense: 20000,
+        debts: [
+          baseDebt({ principal: 120000, remainingMonths: 12, annualRate: 0 }),
+        ],
+      })
+    );
+    // 月付 = 120000 ÷ 12 = 10000，分母 30000；分子 200000（不含保證金）
+    expect(result.emergencyFundMonths).toBeCloseTo(200000 / 30000, 5);
+  });
+
+  it("現金比例與各類配置比例以金融資產為分母，四項加總為 100%", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [cash("一般", 200000), cash("期貨保證金", 100000, true)],
+        twStockValue: 400000,
+        usStockValue: 300000,
+        usStockCurrency: "TWD",
+      })
+    );
+    expect(result.financialAssets).toBe(1000000);
+    expect(result.cashRatio).toBeCloseTo(20, 5);
+    expect(result.restrictedCashRatio).toBeCloseTo(10, 5);
+    expect(result.twStockRatio).toBeCloseTo(40, 5);
+    expect(result.usStockRatio).toBeCloseTo(30, 5);
+    expect(
+      result.cashRatio +
+        result.restrictedCashRatio +
+        result.twStockRatio +
+        result.usStockRatio
+    ).toBeCloseTo(100, 5);
+  });
+
+  it("沒有標記不可動用時，與舊算法一致（可動用現金＝總現金）", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [cash("A", 350000)],
+        twStockValue: 650000,
+      })
+    );
+    expect(result.liquidCash).toBe(result.totalCash);
+    expect(result.restrictedCash).toBe(0);
+    expect(result.cashRatio).toBeCloseTo(35, 5);
+  });
+
+  it("缺少 restricted 欄位（舊資料）視為可動用", () => {
+    const legacy = { id: "x", name: "舊資料", amount: 1000 } as CashSource;
+    const result = calculateMetrics(
+      baseSnapshotInput({ cashSources: [legacy] })
+    );
+    expect(result.liquidCash).toBe(1000);
+    expect(result.restrictedCash).toBe(0);
+  });
+});
+
+// PRD 第 9 節 #41／#41a／#41b：不動產市值
+describe("calculateMetrics：不動產市值", () => {
+  it("計入總資產與淨資產，負債比以含不動產的總資產為分母", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 200000, restricted: false },
+        ],
+        twStockValue: 300000,
+        realEstateValue: 10000000,
+        debts: [baseDebt({ principal: 6000000 })],
+      })
+    );
+    expect(result.totalAssets).toBe(10500000);
+    expect(result.netWorth).toBe(4500000);
+    expect(result.debtRatio).toBeCloseTo((6000000 / 10500000) * 100, 5);
+  });
+
+  it("不計入金融資產：現金比例與配置比例的分母不含不動產", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 200000, restricted: false },
+        ],
+        twStockValue: 300000,
+        realEstateValue: 10000000,
+      })
+    );
+    expect(result.financialAssets).toBe(500000);
+    expect(result.realEstateValue).toBe(10000000);
+    expect(result.cashRatio).toBeCloseTo(40, 5);
+    expect(result.twStockRatio).toBeCloseTo(60, 5);
+  });
+
+  it("不動產為 0（或缺少欄位）時，與舊算法一致", () => {
+    const withZero = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 100000, restricted: false },
+        ],
+      })
+    );
+    expect(withZero.totalAssets).toBe(100000);
+    expect(withZero.realEstateValue).toBe(0);
+
+    const missing = calculateMetrics({
+      ...baseSnapshotInput(),
+      realEstateValue: undefined as unknown as number,
+    });
+    expect(missing.realEstateValue).toBe(0);
+    expect(Number.isFinite(missing.totalAssets)).toBe(true);
+  });
+
+  it("只有不動產、沒有金融資產時，各配置比例為 0，不得除以零", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({ realEstateValue: 5000000 })
+    );
+    expect(result.financialAssets).toBe(0);
+    expect(result.cashRatio).toBe(0);
+    expect(result.twStockRatio).toBe(0);
+    expect(result.usStockRatio).toBe(0);
+    expect(result.totalAssets).toBe(5000000);
+  });
+});
+
+// PRD 第 9 節 #42／#42a／#42b／#42c／#42d：質押整戶維持率
+describe("calculatePledgeMaintenanceStatus", () => {
+  it.each([
+    { ratio: 200, status: "safe" },
+    { ratio: 160, status: "safe" },
+    { ratio: 159.9, status: "watch" },
+    { ratio: 140, status: "watch" },
+    { ratio: 139.9, status: "warning" },
+    { ratio: 130, status: "warning" },
+    { ratio: 129.9, status: "margin-call" },
+    { ratio: 50, status: "margin-call" },
+  ])("維持率 $ratio% → $status", ({ ratio, status }) => {
+    expect(calculatePledgeMaintenanceStatus(ratio)).toBe(status);
+  });
+});
+
+describe("calculatePledgeMaintenance", () => {
+  const pledge = (principal: number, collateralValue: number) =>
+    baseDebt({
+      category: "質押",
+      principal,
+      collateralValue,
+      repaymentMethod: "interestOnly",
+    });
+
+  it("質押股票市值 ÷ 質押本金：800,000 ÷ 500,000 = 160%，距追繳線可再跌 18.75%", () => {
+    const result = calculatePledgeMaintenance([pledge(500000, 800000)]);
+    expect(result.ratio).toBeCloseTo(160, 5);
+    expect(result.status).toBe("safe");
+    expect(result.dropToMarginCall).toBeCloseTo(18.75, 5);
+  });
+
+  it("恰為 130% 時為「接近追繳線」，下跌空間為 0", () => {
+    const result = calculatePledgeMaintenance([pledge(500000, 650000)]);
+    expect(result.ratio).toBeCloseTo(130, 5);
+    expect(result.status).toBe("warning");
+    expect(result.dropToMarginCall).toBeCloseTo(0, 5);
+  });
+
+  it("低於 130% 時為「低於追繳線」，不提供下跌空間", () => {
+    const result = calculatePledgeMaintenance([pledge(500000, 649000)]);
+    expect(result.status).toBe("margin-call");
+    expect(result.dropToMarginCall).toBeNull();
+  });
+
+  it("多筆質押負債合併計算整戶維持率", () => {
+    const result = calculatePledgeMaintenance([
+      pledge(300000, 500000),
+      pledge(200000, 300000),
+    ]);
+    expect(result.principal).toBe(500000);
+    expect(result.collateralValue).toBe(800000);
+    expect(result.ratio).toBeCloseTo(160, 5);
+  });
+
+  it("尚未填寫質押股票市值時為 unset，不計算百分比", () => {
+    const result = calculatePledgeMaintenance([pledge(500000, 0)]);
+    expect(result.status).toBe("unset");
+    expect(result.ratio).toBeNull();
+    expect(result.dropToMarginCall).toBeNull();
+  });
+
+  it("沒有質押負債，或質押本金為 0 時為 none", () => {
+    expect(calculatePledgeMaintenance([]).status).toBe("none");
+    expect(
+      calculatePledgeMaintenance([
+        baseDebt({ category: "房貸", principal: 1e6 }),
+      ]).status
+    ).toBe("none");
+    expect(calculatePledgeMaintenance([pledge(0, 100000)]).status).toBe("none");
+  });
+
+  it("非質押類別負債即使有 collateralValue 也不參與計算", () => {
+    const result = calculatePledgeMaintenance([
+      pledge(500000, 800000),
+      baseDebt({
+        category: "信貸",
+        principal: 1000000,
+        collateralValue: 999999,
+      }),
+    ]);
+    expect(result.principal).toBe(500000);
+    expect(result.collateralValue).toBe(800000);
+  });
+
+  it("calculateMetrics 會帶出質押維持率相關指標", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({ debts: [pledge(500000, 800000)] })
+    );
+    expect(result.pledgePrincipal).toBe(500000);
+    expect(result.pledgeCollateralValue).toBe(800000);
+    expect(result.pledgeMaintenanceRatio).toBeCloseTo(160, 5);
+    expect(result.pledgeMaintenanceStatus).toBe("safe");
+    expect(result.pledgeDropToMarginCall).toBeCloseTo(18.75, 5);
   });
 });

@@ -34,7 +34,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 所有應用狀態的根源是 `src/hooks/useLocalSnapshots.ts`，`App.tsx` 是唯一消費此 hook 的元件，其餘元件皆為受控的展示元件（透過 props 收發資料，不直接碰觸 storage）。
 
-- **Schema**（`src/types/schema.ts`）：`FinanceData = { schemaVersion, snapshots: Snapshot[] }`，每個 `Snapshot` 以 `date`（"YYYY-MM-DD"）為顆粒度，同日覆蓋、跨日新增（見 `upsertSnapshot`）。修改 schema 時務必同步遞增 `CURRENT_SCHEMA_VERSION`（現為 6）並在 `src/lib/storage.ts` 補上 `migrateVxToVy` 遷移函式，同時串進 `migrateFinanceData` 的完整遷移鏈（現有範例：`migrateV1ToV2` ... `migrateV5ToV6`）。
+- **Schema**（`src/types/schema.ts`）：`FinanceData = { schemaVersion, snapshots: Snapshot[] }`，每個 `Snapshot` 以 `date`（"YYYY-MM-DD"）為顆粒度，同日覆蓋、跨日新增（見 `upsertSnapshot`）。修改 schema 時務必同步遞增 `CURRENT_SCHEMA_VERSION`（現為 7）並在 `src/lib/storage.ts` 補上 `migrateVxToVy` 遷移函式，同時串進 `migrateFinanceData` 的完整遷移鏈（現有範例：`migrateV1ToV2` ... `migrateV6ToV7`）。
 - **draft vs. 已存檔資料**：`useLocalSnapshots` 內部維護 `draft`（當日編輯中的快照，未存檔前只存在於 React state）與 `financeData`（已持久化到 LocalStorage 的全部快照）。`isDirty` 用兩者的 JSON 字串比較判斷。使用者按下「更新儀表板」才會呼叫 `save()` 真正寫入 `persistFinanceData`；重新整理頁面會遺失未存檔的 draft（這是刻意行為，e2e 有覆蓋此案例）。
 - **當日表單自動帶入最近一筆資料**：`buildInitialDraft` 在當天尚無快照時，複製最近一筆快照的數值作為初始 draft（日期/時間戳改為今天）。負債清單會額外呼叫 `advanceDebtsByMonths` 依曆月差自動攤還本息、遞減剩餘期數（本息平均攤還會重算剩餘本金，只計息只減期數），並回傳 `estimatedFields` 標記哪些欄位是系統估算；使用者手動修改該筆負債的本金或期數後，`updateDebts` 會清除該筆的估算標記。
 - **讀取狀態機**：`parseFinanceData`（`src/lib/storage.ts`）回傳 `LoadResult`（`empty` / `ok` / `corrupted` / `version-mismatch`），從不拋出例外。`version-mismatch` 時 UI 會暫停顯示與存檔功能，避免覆蓋使用者既有但版本不相容的資料——修改此邏輯要格外小心，因為它是防止資料遺失的最後防線。
@@ -47,8 +47,9 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 - `toSafeNumber()`：非數字或空值一律視為 0（PRD 4.2 輸入防呆規則），所有金額欄位計算前都先經過它。
 - 美股市值有 `usStockCurrency: "USD" | "TWD"` 計價幣別切換：USD 時乘上 `exchangeRate` 換算成台幣，TWD 時視為使用者已填入台幣等值金額，不重複換算（`calculateTotalStockValue`）。
+- 總資產 = 金融資產（現金 + 股票市值合計）+ 不動產市值（`realEstateValue`）；**金融資產**是現金比例與資產配置比例的分母（不含不動產）。現金來源可標記 `restricted`（不可動用，如期貨保證金）：仍計入總資產，但緊急預備金月數與現金比例只計 `liquidCash`（可動用現金）。
 - 負債比 = 總負債 / 總資產 × 100，總資產為 0 時強制為 0（避免除以零），並以 `calculateDebtRatioStatus` 分四級（`debt-free` / `healthy` / `elevated` / `high-risk`，門檻與文案見該檔）。
-- 除負債比外，另有緊急預備金月數、儲蓄率、資產配置比例、FIRE／淨資產目標進度等多項健康指標，計算式與分級門檻皆定義在 `calculateMetrics()` 回傳的 `CalculatedMetrics`，實作細節見該檔逐一函式與 [docs/PRD.md](docs/PRD.md) 第 5 節。
+- 除負債比外，另有緊急預備金月數、儲蓄率、資產配置比例、質押整戶維持率（`calculatePledgeMaintenance`：質押類別負債的 `collateralValue` 合計 ÷ 質押本金合計，追繳線 130%）、FIRE／淨資產目標進度等多項健康指標，計算式與分級門檻皆定義在 `calculateMetrics()` 回傳的 `CalculatedMetrics`，實作細節見該檔逐一函式與 [docs/PRD.md](docs/PRD.md) 第 5 節。
 
 ### AI 分析提示詞（`src/lib/promptBuilder.ts`）
 

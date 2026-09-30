@@ -14,7 +14,7 @@ import { createEmptySnapshot, CURRENT_SCHEMA_VERSION } from "@/types/schema";
 function snapshot(date: string, amount: number) {
   return {
     ...createEmptySnapshot(date),
-    cashSources: [{ id: "1", name: "現金", amount }],
+    cashSources: [{ id: "1", name: "現金", amount, restricted: false }],
   };
 }
 
@@ -294,6 +294,87 @@ describe("parseFinanceData", () => {
       expect(result.data.snapshots[0].targetCashRatio).toBe(0);
       // 既有欄位（targetNetWorth）不受影響
       expect(result.data.snapshots[0].targetNetWorth).toBe(5000000);
+    }
+  });
+
+  // PRD 第 9 節 #43：V6（無不可動用標記／不動產市值／質押股票市值）遷移為 V7，補上預設值，不臆測回填
+  it("V6 舊格式資料會自動遷移為目前版本，補上 realEstateValue／restricted／collateralValue 預設值", () => {
+    const v6Raw = JSON.stringify({
+      schemaVersion: 6,
+      snapshots: [
+        {
+          date: "2026-06-28",
+          updatedAt: "2026-06-28T09:12:00Z",
+          cashSources: [
+            { id: "x", name: "現金", amount: 1000 },
+            { id: "y", name: "期貨保證金", amount: 5000 },
+          ],
+          twStockValue: 0,
+          usStockValue: 0,
+          usStockCurrency: "USD",
+          exchangeRate: 0,
+          debts: [
+            {
+              id: "d",
+              name: "股票質押",
+              category: "質押",
+              principal: 500000,
+              annualRate: 3.5,
+              remainingMonths: 12,
+              repaymentMethod: "interestOnly",
+            },
+          ],
+          incomeSources: [],
+          monthlyExpense: 30000,
+          targetNetWorth: 5000000,
+          targetCashRatio: 30,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v6Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      const snapshot = result.data.snapshots[0];
+      expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+      expect(snapshot.realEstateValue).toBe(0);
+      // 所有既有現金來源視為可動用，緊急預備金與現金比例算法與遷移前一致
+      expect(snapshot.cashSources.map((c) => c.restricted)).toEqual([
+        false,
+        false,
+      ]);
+      expect(snapshot.debts[0].collateralValue).toBe(0);
+      // 既有欄位不受影響
+      expect(snapshot.debts[0].principal).toBe(500000);
+      expect(snapshot.targetCashRatio).toBe(30);
+    }
+  });
+
+  it("V1 一路遷移到目前版本時，也會補上 V7 的新欄位", () => {
+    const v1Raw = JSON.stringify({
+      schemaVersion: 1,
+      snapshots: [
+        {
+          month: "2026-01",
+          updatedAt: "2026-01-01T00:00:00Z",
+          cashSources: [{ id: "x", name: "現金", amount: 1000 }],
+          twStockValue: 0,
+          usStockValue: 0,
+          exchangeRate: 0,
+          loan: 100,
+          otherDebt: 0,
+          cashFlow: 0,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v1Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      const snapshot = result.data.snapshots[0];
+      expect(snapshot.realEstateValue).toBe(0);
+      expect(snapshot.cashSources[0].restricted).toBe(false);
+      expect(snapshot.debts.every((d) => d.collateralValue === 0)).toBe(true);
     }
   });
 });

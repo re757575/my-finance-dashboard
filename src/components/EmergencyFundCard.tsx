@@ -22,19 +22,23 @@ const FULL_BAR_MONTHS = 6;
 interface EmergencyFundCardProps {
   months: number | null;
   status: EmergencyFundStatus;
-  totalCash: number;
+  /** 可動用現金（不含標記為「不可動用」的來源，PRD 5.5 節）。 */
+  liquidCash: number;
+  /** 不可動用現金，大於 0 時於卡片下方以小字註記。 */
+  restrictedCash: number;
   monthlyExpense: number;
   totalMonthlyDebtPayment: number;
 }
 
 /**
- * 緊急預備金月數卡（PRD 5.5 節）：總流動現金 ÷（本月支出 + 本月應還款總額）。
+ * 緊急預備金月數卡（PRD 5.5 節）：可動用現金 ÷（本月支出 + 本月應還款總額）。
  * 分母為 0 時 months 為 null，顯示「∞」與「無需求」狀態，不套用風險分級。
  */
 export function EmergencyFundCard({
   months,
   status,
-  totalCash,
+  liquidCash,
+  restrictedCash,
   monthlyExpense,
   totalMonthlyDebtPayment,
 }: EmergencyFundCardProps) {
@@ -46,8 +50,8 @@ export function EmergencyFundCard({
   const denominator = monthlyExpense + totalMonthlyDebtPayment;
   const substitution =
     denominator === 0
-      ? `${formatCurrency(totalCash)} ÷ $0 = ∞（無需求）`
-      : `${formatCurrency(totalCash)} ÷ (${formatCurrency(monthlyExpense)} + ${formatCurrency(totalMonthlyDebtPayment)}) = ${formatMonths(months)}`;
+      ? `${formatCurrency(liquidCash)} ÷ $0 = ∞（無需求）`
+      : `${formatCurrency(liquidCash)} ÷ (${formatCurrency(monthlyExpense)} + ${formatCurrency(totalMonthlyDebtPayment)}) = ${formatMonths(months)}`;
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm">
@@ -56,9 +60,9 @@ export function EmergencyFundCard({
           <p className="text-sm text-slate-500">緊急預備金月數</p>
           <FormulaInfoButton
             title="緊急預備金月數"
-            formula="緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）"
+            formula="緊急預備金月數 = 可動用現金 ÷（本月支出 + 本月應還款總額）"
             substitution={substitution}
-            note="分母為 0（本月支出與本月應還款總額皆為 0）時顯示「∞」，代表無需求"
+            note="分子不含標記為「不可動用」的現金來源（如期貨保證金）與股票；分母為 0（本月支出與本月應還款總額皆為 0）時顯示「∞」，代表無需求"
           />
         </div>
         <span
@@ -81,6 +85,14 @@ export function EmergencyFundCard({
           style={{ width: `${width}%` }}
         />
       </div>
+      {restrictedCash !== 0 && (
+        <p
+          data-testid="emergency-fund-restricted-note"
+          className="mt-2 text-xs text-slate-400"
+        >
+          不含不可動用現金 {formatCurrency(restrictedCash)}
+        </p>
+      )}
     </div>
   );
 }

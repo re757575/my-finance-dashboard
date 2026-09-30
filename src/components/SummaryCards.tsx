@@ -29,8 +29,9 @@ export function SummaryCards({ metrics, debts }: SummaryCardsProps) {
         formula={
           <FormulaInfoButton
             title="總資產"
-            formula="總資產 = 總流動現金 + 股票市值合計"
-            substitution={`${formatCurrency(metrics.totalCash)} + ${formatCurrency(metrics.totalStockValue)} = ${formatCurrency(metrics.totalAssets)}`}
+            formula="總資產 = 總流動現金 + 股票市值合計 + 不動產市值"
+            substitution={`${formatCurrency(metrics.totalCash)} + ${formatCurrency(metrics.totalStockValue)} + ${formatCurrency(metrics.realEstateValue)} = ${formatCurrency(metrics.totalAssets)}`}
+            note="總流動現金含標記為「不可動用」的來源（如期貨保證金）"
           />
         }
       />

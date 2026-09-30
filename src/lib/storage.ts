@@ -1,5 +1,6 @@
 import {
   CURRENT_SCHEMA_VERSION,
+  type CashSource,
   type Debt,
   type FinanceData,
   type Snapshot,
@@ -29,16 +30,27 @@ interface RawSnapshotV2 extends RawSnapshotV1 {
   usStockCurrency: "USD" | "TWD";
 }
 
-interface RawSnapshotV3 extends Omit<
+/** V6 以前的負債／現金來源／快照（尚無 collateralValue、restricted、realEstateValue）。 */
+type RawDebtV6 = Omit<Debt, "collateralValue">;
+type RawCashSourceV6 = Omit<CashSource, "restricted">;
+type RawSnapshotV6 = Omit<
   Snapshot,
+  "realEstateValue" | "cashSources" | "debts"
+> & {
+  cashSources: RawCashSourceV6[];
+  debts: RawDebtV6[];
+};
+
+interface RawSnapshotV3 extends Omit<
+  RawSnapshotV6,
   "date" | "targetNetWorth" | "targetCashRatio"
 > {
   month: string; // "YYYY-MM"
 }
 
-type RawSnapshotV4 = Omit<Snapshot, "targetNetWorth" | "targetCashRatio">;
+type RawSnapshotV4 = Omit<RawSnapshotV6, "targetNetWorth" | "targetCashRatio">;
 
-type RawSnapshotV5 = Omit<Snapshot, "targetCashRatio">;
+type RawSnapshotV5 = Omit<RawSnapshotV6, "targetCashRatio">;
 
 /** V1（無 usStockCurrency）→ V2：美股市值當時一律以 USD 計價換算，遷移時補上此預設值。 */
 function migrateV1ToV2(raw: { schemaVersion: 1; snapshots: RawSnapshotV1[] }): {
@@ -65,7 +77,7 @@ function migrateV2ToV3(raw: { schemaVersion: 2; snapshots: RawSnapshotV2[] }): {
     schemaVersion: 3,
     snapshots: raw.snapshots.map((s) => {
       const { loan, otherDebt, cashFlow: _cashFlow, ...rest } = s;
-      const debts: Debt[] = [
+      const debts: RawDebtV6[] = [
         {
           id: crypto.randomUUID(),
           name: "銀行貸款",
@@ -130,13 +142,33 @@ function migrateV4ToV5(raw: { schemaVersion: 4; snapshots: RawSnapshotV4[] }): {
  * V5（無 targetCashRatio）→ V6：每筆快照補上 targetCashRatio: 0（視為「尚未設定目標配置」），
  * 供「資產配置再平衡建議」提示詞模式使用，同樣不臆測回填任何建議值。
  */
-function migrateV5ToV6(raw: {
-  schemaVersion: 5;
-  snapshots: RawSnapshotV5[];
-}): FinanceData {
+function migrateV5ToV6(raw: { schemaVersion: 5; snapshots: RawSnapshotV5[] }): {
+  schemaVersion: 6;
+  snapshots: RawSnapshotV6[];
+} {
   return {
     schemaVersion: 6,
     snapshots: raw.snapshots.map((s) => ({ ...s, targetCashRatio: 0 })),
+  };
+}
+
+/**
+ * V6（無不可動用標記／不動產市值／質押股票市值）→ V7：每筆快照補上 realEstateValue: 0，
+ * 每筆現金來源補上 restricted: false（視為可動用，緊急預備金與現金比例算法與遷移前完全一致），
+ * 每筆負債補上 collateralValue: 0（質押負債需使用者日後自行填入才會顯示維持率），不臆測回填任何數值。
+ */
+function migrateV6ToV7(raw: {
+  schemaVersion: 6;
+  snapshots: RawSnapshotV6[];
+}): FinanceData {
+  return {
+    schemaVersion: 7,
+    snapshots: raw.snapshots.map((s) => ({
+      ...s,
+      realEstateValue: 0,
+      cashSources: s.cashSources.map((c) => ({ ...c, restricted: false })),
+      debts: s.debts.map((d) => ({ ...d, collateralValue: 0 })),
+    })),
   };
 }
 
@@ -152,7 +184,7 @@ function migrateFinanceData(parsed: {
     const v3 = migrateV2ToV3(v2);
     const v4 = migrateV3ToV4(v3);
     const v5 = migrateV4ToV5(v4);
-    return migrateV5ToV6(v5);
+    return migrateV6ToV7(migrateV5ToV6(v5));
   }
   if (parsed.schemaVersion === 2) {
     const v3 = migrateV2ToV3(
@@ -160,24 +192,29 @@ function migrateFinanceData(parsed: {
     );
     const v4 = migrateV3ToV4(v3);
     const v5 = migrateV4ToV5(v4);
-    return migrateV5ToV6(v5);
+    return migrateV6ToV7(migrateV5ToV6(v5));
   }
   if (parsed.schemaVersion === 3) {
     const v4 = migrateV3ToV4(
       parsed as { schemaVersion: 3; snapshots: RawSnapshotV3[] }
     );
     const v5 = migrateV4ToV5(v4);
-    return migrateV5ToV6(v5);
+    return migrateV6ToV7(migrateV5ToV6(v5));
   }
   if (parsed.schemaVersion === 4) {
     const v5 = migrateV4ToV5(
       parsed as { schemaVersion: 4; snapshots: RawSnapshotV4[] }
     );
-    return migrateV5ToV6(v5);
+    return migrateV6ToV7(migrateV5ToV6(v5));
   }
   if (parsed.schemaVersion === 5) {
-    return migrateV5ToV6(
-      parsed as { schemaVersion: 5; snapshots: RawSnapshotV5[] }
+    return migrateV6ToV7(
+      migrateV5ToV6(parsed as { schemaVersion: 5; snapshots: RawSnapshotV5[] })
+    );
+  }
+  if (parsed.schemaVersion === 6) {
+    return migrateV6ToV7(
+      parsed as { schemaVersion: 6; snapshots: RawSnapshotV6[] }
     );
   }
   return null;

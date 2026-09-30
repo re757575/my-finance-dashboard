@@ -2,8 +2,9 @@ import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
-import { sumCashSources } from "@/lib/calculations";
+import { sumCashSources, sumRestrictedCashSources } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { CashSource } from "@/types/schema";
 
 interface CashSourceListProps {
@@ -11,13 +12,19 @@ interface CashSourceListProps {
   onChange: (next: CashSource[]) => void;
 }
 
-/** 多來源現金清單：可動態新增/刪除，金額允許負數以表示透支帳戶（PRD 4.2 節）。 */
+/**
+ * 多來源現金清單：可動態新增/刪除，金額允許負數以表示透支帳戶；每筆可標記為「不可動用」
+ * （如期貨保證金，不計入緊急預備金與現金比例的分子）（PRD 4.2 節）。
+ */
 export function CashSourceList({ value, onChange }: CashSourceListProps) {
   // 複製後要聚焦的新來源 id；用 ref 而非 state，避免多一次無謂的重新渲染。
   const focusAmountIdRef = useRef<string | null>(null);
 
   function addSource() {
-    onChange([...value, { id: crypto.randomUUID(), name: "", amount: 0 }]);
+    onChange([
+      ...value,
+      { id: crypto.randomUUID(), name: "", amount: 0, restricted: false },
+    ]);
   }
   function updateSource(id: string, patch: Partial<CashSource>) {
     onChange(
@@ -26,7 +33,7 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
       )
     );
   }
-  /** 在原列正下方插入一筆同名、金額歸零的新來源，避免現金合計被同額重複加總。 */
+  /** 在原列正下方插入一筆同名、金額歸零的新來源（沿用「不可動用」狀態），避免現金合計被同額重複加總。 */
   function duplicateSource(id: string) {
     const index = value.findIndex((source) => source.id === id);
     if (index === -1) return;
@@ -34,6 +41,7 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
       id: crypto.randomUUID(),
       name: value[index].name,
       amount: 0,
+      restricted: value[index].restricted,
     };
     focusAmountIdRef.current = copy.id;
     onChange([...value.slice(0, index + 1), copy, ...value.slice(index + 1)]);
@@ -41,6 +49,8 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
   function removeSource(id: string) {
     onChange(value.filter((source) => source.id !== id));
   }
+
+  const restrictedTotal = sumRestrictedCashSources(value);
 
   return (
     <div className="space-y-2">
@@ -72,6 +82,11 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
 
       <p className="text-right text-sm text-slate-500">
         現金合計：{formatCurrency(sumCashSources(value))}
+        {restrictedTotal !== 0 && (
+          <span data-testid="restricted-cash-total">
+            （其中不可動用 {formatCurrency(restrictedTotal)}）
+          </span>
+        )}
       </p>
     </div>
   );
@@ -125,6 +140,21 @@ function CashSourceRow({
         className="w-32"
         aria-label="金額"
       />
+      <button
+        type="button"
+        onClick={() => onUpdate({ restricted: !source.restricted })}
+        aria-pressed={source.restricted}
+        aria-label={`標記 ${source.name || "此筆現金來源"} 為不可動用`}
+        title="不可動用（如期貨保證金）：仍計入總資產，但不計入緊急預備金與現金比例"
+        className={cn(
+          "shrink-0 rounded-md p-1.5 hover:bg-slate-100",
+          source.restricted
+            ? "bg-amber-50 text-amber-600"
+            : "text-slate-300 hover:text-slate-500"
+        )}
+      >
+        🔒
+      </button>
       <button
         type="button"
         onClick={onDuplicate}
