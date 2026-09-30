@@ -308,6 +308,50 @@ export function calculatePledgeMaintenance(debts: Debt[]): {
   };
 }
 
+/** 壓力測試的一鍵情境：股票下跌百分比（PRD 4.2、5.9 節）。 */
+export const STRESS_TEST_DROPS = [10, 20, 30] as const;
+
+/**
+ * 股票壓力測試（PRD 5.9 節）：假設台股與美股市值同步下跌 dropPercent%，質押負債的質押股票市值同步下跌；
+ * 現金、不動產、負債本金與匯率不變，其餘沿用 calculateMetrics 重新計算。純即時試算，不寫入任何資料。
+ * netWorthChangeRate 以現況淨資產的絕對值為分母，現況淨資產為 0 時為 null。
+ */
+export function calculateStressScenario(
+  snapshot: Parameters<typeof calculateMetrics>[0],
+  dropPercent: number
+): {
+  before: CalculatedMetrics;
+  after: CalculatedMetrics;
+  netWorthChange: number;
+  netWorthChangeRate: number | null;
+} {
+  const factor = 1 - dropPercent / 100;
+  const before = calculateMetrics(snapshot);
+  const after = calculateMetrics({
+    ...snapshot,
+    twStockValue: toSafeNumber(snapshot.twStockValue) * factor,
+    usStockValue: toSafeNumber(snapshot.usStockValue) * factor,
+    debts: snapshot.debts.map((debt) =>
+      debt.category === "質押"
+        ? {
+            ...debt,
+            collateralValue: toSafeNumber(debt.collateralValue) * factor,
+          }
+        : debt
+    ),
+  });
+  const netWorthChange = after.netWorth - before.netWorth;
+  return {
+    before,
+    after,
+    netWorthChange,
+    netWorthChangeRate:
+      before.netWorth === 0
+        ? null
+        : (netWorthChange / Math.abs(before.netWorth)) * 100,
+  };
+}
+
 export function calculateMetrics(
   snapshot: Pick<
     Snapshot,

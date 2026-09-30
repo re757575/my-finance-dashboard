@@ -381,3 +381,93 @@ test("質押負債填入質押股票市值後，顯示整戶維持率與距追�
   await expect(page.getByLabel("質押股票市值")).toHaveCount(0);
   await expect(page.getByTestId("pledge-maintenance-value")).toHaveCount(0);
 });
+
+// PRD 第 9 節 #44～#44g：股票壓力測試
+test("壓力測試：沒有股票時不顯示，持有股票後可一鍵切換 −10%／−20%／−30% 情境", async ({
+  page,
+}) => {
+  await expect(page.getByRole("group", { name: "股票下跌情境" })).toHaveCount(
+    0
+  );
+
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByLabel("金額").fill("300000");
+  await page.locator('label:has-text("台股市值") input').fill("700000");
+  await page.getByText("+ 新增負債").click();
+  await page.getByLabel("剩餘本金").fill("400000");
+
+  const twenty = page.getByRole("button", { name: "\u221220%" });
+  await expect(twenty).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("stress-test-stock")).toHaveText(
+    "$700,000 → $560,000"
+  );
+  await expect(page.getByTestId("stress-test-net-worth")).toHaveText(
+    "$600,000 → $460,000"
+  );
+  await expect(page.getByTestId("stress-test-debt-ratio")).toHaveText(
+    "40.0% → 46.5%"
+  );
+
+  await page.getByRole("button", { name: "\u221230%" }).click();
+  await expect(page.getByRole("button", { name: "\u221230%" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
+  );
+  await expect(twenty).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId("stress-test-stock")).toHaveText(
+    "$700,000 → $490,000"
+  );
+
+  // 只是試算：不會動到輸入欄位，也不會讓「更新儀表板」變成可點擊之外的狀態
+  await expect(page.getByTestId("total-assets")).toHaveText("$1,000,000");
+});
+
+test("壓力測試：質押維持率在 −10% 仍高於追繳線，−20% 跌破時顯示警示", async ({
+  page,
+}) => {
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByLabel("金額").fill("1000000");
+  await page.locator('label:has-text("台股市值") input').fill("1000000");
+  await page.getByText("+ 新增負債").click();
+  await page.getByLabel("負債類別").selectOption("質押");
+  await page.getByLabel("剩餘本金").fill("500000");
+  await page.getByLabel("質押股票市值").fill("800000");
+
+  // 有質押負債但維持率尚未跌破：預設 −20% 即跌破
+  await expect(page.getByTestId("stress-test-pledge-ratio")).toHaveText(
+    "160.0% → 128.0%"
+  );
+  await expect(page.getByTestId("stress-test-pledge-status")).toHaveText(
+    "低於追繳線"
+  );
+  await expect(
+    page.getByTestId("stress-test-margin-call-warning")
+  ).toContainText("低於 130% 追繳線");
+
+  await page.getByRole("button", { name: "\u221210%" }).click();
+  await expect(page.getByTestId("stress-test-pledge-ratio")).toHaveText(
+    "160.0% → 144.0%"
+  );
+  await expect(page.getByTestId("stress-test-margin-call-warning")).toHaveCount(
+    0
+  );
+});
+
+test("壓力測試不會改動已存檔資料：切換情境後重新整理，數字仍為存檔內容", async ({
+  page,
+}) => {
+  await page.locator('label:has-text("台股市值") input').fill("500000");
+  await page.getByTestId("save-button").click();
+  await expect(page.getByTestId("save-button")).toBeDisabled();
+
+  await page.getByRole("button", { name: "\u221230%" }).click();
+  // 切換情境不會讓草稿變成未存檔狀態
+  await expect(page.getByTestId("save-button")).toBeDisabled();
+
+  await page.reload();
+
+  await expect(page.getByTestId("total-assets")).toHaveText("$500,000");
+  await expect(page.getByTestId("stress-test-stock")).toHaveText(
+    "$500,000 → $400,000"
+  );
+});

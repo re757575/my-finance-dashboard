@@ -9,9 +9,11 @@ import {
   calculatePledgeMaintenance,
   calculatePledgeMaintenanceStatus,
   calculateSavingsRate,
+  calculateStressScenario,
   calculateSavingsRateStatus,
   calculateSuggestedTargetNetWorth,
   calculateTotalMonthlyDebtPayment,
+  STRESS_TEST_DROPS,
   toSafeNumber,
 } from "@/lib/calculations";
 import type { CashSource, Debt, IncomeSource } from "@/types/schema";
@@ -819,5 +821,161 @@ describe("calculatePledgeMaintenance", () => {
     expect(result.pledgeMaintenanceRatio).toBeCloseTo(160, 5);
     expect(result.pledgeMaintenanceStatus).toBe("safe");
     expect(result.pledgeDropToMarginCall).toBeCloseTo(18.75, 5);
+  });
+});
+
+// PRD 第 9 節 #44～#44e：股票壓力測試
+describe("calculateStressScenario", () => {
+  const cash = (amount: number, restricted = false): CashSource => ({
+    id: "c",
+    name: "現金",
+    amount,
+    restricted,
+  });
+  const pledge = (principal: number, collateralValue: number) =>
+    baseDebt({
+      category: "質押",
+      principal,
+      collateralValue,
+      repaymentMethod: "interestOnly",
+    });
+
+  it("提供 −10%／−20%／−30% 三個一鍵情境", () => {
+    expect(STRESS_TEST_DROPS).toEqual([10, 20, 30]);
+  });
+
+  it("台股與美股同步下跌：淨資產與負債比依新股票市值重新計算", () => {
+    const snapshot = baseSnapshotInput({
+      cashSources: [cash(300000)],
+      twStockValue: 400000,
+      usStockValue: 300000,
+      usStockCurrency: "TWD",
+      debts: [baseDebt({ category: "房貸", principal: 400000 })],
+    });
+
+    const result = calculateStressScenario(snapshot, 20);
+
+    expect(result.before.totalStockValue).toBe(700000);
+    expect(result.after.totalStockValue).toBeCloseTo(560000, 5);
+    expect(result.before.netWorth).toBe(600000);
+    expect(result.after.netWorth).toBeCloseTo(460000, 5);
+    expect(result.netWorthChange).toBeCloseTo(-140000, 5);
+    expect(result.netWorthChangeRate).toBeCloseTo((-140000 / 600000) * 100, 5);
+    expect(result.before.debtRatio).toBeCloseTo(40, 5);
+    expect(result.after.debtRatio).toBeCloseTo((400000 / 860000) * 100, 5);
+  });
+
+  it("美股以 USD 計價時，美金市值下跌、匯率不變", () => {
+    const snapshot = baseSnapshotInput({
+      usStockValue: 10000,
+      usStockCurrency: "USD",
+      exchangeRate: 30,
+    });
+
+    const result = calculateStressScenario(snapshot, 30);
+
+    expect(result.before.totalStockValue).toBe(300000);
+    expect(result.after.totalStockValue).toBeCloseTo(210000, 5);
+  });
+
+  it("現金（含不可動用現金）、不動產與負債本金不受影響", () => {
+    const snapshot = baseSnapshotInput({
+      cashSources: [cash(150000), cash(50000, true)],
+      twStockValue: 300000,
+      realEstateValue: 10000000,
+      debts: [baseDebt({ category: "房貸", principal: 2000000 })],
+    });
+
+    const result = calculateStressScenario(snapshot, 30);
+
+    expect(result.after.totalCash).toBe(200000);
+    expect(result.after.restrictedCash).toBe(50000);
+    expect(result.after.realEstateValue).toBe(10000000);
+    expect(result.after.totalLiabilities).toBe(2000000);
+    // 只有股票 300,000 × 30% = 90,000 的損失
+    expect(result.netWorthChange).toBeCloseTo(-90000, 5);
+  });
+
+  it("質押股票市值同比例下跌：−20% 時 160% → 128%，跌破 130% 追繳線", () => {
+    const snapshot = baseSnapshotInput({
+      twStockValue: 1000000,
+      debts: [pledge(500000, 800000)],
+    });
+
+    const result = calculateStressScenario(snapshot, 20);
+
+    expect(result.before.pledgeMaintenanceRatio).toBeCloseTo(160, 5);
+    expect(result.after.pledgeMaintenanceRatio).toBeCloseTo(128, 5);
+    expect(result.after.pledgeMaintenanceStatus).toBe("margin-call");
+  });
+
+  it("質押維持率在較輕微的情境下仍高於追繳線：−10% 時 144%（維持率留意）", () => {
+    const snapshot = baseSnapshotInput({
+      twStockValue: 1000000,
+      debts: [pledge(500000, 800000)],
+    });
+
+    const result = calculateStressScenario(snapshot, 10);
+
+    expect(result.after.pledgeMaintenanceRatio).toBeCloseTo(144, 5);
+    expect(result.after.pledgeMaintenanceStatus).toBe("watch");
+  });
+
+  it("非質押類別負債的 collateralValue 不受影響，也不參與維持率", () => {
+    const snapshot = baseSnapshotInput({
+      twStockValue: 1000000,
+      debts: [
+        baseDebt({ category: "信貸", principal: 100000, collateralValue: 999 }),
+      ],
+    });
+
+    const result = calculateStressScenario(snapshot, 30);
+
+    expect(result.after.pledgeMaintenanceStatus).toBe("none");
+    expect(result.after.pledgeMaintenanceRatio).toBeNull();
+  });
+
+  it("有質押負債但尚未填寫質押股票市值時，情境維持率仍為未設定", () => {
+    const snapshot = baseSnapshotInput({
+      twStockValue: 1000000,
+      debts: [pledge(500000, 0)],
+    });
+
+    const result = calculateStressScenario(snapshot, 20);
+
+    expect(result.after.pledgeMaintenanceStatus).toBe("unset");
+    expect(result.after.pledgeMaintenanceRatio).toBeNull();
+  });
+
+  it("現況淨資產為 0 時，變動百分比為 null，不得除以零", () => {
+    const snapshot = baseSnapshotInput({
+      twStockValue: 100000,
+      debts: [baseDebt({ category: "信貸", principal: 100000 })],
+    });
+
+    const result = calculateStressScenario(snapshot, 10);
+
+    expect(result.before.netWorth).toBe(0);
+    expect(result.netWorthChangeRate).toBeNull();
+    expect(Number.isFinite(result.netWorthChange)).toBe(true);
+  });
+
+  it("沒有股票時，情境與現況完全相同", () => {
+    const snapshot = baseSnapshotInput({ cashSources: [cash(500000)] });
+
+    const result = calculateStressScenario(snapshot, 30);
+
+    expect(result.netWorthChange).toBe(0);
+    expect(result.after.netWorth).toBe(result.before.netWorth);
+  });
+
+  it("不會修改傳入的快照（純函式）", () => {
+    const debts = [pledge(500000, 800000)];
+    const snapshot = baseSnapshotInput({ twStockValue: 1000000, debts });
+
+    calculateStressScenario(snapshot, 30);
+
+    expect(snapshot.twStockValue).toBe(1000000);
+    expect(debts[0].collateralValue).toBe(800000);
   });
 });

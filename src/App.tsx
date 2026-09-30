@@ -18,6 +18,7 @@ import { PwaUpdatePrompt } from "@/components/PwaUpdatePrompt";
 import { RealEstateInput } from "@/components/RealEstateInput";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
 import { StockInputs } from "@/components/StockInputs";
+import { StressTestCard } from "@/components/StressTestCard";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TargetCashRatioInput } from "@/components/TargetCashRatioInput";
 import { TargetNetWorthInput } from "@/components/TargetNetWorthInput";
@@ -215,6 +216,8 @@ function App() {
               usStockValueInTwd={metrics.usStockValueInTwd}
               realEstateValue={metrics.realEstateValue}
             />
+
+            <StressTestCard snapshot={draft} />
 
             <GoalProgressSection
               netWorth={metrics.netWorth}
