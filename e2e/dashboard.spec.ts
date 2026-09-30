@@ -43,6 +43,28 @@ test("未存檔的變更在重新整理後不會保留", async ({ page }) => {
   await expect(page.getByText("尚未新增現金來源")).toBeVisible();
 });
 
+// PRD 第 9 節 #7a：複製現金來源只影響今日草稿
+test("複製現金來源會在下方新增同名、金額 0 的來源，未存檔重新整理後消失", async ({
+  page,
+}) => {
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByLabel("來源名稱").fill("富邦");
+  await page.getByLabel("金額").fill("100000");
+
+  await page.getByRole("button", { name: "複製 富邦" }).click();
+
+  await expect(page.getByLabel("來源名稱")).toHaveCount(2);
+  await expect(page.getByLabel("來源名稱").nth(1)).toHaveValue("富邦");
+  // 金額 0 在欄位中顯示為空白（placeholder 為 0）
+  await expect(page.getByLabel("金額").nth(1)).toHaveValue("");
+  await expect(page.getByLabel("金額").nth(1)).toBeFocused();
+  await expect(page.getByTestId("total-assets")).toHaveText("$100,000");
+
+  await page.reload();
+
+  await expect(page.getByText("尚未新增現金來源")).toBeVisible();
+});
+
 // PRD 第 9 節 #3～#6：負債比燈號邊界即時反映
 test("負債比燈號隨輸入即時切換健康狀態", async ({ page }) => {
   await page.getByText("+ 新增現金來源").click();

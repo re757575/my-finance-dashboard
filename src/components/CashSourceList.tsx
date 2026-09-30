@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
@@ -12,6 +13,9 @@ interface CashSourceListProps {
 
 /** 多來源現金清單：可動態新增/刪除，金額允許負數以表示透支帳戶（PRD 4.2 節）。 */
 export function CashSourceList({ value, onChange }: CashSourceListProps) {
+  // 複製後要聚焦的新來源 id；用 ref 而非 state，避免多一次無謂的重新渲染。
+  const focusAmountIdRef = useRef<string | null>(null);
+
   function addSource() {
     onChange([...value, { id: crypto.randomUUID(), name: "", amount: 0 }]);
   }
@@ -21,6 +25,18 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
         source.id === id ? { ...source, ...patch } : source
       )
     );
+  }
+  /** 在原列正下方插入一筆同名、金額歸零的新來源，避免現金合計被同額重複加總。 */
+  function duplicateSource(id: string) {
+    const index = value.findIndex((source) => source.id === id);
+    if (index === -1) return;
+    const copy: CashSource = {
+      id: crypto.randomUUID(),
+      name: value[index].name,
+      amount: 0,
+    };
+    focusAmountIdRef.current = copy.id;
+    onChange([...value.slice(0, index + 1), copy, ...value.slice(index + 1)]);
   }
   function removeSource(id: string) {
     onChange(value.filter((source) => source.id !== id));
@@ -46,7 +62,9 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
           <CashSourceRow
             key={source.id}
             source={source}
+            autoFocusAmount={source.id === focusAmountIdRef.current}
             onUpdate={(patch) => updateSource(source.id, patch)}
+            onDuplicate={() => duplicateSource(source.id)}
             onRemove={() => removeSource(source.id)}
           />
         ))}
@@ -61,15 +79,30 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
 
 interface CashSourceRowProps {
   source: CashSource;
+  autoFocusAmount: boolean;
   onUpdate: (patch: Partial<CashSource>) => void;
+  onDuplicate: () => void;
   onRemove: () => void;
 }
 
-function CashSourceRow({ source, onUpdate, onRemove }: CashSourceRowProps) {
+function CashSourceRow({
+  source,
+  autoFocusAmount,
+  onUpdate,
+  onDuplicate,
+  onRemove,
+}: CashSourceRowProps) {
+  const amountRef = useRef<HTMLInputElement>(null);
   const { text, handleChange, handleFocus, handleBlur } = useNumberInputText({
     value: source.amount,
     onChange: (amount) => onUpdate({ amount }),
   });
+
+  // 只在新列掛載時聚焦一次；既有列 remount 不會觸發（key 為穩定的 source.id）。
+  useEffect(() => {
+    if (autoFocusAmount) amountRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex items-center gap-2">
@@ -81,6 +114,7 @@ function CashSourceRow({ source, onUpdate, onRemove }: CashSourceRowProps) {
         aria-label="來源名稱"
       />
       <Input
+        ref={amountRef}
         type="text"
         inputMode="decimal"
         placeholder="0"
@@ -91,6 +125,14 @@ function CashSourceRow({ source, onUpdate, onRemove }: CashSourceRowProps) {
         className="w-32"
         aria-label="金額"
       />
+      <button
+        type="button"
+        onClick={onDuplicate}
+        aria-label={`複製 ${source.name || "此筆現金來源"}`}
+        className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+      >
+        📄
+      </button>
       <button
         type="button"
         onClick={onRemove}
