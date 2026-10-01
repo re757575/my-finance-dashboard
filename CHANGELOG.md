@@ -2,6 +2,12 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.10](https://github.com/re757575/my-finance-dashboard/compare/v0.3.9...v0.3.10) (2026-10-01)
+
+### Features
+
+- **儀表板:** 新增儲蓄率、每月應還款與資產配置趨勢圖 ([c6589d7](https://github.com/re757575/my-finance-dashboard/commit/c6589d79769f21fcdc2fa6332a46d0d1c976e380))
+
 ## [0.3.9](https://github.com/re757575/my-finance-dashboard/compare/v0.3.8...v0.3.9) (2026-10-01)
 
 ### Features
