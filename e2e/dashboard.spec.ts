@@ -777,3 +777,95 @@ test("歷史快照展開 400 筆後在區塊內捲動，頁面高度不隨筆數
     "auto"
   );
 });
+
+/** 寫入「含收入、支出、負債與股票」的快照，用來驗證儲蓄率／月付／資產配置三張新趨勢圖。 */
+async function seedRichHistory(page: Page, daysAgo: number[]) {
+  await page.evaluate((dates) => {
+    const snapshot = (date: string, i: number) => ({
+      date,
+      updatedAt: `${date}T00:00:00.000Z`,
+      cashSources: [
+        { id: "c1", name: "銀行", amount: 100000, restricted: false },
+      ],
+      twStockValue: 100000,
+      usStockValue: 0,
+      usStockCurrency: "USD",
+      exchangeRate: 0,
+      realEstateValue: 0,
+      debts: [
+        {
+          id: "d1",
+          name: "信貸",
+          category: "信貸",
+          principal: 120000 - i * 30000,
+          annualRate: 0,
+          remainingMonths: 12,
+          repaymentMethod: "amortizing",
+          collateralValue: 0,
+        },
+      ],
+      incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
+      monthlyExpense: 40000 - i * 10000,
+      targetNetWorth: 0,
+      targetCashRatio: 0,
+    });
+    localStorage.setItem(
+      "my_finance_dashboard_data",
+      JSON.stringify({
+        schemaVersion: 7,
+        snapshots: dates.map((d, i) => snapshot(d, i)),
+      })
+    );
+  }, daysAgo.map(dateDaysAgo));
+  await page.reload();
+}
+
+const trendCard = (page: Page, title: string) =>
+  page.locator("div.rounded-xl").filter({ hasText: title }).first();
+
+// PRD 第 9 節 #50、#50b、#50d：儲蓄率、每月應還款、資產配置三張新趨勢圖
+test("新增的儲蓄率、每月應還款、資產配置趨勢圖顯示對應數值", async ({
+  page,
+}) => {
+  // i=0：月付 10,000、支出 40,000 → 儲蓄率 50%；i=1：月付 7,500、支出 30,000 → 儲蓄率 62.5%
+  await seedRichHistory(page, [10, 5]);
+
+  await expect(trendCard(page, "儲蓄率趨勢")).toContainText("62.5%");
+  const debtCard = trendCard(page, "每月應還款趨勢");
+  await expect(debtCard).toContainText("$7,500");
+  await expect(debtCard).toContainText("▼ $2,500 (-25.0%)");
+  await expect(page.getByTestId("allocation-legend")).toContainText(
+    "現金 50.0%"
+  );
+  await expect(page.getByTestId("allocation-legend")).toContainText(
+    "台股 50.0%"
+  );
+  // 沒有不可動用現金：不畫該層
+  await expect(page.getByTestId("allocation-layer-restrictedCash")).toHaveCount(
+    0
+  );
+  await expect(page.getByTestId("allocation-layer-cash")).toBeVisible();
+});
+
+// PRD 第 9 節 #50e、#50i：資產配置趨勢圖 Tooltip 與全螢幕 Y 軸 0–100%
+test("資產配置趨勢圖：點擊節點顯示各類占比，全螢幕顯示 0%～100% 刻度", async ({
+  page,
+}) => {
+  await seedRichHistory(page, [10, 5]);
+
+  await page.getByRole("button", { name: "資產配置趨勢全螢幕檢視" }).click();
+  const dialog = page.getByRole("dialog");
+  for (const tick of ["0%", "25%", "50%", "75%", "100%"]) {
+    await expect(dialog.getByText(tick, { exact: true })).toBeVisible();
+  }
+  await dialog.getByTestId("chart-node-1").click();
+  await expect(dialog.getByTestId("chart-tooltip")).toContainText("現金 50.0%");
+  await expect(dialog.getByTestId("chart-tooltip")).toContainText("台股 50.0%");
+});
+
+// PRD 第 9 節 #50k：只有 1 筆快照時，所有趨勢卡片都是空狀態
+test("只有 1 筆快照時，八張趨勢卡片都顯示空狀態", async ({ page }) => {
+  await seedRichHistory(page, [3]);
+
+  await expect(page.getByText("持續使用滿 2 天即可查看趨勢")).toHaveCount(8);
+});

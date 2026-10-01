@@ -27,7 +27,7 @@ function cardFor(title: string) {
 }
 
 describe("TrendSection", () => {
-  it("尚無快照時，五張卡片皆顯示空狀態提示，且不顯示範圍下拉選單", () => {
+  it("尚無快照時，八張卡片皆顯示空狀態提示，且不顯示範圍下拉選單", () => {
     render(
       <TrendSection
         visibleSnapshots={[]}
@@ -42,7 +42,10 @@ describe("TrendSection", () => {
     expect(screen.getByText("現金趨勢")).toBeInTheDocument();
     expect(screen.getByText("股票趨勢")).toBeInTheDocument();
     expect(screen.getByText("負債比趨勢")).toBeInTheDocument();
-    expect(screen.getAllByText("持續使用滿 2 天即可查看趨勢")).toHaveLength(5);
+    expect(screen.getByText("資產配置趨勢")).toBeInTheDocument();
+    expect(screen.getByText("儲蓄率趨勢")).toBeInTheDocument();
+    expect(screen.getByText("每月應還款趨勢")).toBeInTheDocument();
+    expect(screen.getAllByText("持續使用滿 2 天即可查看趨勢")).toHaveLength(8);
     expect(screen.queryByLabelText("趨勢圖範圍")).not.toBeInTheDocument();
   });
 
@@ -155,5 +158,219 @@ describe("TrendSection", () => {
     );
 
     expect(screen.getByLabelText("趨勢圖範圍")).toHaveValue("30");
+  });
+
+  // PRD 4.2「儲蓄率趨勢圖」「每月應還款趨勢圖」「資產配置趨勢圖」、第 9 節 #50～#50k
+  describe("儲蓄率／每月應還款／資產配置趨勢", () => {
+    const debt = (principal: number, months: number) => ({
+      id: "d1",
+      name: "信貸",
+      category: "信貸" as const,
+      principal,
+      annualRate: 0,
+      remainingMonths: months,
+      repaymentMethod: "amortizing" as const,
+      collateralValue: 0,
+    });
+    const cash = (amount: number, restricted = false) => ({
+      id: `c${amount}${restricted}`,
+      name: "銀行",
+      amount,
+      restricted,
+    });
+
+    // S1：收入 100,000、支出 40,000、月付 10,000 → 儲蓄率 50%
+    // S2：收入 100,000、支出 30,000、月付 9,000 → 儲蓄率 61%
+    const twoSnapshots: Snapshot[] = [
+      baseSnapshot({
+        date: "2026-01-01",
+        cashSources: [cash(100000)],
+        twStockValue: 100000,
+        incomeSources: [{ id: "i", name: "薪資", amount: 100000 }],
+        monthlyExpense: 40000,
+        debts: [debt(120000, 12)],
+      }),
+      baseSnapshot({
+        date: "2026-01-02",
+        cashSources: [cash(100000)],
+        twStockValue: 100000,
+        incomeSources: [{ id: "i", name: "薪資", amount: 100000 }],
+        monthlyExpense: 30000,
+        debts: [debt(90000, 10)],
+      }),
+    ];
+
+    function renderSection(visibleSnapshots: Snapshot[]) {
+      render(
+        <TrendSection
+          visibleSnapshots={visibleSnapshots}
+          snapshotCount={visibleSnapshots.length}
+          trendRange="all"
+          onRangeChange={vi.fn()}
+          targetNetWorth={0}
+        />
+      );
+    }
+
+    it("儲蓄率趨勢顯示最新一筆儲蓄率，且不顯示增減比對", () => {
+      renderSection(twoSnapshots);
+
+      const card = cardFor("儲蓄率趨勢");
+      expect(within(card).getByText("61.0%")).toBeInTheDocument();
+      expect(card).not.toHaveTextContent("▲");
+      expect(card).not.toHaveTextContent("▼");
+    });
+
+    it("儲蓄率為負（入不敷出）時，最新值顯示負的百分比", () => {
+      renderSection([
+        twoSnapshots[0],
+        {
+          ...twoSnapshots[1],
+          monthlyExpense: 120000, // 100,000 − 120,000 − 9,000 = −29,000
+        },
+      ]);
+
+      expect(
+        within(cardFor("儲蓄率趨勢")).getByText("-29.0%")
+      ).toBeInTheDocument();
+    });
+
+    it("沒有收入的快照儲蓄率為 0%，不出現 NaN", () => {
+      renderSection([
+        { ...twoSnapshots[0], incomeSources: [] },
+        { ...twoSnapshots[1], incomeSources: [] },
+      ]);
+
+      const card = cardFor("儲蓄率趨勢");
+      expect(within(card).getByText("0.0%")).toBeInTheDocument();
+      expect(card.textContent).not.toContain("NaN");
+    });
+
+    it("每月應還款趨勢顯示最新月付，並附與上一筆比對的增減", () => {
+      renderSection(twoSnapshots);
+
+      const card = cardFor("每月應還款趨勢");
+      // 最新月付 90,000 ÷ 10 = 9,000；前一筆 120,000 ÷ 12 = 10,000 → 減少 $1,000 (−10.0%)
+      expect(within(card).getAllByText("$9,000")[0]).toBeInTheDocument();
+      expect(card).toHaveTextContent("▼ $1,000 (-10.0%)");
+    });
+
+    it("每月應還款以各筆快照自己的負債計算，不受其他快照影響", () => {
+      renderSection([twoSnapshots[0], { ...twoSnapshots[1], debts: [] }]);
+
+      expect(
+        within(cardFor("每月應還款趨勢")).getAllByText("$0")[0]
+      ).toBeInTheDocument();
+    });
+
+    it("資產配置趨勢圖例顯示最新一筆各類占比", () => {
+      renderSection(twoSnapshots);
+
+      const legend = within(cardFor("資產配置趨勢")).getByTestId(
+        "allocation-legend"
+      );
+      // 現金 100,000、台股 100,000 → 各 50%，美股 0%
+      expect(legend).toHaveTextContent("現金 50.0%");
+      expect(legend).toHaveTextContent("台股 50.0%");
+      expect(legend).toHaveTextContent("美股 0.0%");
+    });
+
+    it("資產配置占比以金融資產為分母，不含不動產", () => {
+      renderSection(
+        twoSnapshots.map((s) => ({ ...s, realEstateValue: 10000000 }))
+      );
+
+      expect(
+        within(cardFor("資產配置趨勢")).getByTestId("allocation-legend")
+      ).toHaveTextContent("現金 50.0%");
+    });
+
+    // PRD 第 9 節 #50g
+    it("金融資產為 0 的快照不納入資產配置趨勢；納入後不足 2 筆時顯示空狀態，其他圖照常", () => {
+      renderSection([
+        baseSnapshot({ date: "2026-01-01", realEstateValue: 5000000 }),
+        twoSnapshots[1],
+      ]);
+
+      expect(
+        within(cardFor("資產配置趨勢")).getByText("持續使用滿 2 天即可查看趨勢")
+      ).toBeInTheDocument();
+      expect(
+        within(cardFor("儲蓄率趨勢")).queryByText("持續使用滿 2 天即可查看趨勢")
+      ).not.toBeInTheDocument();
+    });
+
+    it("可動用現金占比為負（不可動用現金大於總現金）的快照不納入資產配置趨勢", () => {
+      const negativeLiquid = {
+        ...twoSnapshots[1],
+        cashSources: [cash(-20000), cash(100000, true)],
+        twStockValue: 50000,
+      };
+      renderSection([twoSnapshots[0], negativeLiquid]);
+
+      expect(
+        within(cardFor("資產配置趨勢")).getByText("持續使用滿 2 天即可查看趨勢")
+      ).toBeInTheDocument();
+    });
+
+    it("被排除的快照仍會出現在其他趨勢圖（只排除資產配置圖）", () => {
+      renderSection([
+        baseSnapshot({ date: "2026-01-01", realEstateValue: 5000000 }),
+        twoSnapshots[1],
+      ]);
+
+      // 淨資產趨勢含 2 個節點，所以有圖而不是空狀態
+      expect(
+        within(cardFor("淨資產趨勢")).queryByText("持續使用滿 2 天即可查看趨勢")
+      ).not.toBeInTheDocument();
+    });
+
+    it("不可動用現金只在有值的期間出現於資產配置圖", () => {
+      renderSection([
+        twoSnapshots[0],
+        {
+          ...twoSnapshots[1],
+          cashSources: [cash(60000), cash(40000, true)],
+        },
+      ]);
+
+      expect(
+        screen.getByTestId("allocation-layer-restrictedCash")
+      ).toBeInTheDocument();
+      expect(
+        within(cardFor("資產配置趨勢")).getByTestId("allocation-legend")
+      ).toHaveTextContent("不可動用現金 20.0%");
+    });
+
+    it("三張新卡片都提供全螢幕展開按鈕", () => {
+      renderSection(twoSnapshots);
+
+      expect(
+        screen.getByLabelText("資產配置趨勢全螢幕檢視")
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText("儲蓄率趨勢全螢幕檢視")).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("每月應還款趨勢全螢幕檢視")
+      ).toBeInTheDocument();
+    });
+
+    // PRD 第 9 節 #50l：沿用折線圖元件的 Y 軸刻度
+    it("儲蓄率趨勢全螢幕檢視顯示 Y 軸刻度，且不畫目標參考線", () => {
+      render(
+        <TrendSection
+          visibleSnapshots={twoSnapshots}
+          snapshotCount={2}
+          trendRange="all"
+          onRangeChange={vi.fn()}
+          targetNetWorth={1000000}
+        />
+      );
+
+      fireEvent.click(screen.getByLabelText("儲蓄率趨勢全螢幕檢視"));
+
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("50.0%")).toBeInTheDocument();
+      expect(within(dialog).queryByText(/^目標/)).not.toBeInTheDocument();
+    });
   });
 });

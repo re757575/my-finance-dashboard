@@ -1,3 +1,4 @@
+import { AllocationAreaChart } from "@/components/charts/AllocationAreaChart";
 import { AssetsLiabilitiesBarChart } from "@/components/charts/AssetsLiabilitiesBarChart";
 import { TrendLineChart } from "@/components/charts/TrendLineChart";
 import { calculateMetrics } from "@/lib/calculations";
@@ -21,7 +22,7 @@ const RANGE_OPTIONS: { value: TrendRange; label: string }[] = [
   { value: "all", label: "全部" },
 ];
 
-/** 歷史趨勢圖區：淨資產／現金／股票／負債比／資產負債對比五張獨立卡片；現金、股票趨勢排在淨資產旁，方便對照淨資產變化是現金減少還是轉為股票（PRD 4.2、6 節）。 */
+/** 歷史趨勢圖區：淨資產／現金／股票／負債比／資產負債對比／資產配置／儲蓄率／每月應還款八張獨立卡片；現金、股票趨勢排在淨資產旁，方便對照淨資產變化是現金減少還是轉為股票（PRD 4.2、6 節）。 */
 export function TrendSection({
   visibleSnapshots,
   snapshotCount,
@@ -33,6 +34,25 @@ export function TrendSection({
     date: s.date,
     ...calculateMetrics(s),
   }));
+
+  // 資產配置趨勢只納入「有可配置資產」的快照：金融資產為 0（或為負）、或任一類占比為負（例如不可動用現金
+  // 大於總現金）時，各類占比沒有意義、也無法堆疊成 100%，排除之（PRD 4.2「資產配置趨勢圖」）
+  const allocationPoints = points
+    .filter(
+      (p) =>
+        p.financialAssets > 0 &&
+        p.cashRatio >= 0 &&
+        p.restrictedCashRatio >= 0 &&
+        p.twStockRatio >= 0 &&
+        p.usStockRatio >= 0
+    )
+    .map((p) => ({
+      date: p.date,
+      cashRatio: p.cashRatio,
+      restrictedCashRatio: p.restrictedCashRatio,
+      twStockRatio: p.twStockRatio,
+      usStockRatio: p.usStockRatio,
+    }));
 
   return (
     <section className="space-y-3">
@@ -96,6 +116,23 @@ export function TrendSection({
             assets: p.totalAssets,
             liabilities: p.totalLiabilities,
           }))}
+        />
+        <AllocationAreaChart points={allocationPoints} />
+        <TrendLineChart
+          title="儲蓄率趨勢"
+          points={points.map((p) => ({ date: p.date, value: p.savingsRate }))}
+          formatValue={formatPercent}
+          colorClassName="text-sky-500"
+        />
+        <TrendLineChart
+          title="每月應還款趨勢"
+          points={points.map((p) => ({
+            date: p.date,
+            value: p.totalMonthlyDebtPayment,
+          }))}
+          formatValue={formatCurrency}
+          colorClassName="text-orange-500"
+          showDelta
         />
       </div>
     </section>
