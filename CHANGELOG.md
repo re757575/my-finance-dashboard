@@ -2,6 +2,12 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.9](https://github.com/re757575/my-finance-dashboard/compare/v0.3.8...v0.3.9) (2026-10-01)
+
+### Features
+
+- **儀表板:** 新增歷史快照修正與刪除 ([047d3fe](https://github.com/re757575/my-finance-dashboard/commit/047d3fe6363d8d0d3fb38dda86ab26e29f69b528))
+
 ## [0.3.8](https://github.com/re757575/my-finance-dashboard/compare/v0.3.7...v0.3.8) (2026-09-30)
 
 ### Features
