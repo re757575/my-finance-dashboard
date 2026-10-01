@@ -28,6 +28,15 @@ npm run test:e2e                              # Playwright e2e（會自動啟動
 
 Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 格式化）→ `typecheck` → `test`。e2e 測試因啟動較慢，不包含在 pre-commit 內。
 
+## 開發流程
+
+每當要異動程式碼，依下列順序進行：
+
+1. **從 `main` 建立新分支與 git worktree**：不直接在 `main` 上修改，改動一律在新分支對應的 worktree 內進行。
+2. **實際測試資料使用 [fixtures/finance-data.json](fixtures/finance-data.json)**：手動驗證、e2e 匯入等需要真實規模資料時都用這份（見下方「測試」章節的 fixture 說明），不要使用含真實帳戶名稱或金額的個人備份。
+3. **功能完成後詢問使用者是否要 commit**：不自行 commit，待使用者確認後才執行（commit 訊息見全域的 `/generating-commit-messages` 規範）。
+4. **commit 完成後才關閉 worktree**：commit 前不可移除 worktree，避免遺失未提交的改動。
+
 ## Architecture
 
 ### 資料流：單一 LocalStorage 快照陣列
