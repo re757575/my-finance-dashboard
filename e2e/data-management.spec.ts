@@ -7,6 +7,11 @@ import { expect, test, type Page } from "@playwright/test";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sampleBackup = path.join(__dirname, "fixtures/sample-backup.json");
 const corruptedBackup = path.join(__dirname, "fixtures/corrupted-backup.json");
+// 全功能、60 筆月底快照的虛構測試資料（全專案共用，見 CLAUDE.md「測試」章節）
+const financeDataFixture = path.join(
+  __dirname,
+  "../fixtures/finance-data.json"
+);
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -308,4 +313,45 @@ test("資料新鮮度：今日已更新／數天前／超過 14 天標示過期"
   await page.getByTestId("save-button").click();
   await expect(page.getByTestId("data-freshness")).toHaveText("今日已更新");
   await expect(page.getByTestId("data-freshness-stale-badge")).toHaveCount(0);
+});
+
+// 共用 fixture：60 筆快照匯入後，歷史清單與趨勢圖都能完整呈現
+test("匯入全功能 fixture：歷史快照 60 筆、各看板卡片皆有數值", async ({
+  page,
+}) => {
+  await page.setInputFiles('input[type="file"]', financeDataFixture);
+  await page.getByText("確認覆蓋匯入").click();
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+
+  // 歷史快照：預設只顯示最新 10 筆，可展開看到全部 60 筆
+  await expect(page.getByTestId("snapshot-row-2026-09-30")).toBeVisible();
+  await page.getByRole("button", { name: /顯示全部（60 筆）/ }).click();
+  await expect(
+    page
+      .getByTestId("snapshot-history-list")
+      .locator('[data-testid^="snapshot-row-"]')
+  ).toHaveCount(60);
+
+  // 看板卡片：有財務語意的指標皆非空值
+  await expect(page.getByTestId("total-assets")).not.toHaveText("$0");
+  await expect(page.getByTestId("debt-ratio-value")).toBeVisible();
+  await expect(page.getByTestId("pledge-maintenance-value")).toBeVisible();
+  await expect(page.getByTestId("goal-progress-value")).toBeVisible();
+  await expect(page.getByTestId("emergency-fund-value")).toBeVisible();
+  await expect(page.getByTestId("total-monthly-debt-payment")).not.toHaveText(
+    "$0"
+  );
+});
+
+test("匯入全功能 fixture：趨勢圖選「全部」會涵蓋 60 筆資料", async ({
+  page,
+}) => {
+  await page.setInputFiles('input[type="file"]', financeDataFixture);
+  await page.getByText("確認覆蓋匯入").click();
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+
+  await page.getByLabel("趨勢圖範圍").selectOption("all");
+  await expect(
+    page.getByRole("img", { name: /折線圖，共 60 筆資料/ }).first()
+  ).toBeVisible();
 });

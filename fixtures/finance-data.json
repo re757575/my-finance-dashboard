@@ -1,0 +1,5885 @@
+{
+  "schemaVersion": 7,
+  "snapshots": [
+    {
+      "date": "2021-10-31",
+      "updatedAt": "2021-10-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 150193,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 56465,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 200000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 8029.62,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2618000,
+      "usStockValue": 619277,
+      "usStockCurrency": "TWD",
+      "exchangeRate": 0,
+      "realEstateValue": 10500000,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6500000,
+          "annualRate": 2.2,
+          "remainingMonths": 300,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 900000,
+          "annualRate": 3.5,
+          "remainingMonths": 84,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1960000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 120000,
+          "annualRate": 0,
+          "remainingMonths": 12,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6000
+        }
+      ],
+      "monthlyExpense": 38928,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2021-11-30",
+      "updatedAt": "2021-11-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 156326,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 55353,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 200000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 8190.34,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2499000,
+      "usStockValue": 564825,
+      "usStockCurrency": "TWD",
+      "exchangeRate": 0,
+      "realEstateValue": 10538983,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6483729,
+          "annualRate": 2.2,
+          "remainingMonths": 299,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 890529,
+          "annualRate": 3.5,
+          "remainingMonths": 83,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1870000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 110000,
+          "annualRate": 0,
+          "remainingMonths": 11,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6000
+        }
+      ],
+      "monthlyExpense": 36312,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2021-12-31",
+      "updatedAt": "2021-12-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 155522,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 68635,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 200000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 8700.82,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2637000,
+      "usStockValue": 577070,
+      "usStockCurrency": "TWD",
+      "exchangeRate": 0,
+      "realEstateValue": 10577966,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6467428,
+          "annualRate": 2.2,
+          "remainingMonths": 298,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 881031,
+          "annualRate": 3.5,
+          "remainingMonths": 82,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1980000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 100000,
+          "annualRate": 0,
+          "remainingMonths": 10,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6000
+        }
+      ],
+      "monthlyExpense": 38202,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-01-31",
+      "updatedAt": "2022-01-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 167263,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 46477,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 200000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 8981.88,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2627000,
+      "usStockValue": 571702,
+      "usStockCurrency": "TWD",
+      "exchangeRate": 0,
+      "realEstateValue": 10616949,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6451097,
+          "annualRate": 2.2,
+          "remainingMonths": 297,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 871504,
+          "annualRate": 3.5,
+          "remainingMonths": 81,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1970000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 90000,
+          "annualRate": 0,
+          "remainingMonths": 9,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6000
+        }
+      ],
+      "monthlyExpense": 36648,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-02-28",
+      "updatedAt": "2022-02-28T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 163344,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 45163,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 200000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 9106.64,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2805000,
+      "usStockValue": 627636,
+      "usStockCurrency": "TWD",
+      "exchangeRate": 0,
+      "realEstateValue": 10655932,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6434736,
+          "annualRate": 2.2,
+          "remainingMonths": 296,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 861950,
+          "annualRate": 3.5,
+          "remainingMonths": 80,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2100000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 80000,
+          "annualRate": 0,
+          "remainingMonths": 8,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6000
+        }
+      ],
+      "monthlyExpense": 37026,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-03-31",
+      "updatedAt": "2022-03-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 175237,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 49750,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 200000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 9226.3,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2653000,
+      "usStockValue": 618785,
+      "usStockCurrency": "TWD",
+      "exchangeRate": 0,
+      "realEstateValue": 10694915,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6418345,
+          "annualRate": 2.2,
+          "remainingMonths": 295,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 852369,
+          "annualRate": 3.5,
+          "remainingMonths": 79,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1990000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 70000,
+          "annualRate": 0,
+          "remainingMonths": 7,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6000
+        }
+      ],
+      "monthlyExpense": 37260,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-04-30",
+      "updatedAt": "2022-04-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 176507,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 54571,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 210000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 9401.29,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2595000,
+      "usStockValue": 20324,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.29,
+      "realEstateValue": 10733898,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6401925,
+          "annualRate": 2.2,
+          "remainingMonths": 294,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 842759,
+          "annualRate": 3.5,
+          "remainingMonths": 78,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1950000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 60000,
+          "annualRate": 0,
+          "remainingMonths": 6,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6800
+        }
+      ],
+      "monthlyExpense": 38474,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-05-31",
+      "updatedAt": "2022-05-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 177861,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 78029,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 210000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 9753.42,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2653000,
+      "usStockValue": 21598,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.07,
+      "realEstateValue": 10772881,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6385474,
+          "annualRate": 2.2,
+          "remainingMonths": 293,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 833121,
+          "annualRate": 3.5,
+          "remainingMonths": 77,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1990000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 50000,
+          "annualRate": 0,
+          "remainingMonths": 5,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6800
+        }
+      ],
+      "monthlyExpense": 38294,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-06-30",
+      "updatedAt": "2022-06-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 182157,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 60784,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 210000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 9455.1,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2843000,
+      "usStockValue": 23085,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.99,
+      "realEstateValue": 10811864,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6368993,
+          "annualRate": 2.2,
+          "remainingMonths": 292,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 823455,
+          "annualRate": 3.5,
+          "remainingMonths": 76,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2130000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 40000,
+          "annualRate": 0,
+          "remainingMonths": 4,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6800
+        }
+      ],
+      "monthlyExpense": 38595,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-07-31",
+      "updatedAt": "2022-07-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 189922,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 77660,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 210000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 9670.62,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2717000,
+      "usStockValue": 22299,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.54,
+      "realEstateValue": 10850847,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6352481,
+          "annualRate": 2.2,
+          "remainingMonths": 291,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 813761,
+          "annualRate": 3.5,
+          "remainingMonths": 75,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2040000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 30000,
+          "annualRate": 0,
+          "remainingMonths": 3,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6800
+        }
+      ],
+      "monthlyExpense": 37689,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-08-31",
+      "updatedAt": "2022-08-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 196758,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 87121,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 210000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 10294.26,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2641000,
+      "usStockValue": 22959,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.84,
+      "realEstateValue": 10889831,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6335940,
+          "annualRate": 2.2,
+          "remainingMonths": 290,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 804039,
+          "annualRate": 3.5,
+          "remainingMonths": 74,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1980000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 20000,
+          "annualRate": 0,
+          "remainingMonths": 2,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6800
+        }
+      ],
+      "monthlyExpense": 37665,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-09-30",
+      "updatedAt": "2022-09-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 190828,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 400000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 62604,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 210000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 10326.76,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2742000,
+      "usStockValue": 23321,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.53,
+      "realEstateValue": 10928814,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6319368,
+          "annualRate": 2.2,
+          "remainingMonths": 289,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 794288,
+          "annualRate": 3.5,
+          "remainingMonths": 73,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2060000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 10000,
+          "annualRate": 0,
+          "remainingMonths": 1,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 6800
+        }
+      ],
+      "monthlyExpense": 36519,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 0
+    },
+    {
+      "date": "2022-10-31",
+      "updatedAt": "2022-10-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 202267,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 86597,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 220000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 10326.9,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2874000,
+      "usStockValue": 24700,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.36,
+      "realEstateValue": 10967797,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6302765,
+          "annualRate": 2.2,
+          "remainingMonths": 288,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 784509,
+          "annualRate": 3.5,
+          "remainingMonths": 72,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2160000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 120000,
+          "annualRate": 0,
+          "remainingMonths": 12,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 7600
+        }
+      ],
+      "monthlyExpense": 39339,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2022-11-30",
+      "updatedAt": "2022-11-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 209401,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 77261,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 220000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 10792.36,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2951000,
+      "usStockValue": 24716,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.84,
+      "realEstateValue": 11006780,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6286133,
+          "annualRate": 2.2,
+          "remainingMonths": 287,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 774701,
+          "annualRate": 3.5,
+          "remainingMonths": 71,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2210000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 110000,
+          "annualRate": 0,
+          "remainingMonths": 11,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 7600
+        }
+      ],
+      "monthlyExpense": 37573,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2022-12-31",
+      "updatedAt": "2022-12-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 214657,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 51232,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 220000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 10985.26,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2909000,
+      "usStockValue": 25224,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.61,
+      "realEstateValue": 11045763,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6269469,
+          "annualRate": 2.2,
+          "remainingMonths": 286,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 764865,
+          "annualRate": 3.5,
+          "remainingMonths": 70,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2180000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 100000,
+          "annualRate": 0,
+          "remainingMonths": 10,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 7600
+        }
+      ],
+      "monthlyExpense": 37547,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-01-31",
+      "updatedAt": "2023-01-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 210803,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 89181,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 220000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 11186.94,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2908000,
+      "usStockValue": 22237,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.55,
+      "realEstateValue": 11084746,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6252776,
+          "annualRate": 2.2,
+          "remainingMonths": 285,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 755000,
+          "annualRate": 3.5,
+          "remainingMonths": 69,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2180000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 90000,
+          "annualRate": 0,
+          "remainingMonths": 9,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 7600
+        }
+      ],
+      "monthlyExpense": 37526,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-02-28",
+      "updatedAt": "2023-02-28T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 217950,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 51145,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 220000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 11129.8,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2747000,
+      "usStockValue": 21795,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.02,
+      "realEstateValue": 11123729,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6236051,
+          "annualRate": 2.2,
+          "remainingMonths": 284,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 745106,
+          "annualRate": 3.5,
+          "remainingMonths": 68,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2060000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 80000,
+          "annualRate": 0,
+          "remainingMonths": 8,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 7600
+        }
+      ],
+      "monthlyExpense": 38747,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-03-31",
+      "updatedAt": "2023-03-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 222087,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 60440,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 220000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 11127.57,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2621000,
+      "usStockValue": 20886,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.53,
+      "realEstateValue": 11162712,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6219296,
+          "annualRate": 2.2,
+          "remainingMonths": 283,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 735183,
+          "annualRate": 3.5,
+          "remainingMonths": 67,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1970000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 70000,
+          "annualRate": 0,
+          "remainingMonths": 7,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 7600
+        }
+      ],
+      "monthlyExpense": 38273,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-04-30",
+      "updatedAt": "2023-04-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 231602,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 76527,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 230000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 11686.72,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2582000,
+      "usStockValue": 22831,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.24,
+      "realEstateValue": 11201695,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6202510,
+          "annualRate": 2.2,
+          "remainingMonths": 282,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 725232,
+          "annualRate": 3.5,
+          "remainingMonths": 66,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1940000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 60000,
+          "annualRate": 0,
+          "remainingMonths": 6,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 8400
+        }
+      ],
+      "monthlyExpense": 40153,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-05-31",
+      "updatedAt": "2023-05-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 231108,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 80957,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 230000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 11791.58,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2482000,
+      "usStockValue": 20310,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.1,
+      "realEstateValue": 11240678,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6185694,
+          "annualRate": 2.2,
+          "remainingMonths": 281,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 715251,
+          "annualRate": 3.5,
+          "remainingMonths": 65,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1860000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 50000,
+          "annualRate": 0,
+          "remainingMonths": 5,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 8400
+        }
+      ],
+      "monthlyExpense": 38138,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-06-30",
+      "updatedAt": "2023-06-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 236106,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 83687,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 230000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 11687.37,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2523000,
+      "usStockValue": 21657,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.4,
+      "realEstateValue": 11279661,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6168847,
+          "annualRate": 2.2,
+          "remainingMonths": 280,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 705241,
+          "annualRate": 3.5,
+          "remainingMonths": 64,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1890000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 40000,
+          "annualRate": 0,
+          "remainingMonths": 4,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 8400
+        }
+      ],
+      "monthlyExpense": 38422,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-07-31",
+      "updatedAt": "2023-07-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 245263,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 79481,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 230000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 12036.82,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2418000,
+      "usStockValue": 21184,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.4,
+      "realEstateValue": 11318644,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6151968,
+          "annualRate": 2.2,
+          "remainingMonths": 279,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 695202,
+          "annualRate": 3.5,
+          "remainingMonths": 63,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1810000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 30000,
+          "annualRate": 0,
+          "remainingMonths": 3,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 8400
+        }
+      ],
+      "monthlyExpense": 39941,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-08-31",
+      "updatedAt": "2023-08-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 238192,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 95343,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 230000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 12154.15,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2254000,
+      "usStockValue": 18837,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.27,
+      "realEstateValue": 11357627,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6135059,
+          "annualRate": 2.2,
+          "remainingMonths": 278,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 685134,
+          "annualRate": 3.5,
+          "remainingMonths": 62,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1690000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 20000,
+          "annualRate": 0,
+          "remainingMonths": 2,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 8400
+        }
+      ],
+      "monthlyExpense": 37871,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-09-30",
+      "updatedAt": "2023-09-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 253854,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 500000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 58046,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 230000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 12163.1,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2340000,
+      "usStockValue": 19207,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.54,
+      "realEstateValue": 11396610,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6118119,
+          "annualRate": 2.2,
+          "remainingMonths": 277,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 675037,
+          "annualRate": 3.5,
+          "remainingMonths": 61,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1760000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 10000,
+          "annualRate": 0,
+          "remainingMonths": 1,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 90000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 8400
+        }
+      ],
+      "monthlyExpense": 38019,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-10-31",
+      "updatedAt": "2023-10-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 246734,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 65074,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 240000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 12606.64,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2376000,
+      "usStockValue": 19333,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.31,
+      "realEstateValue": 11435593,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6101148,
+          "annualRate": 2.2,
+          "remainingMonths": 276,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 664910,
+          "annualRate": 3.5,
+          "remainingMonths": 60,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1780000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 120000,
+          "annualRate": 0,
+          "remainingMonths": 12,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 9200
+        }
+      ],
+      "monthlyExpense": 41572,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-11-30",
+      "updatedAt": "2023-11-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 255840,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 79648,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 240000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 12524.32,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2452000,
+      "usStockValue": 20065,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.81,
+      "realEstateValue": 11474576,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6084145,
+          "annualRate": 2.2,
+          "remainingMonths": 275,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 654753,
+          "annualRate": 3.5,
+          "remainingMonths": 59,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1840000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 110000,
+          "annualRate": 0,
+          "remainingMonths": 11,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 9200
+        }
+      ],
+      "monthlyExpense": 40015,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2023-12-31",
+      "updatedAt": "2023-12-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 258251,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 82524,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 240000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 12693.54,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2366000,
+      "usStockValue": 19618,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.19,
+      "realEstateValue": 11513559,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6067112,
+          "annualRate": 2.2,
+          "remainingMonths": 274,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 644567,
+          "annualRate": 3.5,
+          "remainingMonths": 58,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1770000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 100000,
+          "annualRate": 0,
+          "remainingMonths": 10,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 9200
+        }
+      ],
+      "monthlyExpense": 40467,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-01-31",
+      "updatedAt": "2024-01-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 255879,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 78167,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 240000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 12877.64,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2473000,
+      "usStockValue": 21513,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.95,
+      "realEstateValue": 11552542,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6050047,
+          "annualRate": 2.2,
+          "remainingMonths": 273,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 634351,
+          "annualRate": 3.5,
+          "remainingMonths": 57,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1850000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 90000,
+          "annualRate": 0,
+          "remainingMonths": 9,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 9200
+        }
+      ],
+      "monthlyExpense": 41588,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-02-29",
+      "updatedAt": "2024-02-29T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 262373,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 69668,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 240000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 13120.42,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2687000,
+      "usStockValue": 23201,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.29,
+      "realEstateValue": 11591525,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6032951,
+          "annualRate": 2.2,
+          "remainingMonths": 272,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 624105,
+          "annualRate": 3.5,
+          "remainingMonths": 56,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2020000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 80000,
+          "annualRate": 0,
+          "remainingMonths": 8,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 9200
+        }
+      ],
+      "monthlyExpense": 40523,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-03-31",
+      "updatedAt": "2024-03-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 269517,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 88303,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 240000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 13511.11,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2574000,
+      "usStockValue": 22112,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.89,
+      "realEstateValue": 11630508,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 6015823,
+          "annualRate": 2.2,
+          "remainingMonths": 271,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 613830,
+          "annualRate": 3.5,
+          "remainingMonths": 55,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1930000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 70000,
+          "annualRate": 0,
+          "remainingMonths": 7,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 9200
+        }
+      ],
+      "monthlyExpense": 39424,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-04-30",
+      "updatedAt": "2024-04-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 280940,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 85043,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 250000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 13629.78,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2603000,
+      "usStockValue": 21894,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.26,
+      "realEstateValue": 11669492,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5998665,
+          "annualRate": 2.2,
+          "remainingMonths": 270,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 603524,
+          "annualRate": 3.5,
+          "remainingMonths": 54,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1950000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 60000,
+          "annualRate": 0,
+          "remainingMonths": 6,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10000
+        }
+      ],
+      "monthlyExpense": 41481,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-05-31",
+      "updatedAt": "2024-05-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 284848,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 97461,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 250000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 13726.49,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2507000,
+      "usStockValue": 20171,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.86,
+      "realEstateValue": 11708475,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5981474,
+          "annualRate": 2.2,
+          "remainingMonths": 269,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 593189,
+          "annualRate": 3.5,
+          "remainingMonths": 53,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1880000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 50000,
+          "annualRate": 0,
+          "remainingMonths": 5,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10000
+        }
+      ],
+      "monthlyExpense": 39601,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-06-30",
+      "updatedAt": "2024-06-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 289087,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 89120,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 250000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 13989.36,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2551000,
+      "usStockValue": 20759,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.52,
+      "realEstateValue": 11747458,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5964253,
+          "annualRate": 2.2,
+          "remainingMonths": 268,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 582823,
+          "annualRate": 3.5,
+          "remainingMonths": 52,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1910000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 40000,
+          "annualRate": 0,
+          "remainingMonths": 4,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10000
+        }
+      ],
+      "monthlyExpense": 41250,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-07-31",
+      "updatedAt": "2024-07-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 286200,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 66337,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 250000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 13971.01,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2506000,
+      "usStockValue": 20580,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31,
+      "realEstateValue": 11786441,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5946999,
+          "annualRate": 2.2,
+          "remainingMonths": 267,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 572427,
+          "annualRate": 3.5,
+          "remainingMonths": 51,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1880000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 30000,
+          "annualRate": 0,
+          "remainingMonths": 3,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10000
+        }
+      ],
+      "monthlyExpense": 39471,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-08-31",
+      "updatedAt": "2024-08-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 293701,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 66986,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 250000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 14402.44,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2619000,
+      "usStockValue": 22388,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.71,
+      "realEstateValue": 11825424,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5929714,
+          "annualRate": 2.2,
+          "remainingMonths": 266,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 562001,
+          "annualRate": 3.5,
+          "remainingMonths": 50,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1960000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 20000,
+          "annualRate": 0,
+          "remainingMonths": 2,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10000
+        }
+      ],
+      "monthlyExpense": 39960,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-09-30",
+      "updatedAt": "2024-09-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 303846,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 600000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 103237,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 250000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 14584.8,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2588000,
+      "usStockValue": 22049,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.94,
+      "realEstateValue": 11864407,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5912398,
+          "annualRate": 2.2,
+          "remainingMonths": 265,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 551544,
+          "annualRate": 3.5,
+          "remainingMonths": 49,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 1940000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 10000,
+          "annualRate": 0,
+          "remainingMonths": 1,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10000
+        }
+      ],
+      "monthlyExpense": 41514,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-10-31",
+      "updatedAt": "2024-10-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 300058,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 68791,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 260000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 14754.41,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2759000,
+      "usStockValue": 22827,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.31,
+      "realEstateValue": 11903390,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5895049,
+          "annualRate": 2.2,
+          "remainingMonths": 264,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 541057,
+          "annualRate": 3.5,
+          "remainingMonths": 48,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2070000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 120000,
+          "annualRate": 0,
+          "remainingMonths": 12,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10800
+        }
+      ],
+      "monthlyExpense": 42810,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-11-30",
+      "updatedAt": "2024-11-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 299214,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 110493,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 260000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 15099.94,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2905000,
+      "usStockValue": 23393,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.75,
+      "realEstateValue": 11942373,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5877669,
+          "annualRate": 2.2,
+          "remainingMonths": 263,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 530539,
+          "annualRate": 3.5,
+          "remainingMonths": 47,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2180000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 110000,
+          "annualRate": 0,
+          "remainingMonths": 11,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10800
+        }
+      ],
+      "monthlyExpense": 41438,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2024-12-31",
+      "updatedAt": "2024-12-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 307442,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 107919,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 260000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 14920.41,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2871000,
+      "usStockValue": 23811,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.27,
+      "realEstateValue": 11981356,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5860257,
+          "annualRate": 2.2,
+          "remainingMonths": 262,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 519991,
+          "annualRate": 3.5,
+          "remainingMonths": 46,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2150000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 100000,
+          "annualRate": 0,
+          "remainingMonths": 10,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10800
+        }
+      ],
+      "monthlyExpense": 42884,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-01-31",
+      "updatedAt": "2025-01-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 322548,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 73681,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 260000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 15292.76,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3093000,
+      "usStockValue": 25278,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.38,
+      "realEstateValue": 12020339,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5842813,
+          "annualRate": 2.2,
+          "remainingMonths": 261,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 509411,
+          "annualRate": 3.5,
+          "remainingMonths": 45,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2320000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 90000,
+          "annualRate": 0,
+          "remainingMonths": 9,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10800
+        }
+      ],
+      "monthlyExpense": 43031,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-02-28",
+      "updatedAt": "2025-02-28T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 326132,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 114859,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 260000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 15634.89,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3136000,
+      "usStockValue": 25283,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.32,
+      "realEstateValue": 12059322,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5825337,
+          "annualRate": 2.2,
+          "remainingMonths": 260,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 498801,
+          "annualRate": 3.5,
+          "remainingMonths": 44,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2350000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 80000,
+          "annualRate": 0,
+          "remainingMonths": 8,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10800
+        }
+      ],
+      "monthlyExpense": 40824,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-03-31",
+      "updatedAt": "2025-03-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 331455,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 78197,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 260000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 15659.19,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3223000,
+      "usStockValue": 25960,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.38,
+      "realEstateValue": 12098305,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5807829,
+          "annualRate": 2.2,
+          "remainingMonths": 259,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 488160,
+          "annualRate": 3.5,
+          "remainingMonths": 43,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2420000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 70000,
+          "annualRate": 0,
+          "remainingMonths": 7,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 10800
+        }
+      ],
+      "monthlyExpense": 41462,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-04-30",
+      "updatedAt": "2025-04-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 331494,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 114364,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 270000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 15759.16,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3040000,
+      "usStockValue": 24623,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.86,
+      "realEstateValue": 12137288,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5790289,
+          "annualRate": 2.2,
+          "remainingMonths": 258,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 477488,
+          "annualRate": 3.5,
+          "remainingMonths": 42,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2280000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 60000,
+          "annualRate": 0,
+          "remainingMonths": 6,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 11600
+        }
+      ],
+      "monthlyExpense": 40850,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-05-31",
+      "updatedAt": "2025-05-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 326076,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 121056,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 270000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 15892.62,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3059000,
+      "usStockValue": 24125,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.41,
+      "realEstateValue": 12176271,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5772717,
+          "annualRate": 2.2,
+          "remainingMonths": 257,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 466785,
+          "annualRate": 3.5,
+          "remainingMonths": 41,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2290000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 50000,
+          "annualRate": 0,
+          "remainingMonths": 5,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 11600
+        }
+      ],
+      "monthlyExpense": 40792,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-06-30",
+      "updatedAt": "2025-06-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 334075,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 114585,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 270000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 16307.42,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3015000,
+      "usStockValue": 23659,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.79,
+      "realEstateValue": 12215254,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5755112,
+          "annualRate": 2.2,
+          "remainingMonths": 256,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 456051,
+          "annualRate": 3.5,
+          "remainingMonths": 40,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2260000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 40000,
+          "annualRate": 0,
+          "remainingMonths": 4,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 11600
+        }
+      ],
+      "monthlyExpense": 41663,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-07-31",
+      "updatedAt": "2025-07-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 331948,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 83643,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 270000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 16201.77,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2916000,
+      "usStockValue": 23540,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.41,
+      "realEstateValue": 12254237,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5737475,
+          "annualRate": 2.2,
+          "remainingMonths": 255,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 445285,
+          "annualRate": 3.5,
+          "remainingMonths": 39,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2190000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 30000,
+          "annualRate": 0,
+          "remainingMonths": 3,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 11600
+        }
+      ],
+      "monthlyExpense": 43182,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-08-31",
+      "updatedAt": "2025-08-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 351644,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 80376,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 270000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 16288.94,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2890000,
+      "usStockValue": 22720,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.1,
+      "realEstateValue": 12293220,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5719806,
+          "annualRate": 2.2,
+          "remainingMonths": 254,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 434488,
+          "annualRate": 3.5,
+          "remainingMonths": 38,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2170000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 20000,
+          "annualRate": 0,
+          "remainingMonths": 2,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 11600
+        }
+      ],
+      "monthlyExpense": 41185,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-09-30",
+      "updatedAt": "2025-09-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 347257,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 700000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 80077,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 270000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 16587.79,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2857000,
+      "usStockValue": 22547,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.07,
+      "realEstateValue": 12332203,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5702105,
+          "annualRate": 2.2,
+          "remainingMonths": 253,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 423659,
+          "annualRate": 3.5,
+          "remainingMonths": 37,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2140000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 10000,
+          "annualRate": 0,
+          "remainingMonths": 1,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 99000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 11600
+        }
+      ],
+      "monthlyExpense": 42048,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-10-31",
+      "updatedAt": "2025-10-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 360240,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 119981,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 280000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 16852.51,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2872000,
+      "usStockValue": 22458,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.49,
+      "realEstateValue": 12371186,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5684371,
+          "annualRate": 2.2,
+          "remainingMonths": 252,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 412799,
+          "annualRate": 3.5,
+          "remainingMonths": 36,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2150000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 120000,
+          "annualRate": 0,
+          "remainingMonths": 12,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 12400
+        }
+      ],
+      "monthlyExpense": 43294,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-11-30",
+      "updatedAt": "2025-11-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 361193,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 96855,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 280000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 16876.65,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 2927000,
+      "usStockValue": 24256,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.55,
+      "realEstateValue": 12410169,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5666604,
+          "annualRate": 2.2,
+          "remainingMonths": 251,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 401907,
+          "annualRate": 3.5,
+          "remainingMonths": 35,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2200000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 110000,
+          "annualRate": 0,
+          "remainingMonths": 11,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 12400
+        }
+      ],
+      "monthlyExpense": 44300,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2025-12-31",
+      "updatedAt": "2025-12-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 361929,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 98847,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 280000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 17171.94,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3209000,
+      "usStockValue": 26111,
+      "usStockCurrency": "USD",
+      "exchangeRate": 29.51,
+      "realEstateValue": 12449153,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5648805,
+          "annualRate": 2.2,
+          "remainingMonths": 250,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 390983,
+          "annualRate": 3.5,
+          "remainingMonths": 34,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2410000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 100000,
+          "annualRate": 0,
+          "remainingMonths": 10,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 12400
+        }
+      ],
+      "monthlyExpense": 42726,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-01-31",
+      "updatedAt": "2026-01-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 363035,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 110242,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 280000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 17438.02,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3314000,
+      "usStockValue": 27581,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.42,
+      "realEstateValue": 12488136,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5630974,
+          "annualRate": 2.2,
+          "remainingMonths": 249,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 380028,
+          "annualRate": 3.5,
+          "remainingMonths": 33,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2490000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 90000,
+          "annualRate": 0,
+          "remainingMonths": 9,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 12400
+        }
+      ],
+      "monthlyExpense": 44553,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-02-28",
+      "updatedAt": "2026-02-28T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 374793,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 90206,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 280000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 17394.35,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3382000,
+      "usStockValue": 26517,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.35,
+      "realEstateValue": 12527119,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5613109,
+          "annualRate": 2.2,
+          "remainingMonths": 248,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 369040,
+          "annualRate": 3.5,
+          "remainingMonths": 32,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2540000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 80000,
+          "annualRate": 0,
+          "remainingMonths": 8,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 12400
+        }
+      ],
+      "monthlyExpense": 44075,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-03-31",
+      "updatedAt": "2026-03-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 372213,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 73248,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 280000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 17662.95,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3407000,
+      "usStockValue": 27644,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.52,
+      "realEstateValue": 12566102,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5595212,
+          "annualRate": 2.2,
+          "remainingMonths": 247,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 358021,
+          "annualRate": 3.5,
+          "remainingMonths": 31,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2560000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 70000,
+          "annualRate": 0,
+          "remainingMonths": 7,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 12400
+        }
+      ],
+      "monthlyExpense": 43446,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-04-30",
+      "updatedAt": "2026-04-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 372351,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 116704,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 290000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 17761.57,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3260000,
+      "usStockValue": 27076,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.68,
+      "realEstateValue": 12605085,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5577282,
+          "annualRate": 2.2,
+          "remainingMonths": 246,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 346969,
+          "annualRate": 3.5,
+          "remainingMonths": 30,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2450000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 60000,
+          "annualRate": 0,
+          "remainingMonths": 6,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 13200
+        }
+      ],
+      "monthlyExpense": 42405,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-05-31",
+      "updatedAt": "2026-05-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 385965,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 123133,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 290000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 17908.23,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3363000,
+      "usStockValue": 28870,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.91,
+      "realEstateValue": 12644068,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5559319,
+          "annualRate": 2.2,
+          "remainingMonths": 245,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 335885,
+          "annualRate": 3.5,
+          "remainingMonths": 29,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2520000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 50000,
+          "annualRate": 0,
+          "remainingMonths": 5,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 13200
+        }
+      ],
+      "monthlyExpense": 43641,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-06-30",
+      "updatedAt": "2026-06-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 381096,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 94163,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 290000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 18475.13,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3391000,
+      "usStockValue": 28779,
+      "usStockCurrency": "USD",
+      "exchangeRate": 30.99,
+      "realEstateValue": 12683051,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5541324,
+          "annualRate": 2.2,
+          "remainingMonths": 244,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 324769,
+          "annualRate": 3.5,
+          "remainingMonths": 28,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2540000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 40000,
+          "annualRate": 0,
+          "remainingMonths": 4,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 13200
+        }
+      ],
+      "monthlyExpense": 43006,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-07-31",
+      "updatedAt": "2026-07-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 383740,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 84287,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 290000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 18731.2,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3693000,
+      "usStockValue": 30817,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.19,
+      "realEstateValue": 12722034,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5523295,
+          "annualRate": 2.2,
+          "remainingMonths": 243,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 313621,
+          "annualRate": 3.5,
+          "remainingMonths": 27,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2770000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 30000,
+          "annualRate": 0,
+          "remainingMonths": 3,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 13200
+        }
+      ],
+      "monthlyExpense": 43880,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-08-31",
+      "updatedAt": "2026-08-31T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 400194,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 131882,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 290000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 18613.4,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3911000,
+      "usStockValue": 31198,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.13,
+      "realEstateValue": 12761017,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5505233,
+          "annualRate": 2.2,
+          "remainingMonths": 242,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 302439,
+          "annualRate": 3.5,
+          "remainingMonths": 26,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2930000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 20000,
+          "annualRate": 0,
+          "remainingMonths": 2,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 13200
+        }
+      ],
+      "monthlyExpense": 44307,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    },
+    {
+      "date": "2026-09-30",
+      "updatedAt": "2026-09-30T12:00:00.000Z",
+      "cashSources": [
+        {
+          "id": "cash-1",
+          "name": "範例銀行 A（薪轉）",
+          "amount": 390750,
+          "restricted": false
+        },
+        {
+          "id": "cash-2",
+          "name": "範例銀行 B（定存）",
+          "amount": 800000,
+          "restricted": false
+        },
+        {
+          "id": "cash-3",
+          "name": "範例證券交割戶",
+          "amount": 115335,
+          "restricted": false
+        },
+        {
+          "id": "cash-4",
+          "name": "範例期貨保證金",
+          "amount": 290000,
+          "restricted": true
+        },
+        {
+          "id": "cash-5",
+          "name": "範例加密貨幣帳戶",
+          "amount": 18867.36,
+          "restricted": false
+        }
+      ],
+      "twStockValue": 3939000,
+      "usStockValue": 31629,
+      "usStockCurrency": "USD",
+      "exchangeRate": 31.18,
+      "realEstateValue": 12800000,
+      "debts": [
+        {
+          "id": "debt-1",
+          "name": "範例房貸",
+          "category": "房貸",
+          "principal": 5487138,
+          "annualRate": 2.2,
+          "remainingMonths": 241,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-2",
+          "name": "範例信貸",
+          "category": "信貸",
+          "principal": 291226,
+          "annualRate": 3.5,
+          "remainingMonths": 25,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        },
+        {
+          "id": "debt-3",
+          "name": "範例股票質押",
+          "category": "質押",
+          "principal": 1200000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 2950000
+        },
+        {
+          "id": "debt-4",
+          "name": "範例信用卡分期",
+          "category": "其他",
+          "principal": 10000,
+          "annualRate": 0,
+          "remainingMonths": 1,
+          "repaymentMethod": "amortizing",
+          "collateralValue": 0
+        }
+      ],
+      "incomeSources": [
+        {
+          "id": "income-1",
+          "name": "範例本業薪資",
+          "amount": 108000
+        },
+        {
+          "id": "income-2",
+          "name": "範例股利與副業",
+          "amount": 13200
+        }
+      ],
+      "monthlyExpense": 44489,
+      "targetNetWorth": 30000000,
+      "targetCashRatio": 25
+    }
+  ]
+}

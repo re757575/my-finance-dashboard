@@ -70,6 +70,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 - 單元/元件測試（Vitest + Testing Library + jsdom）與被測檔案同目錄、`*.test.ts(x)` 命名，測試環境設定在 `src/test/setup.ts`。
 - e2e（Playwright，`e2e/*.spec.ts`）以 `data-testid`（如 `total-assets`、`save-button`）與 `getByRole`/`getByLabel` 定位；每個測試在 `beforeEach` 用 `page.evaluate(() => localStorage.clear())` 重置狀態（注意：故意不用 `addInitScript`，否則測試中的 `page.reload()` 也會被清空）。新增有財務語意的行為時，優先在 `calculations.test.ts` 或對應 hook 測試中覆蓋，UI 互動流程用 e2e 驗證。
+- **測試資料 fixture**：[fixtures/finance-data.json](fixtures/finance-data.json) 是全部虛構（不含任何真實帳戶名稱或金額）、填滿所有功能欄位的 `FinanceData`（現為 schema v7，4 筆月底快照，含不可動用現金、美股 USD 換算、不動產、四種負債類別含質押、收入來源、月支出與目標），不是使用者備份檔，供 Vitest 與 Playwright 共用。**新增／調整功能或 schema 欄位時，必須同步更新此 JSON**（schema 升版時一併遞增 `schemaVersion`，確保 `parseFinanceData` 仍回傳 `ok`）。`e2e/fixtures/` 內的 `sample-backup.json`（舊版 v1 遷移）與 `corrupted-backup.json`（損毀）是個別情境的 e2e 專用檔，與此檔分開。
 - **每次新增／修改功能後**，檢查單元/元件測試（`*.test.ts(x)`）與 `e2e/*.spec.ts` 是否需要跟著新增或調整測試案例（新元件、新看板卡片、新輸入欄位、新計算邏輯等，即使部分已有其他層級測試覆蓋，仍缺乏對應案例時要一併補上），避免功能與測試覆蓋範圍脫節。發現需要異動單元測試或 e2e 測試時，先向使用者說明本次功能異動內容並詢問是否確認無誤，待使用者確認後才動手修改測試。
 
 ## Release
