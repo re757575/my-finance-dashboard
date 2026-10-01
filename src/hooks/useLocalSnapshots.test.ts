@@ -631,3 +631,539 @@ describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
     });
   });
 });
+
+// PRD 4.2「歷史快照清單」「修正歷史快照」「刪除歷史快照」、第 9 節 #48～#49f
+describe("useLocalSnapshots：修正與刪除歷史快照", () => {
+  const TODAY = getCurrentDate();
+
+  function snap(date: string, amount: number) {
+    return {
+      ...createEmptySnapshot(date),
+      updatedAt: `${date}T00:00:00.000Z`,
+      cashSources: [{ id: "c1", name: "銀行", amount, restricted: false }],
+    };
+  }
+
+  function seed(...snapshots: ReturnType<typeof snap>[]) {
+    persistFinanceData({ schemaVersion: 7, snapshots });
+  }
+
+  function storedSnapshots() {
+    const loaded = loadFinanceData();
+    if (loaded.status !== "ok") throw new Error("expected ok");
+    return loaded.data.snapshots;
+  }
+
+  describe("進入與離開修正模式", () => {
+    it("一般狀態下 editingDate 為 null", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      expect(result.current.editingDate).toBeNull();
+    });
+
+    // PRD 第 9 節 #48b
+    it("startEditing 載入該日快照到表單，日期為該日，且尚未修改時不算 dirty", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      expect(result.current.editingDate).toBe("2026-01-10");
+      expect(result.current.draft.date).toBe("2026-01-10");
+      expect(result.current.draft.cashSources[0].amount).toBe(100000);
+      expect(result.current.metrics.totalCash).toBe(100000);
+      expect(result.current.isDirty).toBe(false);
+    });
+
+    it("修改欄位後 isDirty 變為 true（以被修正的日期比對已存檔快照）", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 123 });
+      });
+
+      expect(result.current.isDirty).toBe(true);
+    });
+
+    it("找不到的日期、今天的快照都不會進入修正模式", () => {
+      seed(snap("2026-01-10", 100000), snap(TODAY, 300000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      act(() => {
+        result.current.startEditing("2025-12-31");
+      });
+      expect(result.current.editingDate).toBeNull();
+
+      act(() => {
+        result.current.startEditing(TODAY);
+      });
+      expect(result.current.editingDate).toBeNull();
+      expect(result.current.draft.date).toBe(TODAY);
+    });
+
+    // PRD 第 9 節 #49f
+    it("版本不相容時不進入修正模式", () => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ schemaVersion: 999, snapshots: [] })
+      );
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      expect(result.current.editingDate).toBeNull();
+    });
+
+    // PRD 第 9 節 #48d
+    it("取消修正：還原進入前的今日草稿（含未存檔的異動），不改動任何已存檔快照", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+      const before = JSON.stringify(storedSnapshots());
+
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+      expect(result.current.draft.monthlyExpense).toBe(0);
+
+      act(() => {
+        result.current.cancelEditing();
+      });
+
+      expect(result.current.editingDate).toBeNull();
+      expect(result.current.draft.date).toBe(TODAY);
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+      expect(result.current.isDirty).toBe(true);
+      expect(JSON.stringify(storedSnapshots())).toBe(before);
+    });
+
+    it("在非修正模式呼叫 cancelEditing 不會改動表單", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 777 });
+      });
+
+      act(() => {
+        result.current.cancelEditing();
+      });
+
+      expect(result.current.draft.monthlyExpense).toBe(777);
+    });
+
+    // PRD 第 9 節 #48j
+    it("修正中切換到另一筆：直接切換，取消後還原的仍是最初的今日草稿", () => {
+      seed(
+        snap("2026-01-10", 100000),
+        snap("2026-02-10", 200000),
+        snap("2026-03-10", 300000)
+      );
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 1 });
+      });
+      act(() => {
+        result.current.startEditing("2026-02-10");
+      });
+
+      expect(result.current.editingDate).toBe("2026-02-10");
+      expect(result.current.draft.cashSources[0].amount).toBe(200000);
+
+      act(() => {
+        result.current.cancelEditing();
+      });
+
+      expect(result.current.draft.date).toBe(TODAY);
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+    });
+
+    // PRD 第 9 節 #48h
+    it("修正模式不做負債自動估算；離開後還原今日草稿的估算標記", () => {
+      const debt = {
+        id: "d1",
+        name: "房貸",
+        category: "房貸" as const,
+        principal: 3000000,
+        annualRate: 2.4,
+        remainingMonths: 240,
+        repaymentMethod: "amortizing" as const,
+        collateralValue: 0,
+      };
+      seed(
+        { ...snap(dateMonthsAgo(6), 100000), debts: [debt] },
+        { ...snap(dateMonthsAgo(3), 200000), debts: [debt] }
+      );
+      const { result } = renderHook(() => useLocalSnapshots());
+      // 今日草稿依經過月數自動估算，並帶有系統估算標記
+      expect(Object.keys(result.current.estimatedDebtFields)).toContain("d1");
+      expect(result.current.draft.debts[0].remainingMonths).toBe(237);
+
+      act(() => {
+        result.current.startEditing(dateMonthsAgo(6));
+      });
+      expect(result.current.estimatedDebtFields).toEqual({});
+      expect(result.current.draft.debts[0].remainingMonths).toBe(240);
+      expect(result.current.draft.debts[0].principal).toBe(3000000);
+
+      act(() => {
+        result.current.cancelEditing();
+      });
+      expect(Object.keys(result.current.estimatedDebtFields)).toContain("d1");
+      expect(result.current.draft.debts[0].remainingMonths).toBe(237);
+    });
+  });
+
+  describe("儲存修正", () => {
+    // PRD 第 9 節 #48c
+    it("只覆蓋被修正的那一天，其他日期完全不變，筆數不增加", () => {
+      seed(
+        snap("2026-01-10", 100000),
+        snap("2026-02-10", 200000),
+        snap("2026-03-10", 300000)
+      );
+      const { result } = renderHook(() => useLocalSnapshots());
+      const untouched = [
+        storedSnapshots().find((x) => x.date === "2026-01-10"),
+        storedSnapshots().find((x) => x.date === "2026-03-10"),
+      ];
+
+      act(() => {
+        result.current.startEditing("2026-02-10");
+      });
+      act(() => {
+        result.current.updateDraft({
+          cashSources: [
+            { id: "c1", name: "銀行", amount: 999, restricted: false },
+          ],
+        });
+      });
+      let saveResult: { ok: boolean } | undefined;
+      act(() => {
+        saveResult = result.current.save();
+      });
+
+      expect(saveResult?.ok).toBe(true);
+      const stored = storedSnapshots();
+      expect(stored).toHaveLength(3);
+      expect(
+        stored.find((x) => x.date === "2026-02-10")?.cashSources[0].amount
+      ).toBe(999);
+      expect(stored.find((x) => x.date === "2026-01-10")).toEqual(untouched[0]);
+      expect(stored.find((x) => x.date === "2026-03-10")).toEqual(untouched[1]);
+      // 不會因此多出一筆今天的快照
+      expect(stored.some((x) => x.date === TODAY)).toBe(false);
+    });
+
+    it("被修正快照的 updatedAt 更新為當下，日期不變", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 5 });
+      });
+
+      act(() => {
+        result.current.save();
+      });
+
+      const saved = storedSnapshots().find((x) => x.date === "2026-01-10");
+      expect(saved?.monthlyExpense).toBe(5);
+      expect(saved?.updatedAt).not.toBe("2026-01-10T00:00:00.000Z");
+    });
+
+    // PRD 第 9 節 #48e
+    it("儲存後離開修正模式，並還原進入前的今日草稿", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 1 });
+      });
+
+      act(() => {
+        result.current.save();
+      });
+
+      expect(result.current.editingDate).toBeNull();
+      expect(result.current.draft.date).toBe(TODAY);
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+      expect(result.current.isDirty).toBe(true);
+    });
+
+    // PRD 第 9 節 #48g：歷史計算穩定，不重算其後快照
+    it("修正較早的快照不會連動其後快照的負債剩餘本金／期數", () => {
+      const debt = (months: number, principal: number) => ({
+        id: "d1",
+        name: "房貸",
+        category: "房貸" as const,
+        principal,
+        annualRate: 2.4,
+        remainingMonths: months,
+        repaymentMethod: "amortizing" as const,
+        collateralValue: 0,
+      });
+      seed(
+        { ...snap("2026-01-10", 100000), debts: [debt(240, 3000000)] },
+        { ...snap("2026-02-10", 200000), debts: [debt(239, 2990000)] }
+      );
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+      act(() => {
+        result.current.updateDraft({ debts: [debt(120, 1500000)] });
+      });
+      act(() => {
+        result.current.save();
+      });
+
+      const later = storedSnapshots().find((x) => x.date === "2026-02-10");
+      expect(later?.debts[0].remainingMonths).toBe(239);
+      expect(later?.debts[0].principal).toBe(2990000);
+    });
+
+    it("一般狀態下的 save 行為不變：只寫入今天", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      act(() => {
+        result.current.save();
+      });
+
+      const stored = storedSnapshots();
+      expect(stored.map((x) => x.date)).toEqual(["2026-01-10", TODAY]);
+      expect(result.current.editingDate).toBeNull();
+    });
+  });
+
+  describe("刪除歷史快照", () => {
+    // PRD 第 9 節 #49
+    it("只移除指定日期，其他日期不受影響，並寫入 LocalStorage", () => {
+      seed(
+        snap("2026-01-10", 100000),
+        snap("2026-02-10", 200000),
+        snap("2026-03-10", 300000)
+      );
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      let response: { ok: boolean; reason?: string } | undefined;
+      act(() => {
+        response = result.current.deleteSnapshot("2026-02-10");
+      });
+
+      expect(response).toEqual({ ok: true });
+      expect(result.current.snapshots.map((x) => x.date)).toEqual([
+        "2026-01-10",
+        "2026-03-10",
+      ]);
+      expect(result.current.snapshotCount).toBe(2);
+      expect(storedSnapshots().map((x) => x.date)).toEqual([
+        "2026-01-10",
+        "2026-03-10",
+      ]);
+    });
+
+    it("找不到的日期回傳失敗與原因，資料不變", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      let response: { ok: boolean; reason?: string } | undefined;
+      act(() => {
+        response = result.current.deleteSnapshot("2025-01-01");
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(response?.reason).toContain("2025-01-01");
+      expect(storedSnapshots()).toHaveLength(1);
+    });
+
+    // PRD 第 9 節 #49e
+    it("不會更新上次備份時間", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      localStorage.setItem(LAST_BACKUP_KEY, "2026-08-01T00:00:00.000Z");
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      act(() => {
+        result.current.deleteSnapshot("2026-01-10");
+      });
+
+      expect(result.current.lastBackupAt).toBe("2026-08-01T00:00:00.000Z");
+      expect(localStorage.getItem(LAST_BACKUP_KEY)).toBe(
+        "2026-08-01T00:00:00.000Z"
+      );
+    });
+
+    // PRD 第 9 節 #49f
+    it("版本不相容時拒絕刪除，原始資料不被改動", () => {
+      const raw = JSON.stringify({ schemaVersion: 999, snapshots: [] });
+      localStorage.setItem(STORAGE_KEY, raw);
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      let response: { ok: boolean; reason?: string } | undefined;
+      act(() => {
+        response = result.current.deleteSnapshot("2026-01-10");
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(response?.reason).toBeTruthy();
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(raw);
+    });
+
+    // PRD 第 9 節 #49c
+    it("刪除正在修正的那一筆：自動離開修正模式並還原今日草稿", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      act(() => {
+        result.current.deleteSnapshot("2026-01-10");
+      });
+
+      expect(result.current.editingDate).toBeNull();
+      expect(result.current.draft.date).toBe(TODAY);
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+    });
+
+    it("修正某一筆時刪除另一筆：仍維持在修正模式", () => {
+      seed(
+        snap("2026-01-10", 100000),
+        snap("2026-02-10", 200000),
+        snap("2026-03-10", 300000)
+      );
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      act(() => {
+        result.current.deleteSnapshot("2026-03-10");
+      });
+
+      expect(result.current.editingDate).toBe("2026-01-10");
+      expect(result.current.draft.date).toBe("2026-01-10");
+    });
+
+    // PRD 第 9 節 #49d
+    it("刪除今天已存檔的快照：表單內容不變，但回到未存檔狀態", () => {
+      seed(snap("2026-01-10", 100000), snap(TODAY, 300000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      expect(result.current.isDirty).toBe(false);
+
+      act(() => {
+        result.current.deleteSnapshot(TODAY);
+      });
+
+      expect(result.current.draft.date).toBe(TODAY);
+      expect(result.current.draft.cashSources[0].amount).toBe(300000);
+      expect(result.current.isDirty).toBe(true);
+    });
+
+    // PRD 第 9 節 #49b
+    it("全部刪除後，快照筆數為 0，最早／最近日期為 undefined，LocalStorage 仍為合法資料", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      act(() => {
+        result.current.deleteSnapshot("2026-01-10");
+      });
+      act(() => {
+        result.current.deleteSnapshot("2026-02-10");
+      });
+
+      expect(result.current.snapshotCount).toBe(0);
+      expect(result.current.snapshots).toEqual([]);
+      expect(result.current.earliestSnapshotDate).toBeUndefined();
+      expect(result.current.latestSnapshotDate).toBeUndefined();
+      expect(storedSnapshots()).toEqual([]);
+    });
+  });
+
+  describe("與其他操作的互動", () => {
+    it("importBackup 成功後會結束修正模式，且不會再還原舊的今日草稿", async () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      vi.mocked(parseBackupFile).mockResolvedValue({
+        status: "ok",
+        data: { schemaVersion: 7, snapshots: [snap("2026-05-05", 55555)] },
+      });
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      await act(async () => {
+        await result.current.importBackup(new File(["x"], "backup.json"));
+      });
+      expect(result.current.editingDate).toBeNull();
+      expect(result.current.draft.cashSources[0].amount).toBe(55555);
+
+      // 之後即使再進入／離開修正模式，也不應復活匯入前的舊草稿
+      act(() => {
+        result.current.cancelEditing();
+      });
+      expect(result.current.draft.cashSources[0].amount).toBe(55555);
+    });
+
+    it("clearAllData 會結束修正模式並清空表單", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      act(() => {
+        result.current.clearAllData();
+      });
+
+      expect(result.current.editingDate).toBeNull();
+      expect(result.current.draft.date).toBe(TODAY);
+      expect(result.current.draft.cashSources).toEqual([]);
+      expect(result.current.snapshots).toEqual([]);
+    });
+  });
+
+  // PRD 4.2「歷史快照清單」
+  it("snapshots 依日期遞增排序，與寫入順序無關，且包含全部歷史（不受趨勢圖範圍影響）", () => {
+    seed(snap("2026-03-10", 3), snap("2026-01-10", 1), snap("2026-02-10", 2));
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    expect(result.current.snapshots.map((x) => x.date)).toEqual([
+      "2026-01-10",
+      "2026-02-10",
+      "2026-03-10",
+    ]);
+    act(() => {
+      result.current.setTrendRange(7);
+    });
+    expect(result.current.snapshots).toHaveLength(3);
+  });
+});

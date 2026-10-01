@@ -19,6 +19,8 @@ import { PledgeMaintenanceCard } from "@/components/PledgeMaintenanceCard";
 import { PwaUpdatePrompt } from "@/components/PwaUpdatePrompt";
 import { RealEstateInput } from "@/components/RealEstateInput";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
+import { SnapshotEditBanner } from "@/components/SnapshotEditBanner";
+import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { StockInputs } from "@/components/StockInputs";
 import { StressTestCard } from "@/components/StressTestCard";
 import { SummaryCards } from "@/components/SummaryCards";
@@ -41,6 +43,11 @@ function App() {
     estimatedDebtFields,
     updateDebts,
     save,
+    editingDate,
+    startEditing,
+    cancelEditing,
+    deleteSnapshot,
+    snapshots,
     exportBackup,
     exportEncryptedBackup,
     importBackup,
@@ -66,12 +73,37 @@ function App() {
     currentDate,
   });
 
-  function handleSave() {
-    const result = save();
-    setSaveMessage(
-      result.ok ? "已更新並儲存今日資料。" : (result.reason ?? "儲存失敗")
-    );
+  function showMessage(message: string) {
+    setSaveMessage(message);
     window.setTimeout(() => setSaveMessage(null), 4000);
+  }
+
+  function handleSave() {
+    // 修正模式下儲存後會離開修正模式，需在呼叫 save() 前記下被修正的日期
+    const correctedDate = editingDate;
+    const result = save();
+    if (!result.ok) {
+      showMessage(result.reason ?? "儲存失敗");
+      return;
+    }
+    showMessage(
+      correctedDate
+        ? `已更新 ${correctedDate} 的快照。`
+        : "已更新並儲存今日資料。"
+    );
+  }
+
+  function handleEdit(date: string) {
+    startEditing(date);
+    // 讓使用者看見左欄表單與修正橫幅
+    window.scrollTo?.({ top: 0, behavior: "smooth" });
+  }
+
+  function handleDelete(date: string) {
+    const result = deleteSnapshot(date);
+    showMessage(
+      result.ok ? `已刪除 ${date} 的快照。` : (result.reason ?? "刪除失敗")
+    );
   }
 
   return (
@@ -101,6 +133,7 @@ function App() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* 左欄：輸入區 */}
           <div className="space-y-4 rounded-xl bg-white p-4 shadow-sm md:col-span-1 md:self-start">
+            <SnapshotEditBanner date={editingDate} onCancel={cancelEditing} />
             <CashSourceList
               value={draft.cashSources}
               onChange={(cashSources) => updateDraft({ cashSources })}
@@ -147,7 +180,9 @@ function App() {
                 onClick={handleSave}
                 disabled={!isDirty}
               >
-                更新儀表板{isDirty ? "" : "（已是最新）"}
+                {editingDate
+                  ? `儲存修正${isDirty ? "" : "（尚未修改）"}`
+                  : `更新儀表板${isDirty ? "" : "（已是最新）"}`}
               </Button>
               {saveMessage && (
                 <p
@@ -177,7 +212,7 @@ function App() {
                   draft={draft}
                   metrics={metrics}
                   recentSnapshots={visibleSnapshots}
-                  disabled={snapshotCount === 0}
+                  disabled={snapshotCount === 0 || editingDate !== null}
                 />
               </div>
               <SummaryCards metrics={metrics} debts={draft.debts} />
@@ -256,6 +291,14 @@ function App() {
               trendRange={trendRange}
               onRangeChange={setTrendRange}
               targetNetWorth={draft.targetNetWorth}
+            />
+
+            <SnapshotHistory
+              snapshots={snapshots}
+              currentDate={currentDate}
+              editingDate={editingDate}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           </div>
         </div>

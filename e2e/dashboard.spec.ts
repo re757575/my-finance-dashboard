@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -469,5 +469,311 @@ test("壓力測試不會改動已存檔資料：切換情境後重新整理，�
   await expect(page.getByTestId("total-assets")).toHaveText("$500,000");
   await expect(page.getByTestId("stress-test-stock")).toHaveText(
     "$500,000 → $400,000"
+  );
+});
+
+/** 本機日期字串（與 App 的 getCurrentDate 一致）：今天往前推 n 天。 */
+function dateDaysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** 直接寫入 LocalStorage：由舊到新依序為 100,000／200,000／… 的現金快照。 */
+async function seedHistory(page: Page, daysAgo: number[]) {
+  await page.evaluate((dates) => {
+    const snapshot = (date: string, amount: number) => ({
+      date,
+      updatedAt: `${date}T00:00:00.000Z`,
+      cashSources: [{ id: "c1", name: "銀行", amount, restricted: false }],
+      twStockValue: 0,
+      usStockValue: 0,
+      usStockCurrency: "USD",
+      exchangeRate: 0,
+      realEstateValue: 0,
+      debts: [],
+      incomeSources: [],
+      monthlyExpense: 0,
+      targetNetWorth: 0,
+      targetCashRatio: 0,
+    });
+    localStorage.setItem(
+      "my_finance_dashboard_data",
+      JSON.stringify({
+        schemaVersion: 7,
+        snapshots: dates.map((d, i) => snapshot(d, (i + 1) * 100000)),
+      })
+    );
+  }, daysAgo.map(dateDaysAgo));
+  await page.reload();
+}
+
+function storedAmounts(page: Page) {
+  return page.evaluate(() =>
+    JSON.parse(
+      localStorage.getItem("my_finance_dashboard_data")!
+    ).snapshots.map(
+      (s: { date: string; cashSources: { amount: number }[] }) => [
+        s.date,
+        s.cashSources[0].amount,
+      ]
+    )
+  );
+}
+
+const rows = (page: Page) => page.locator('[data-testid^="snapshot-row-"]');
+
+// PRD 第 9 節 #48、#48a
+test("歷史快照清單：由新到舊、今天沒有修正按鈕、超過 10 筆可展開", async ({
+  page,
+}) => {
+  await expect(page.getByTestId("snapshot-history-empty")).toHaveText(
+    "尚未有已存檔的快照"
+  );
+
+  await seedHistory(
+    page,
+    Array.from({ length: 12 }, (_, i) => 12 - i)
+  );
+
+  await expect(rows(page)).toHaveCount(10);
+  await expect(rows(page).first()).toHaveAttribute(
+    "data-testid",
+    `snapshot-row-${dateDaysAgo(1)}`
+  );
+  await page.getByRole("button", { name: "顯示全部（12 筆）" }).click();
+  await expect(rows(page)).toHaveCount(12);
+  await page.getByRole("button", { name: "收合" }).click();
+  await expect(rows(page)).toHaveCount(10);
+
+  // 今天那筆沒有「修正」，仍可刪除
+  await seedHistory(page, [3, 0]);
+  await expect(
+    page.getByRole("button", { name: `修正 ${dateDaysAgo(0)} 的快照` })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: `刪除 ${dateDaysAgo(0)} 的快照` })
+  ).toBeVisible();
+  await expect(
+    page.getByTestId(`snapshot-row-${dateDaysAgo(0)}`)
+  ).toContainText("今天");
+});
+
+// PRD 第 9 節 #48b、#48c、#48e、#48g
+test("修正歷史快照：只覆蓋該日，儲存後今日草稿還原，重新整理後仍保留", async ({
+  page,
+}) => {
+  await seedHistory(page, [30, 20, 10]); // 100,000／200,000／300,000
+  await page.locator('label:has-text("本月支出") input').fill("30000");
+
+  await page
+    .getByRole("button", { name: `修正 ${dateDaysAgo(20)} 的快照` })
+    .click();
+
+  await expect(page.getByTestId("snapshot-edit-banner")).toContainText(
+    `正在修正 ${dateDaysAgo(20)} 的快照`
+  );
+  await expect(page.getByTestId("total-assets")).toHaveText("$200,000");
+  await expect(page.getByTestId("save-button")).toHaveText(
+    "儲存修正（尚未修改）"
+  );
+  await expect(page.getByTestId("save-button")).toBeDisabled();
+  await expect(
+    page.getByTestId(`snapshot-row-${dateDaysAgo(20)}`)
+  ).toContainText("修正中");
+
+  await page.getByLabel("金額").fill("999");
+  await expect(page.getByTestId("save-button")).toHaveText("儲存修正");
+  await page.getByTestId("save-button").click();
+
+  await expect(page.getByTestId("save-message")).toHaveText(
+    `已更新 ${dateDaysAgo(20)} 的快照。`
+  );
+  await expect(page.getByTestId("snapshot-edit-banner")).toHaveCount(0);
+  // 只有被修正的那一天改變，且沒有多出今天的快照
+  expect(await storedAmounts(page)).toEqual([
+    [dateDaysAgo(30), 100000],
+    [dateDaysAgo(20), 999],
+    [dateDaysAgo(10), 300000],
+  ]);
+  // 今日草稿（含尚未存檔的本月支出）原樣還原
+  await expect(page.locator('label:has-text("本月支出") input')).toHaveValue(
+    "30000"
+  );
+  await expect(page.getByTestId("total-assets")).toHaveText("$300,000");
+
+  await page.reload();
+  expect(await storedAmounts(page)).toEqual([
+    [dateDaysAgo(30), 100000],
+    [dateDaysAgo(20), 999],
+    [dateDaysAgo(10), 300000],
+  ]);
+});
+
+// PRD 第 9 節 #48d、#48i、#48j
+test("取消修正會還原今日草稿；修正中可直接切換對象，且停用 AI 提示詞按鈕", async ({
+  page,
+}) => {
+  await seedHistory(page, [30, 20, 10]);
+  await page.locator('label:has-text("本月支出") input').fill("30000");
+  await expect(page.getByTestId("copy-prompt-button")).toBeEnabled();
+
+  await page
+    .getByRole("button", { name: `修正 ${dateDaysAgo(20)} 的快照` })
+    .click();
+  await expect(page.getByTestId("copy-prompt-button")).toBeDisabled();
+
+  // 直接切換到另一筆
+  await page
+    .getByRole("button", { name: `修正 ${dateDaysAgo(30)} 的快照` })
+    .click();
+  await expect(page.getByTestId("total-assets")).toHaveText("$100,000");
+  await expect(page.getByTestId("snapshot-edit-banner")).toContainText(
+    dateDaysAgo(30)
+  );
+
+  await page.getByRole("button", { name: "取消修正" }).click();
+
+  await expect(page.getByTestId("snapshot-edit-banner")).toHaveCount(0);
+  await expect(page.locator('label:has-text("本月支出") input')).toHaveValue(
+    "30000"
+  );
+  await expect(page.getByTestId("total-assets")).toHaveText("$300,000");
+  await expect(page.getByTestId("copy-prompt-button")).toBeEnabled();
+  // 取消不寫入任何變動
+  expect(await storedAmounts(page)).toEqual([
+    [dateDaysAgo(30), 100000],
+    [dateDaysAgo(20), 200000],
+    [dateDaysAgo(10), 300000],
+  ]);
+});
+
+// PRD 第 9 節 #49、#49a
+test("刪除歷史快照：取消不刪，確認後只移除該日", async ({ page }) => {
+  await seedHistory(page, [30, 20, 10]);
+
+  await page
+    .getByRole("button", { name: `刪除 ${dateDaysAgo(20)} 的快照` })
+    .click();
+  await expect(
+    page.getByText(`確認刪除 ${dateDaysAgo(20)} 的快照？`)
+  ).toBeVisible();
+  await page.getByRole("button", { name: "取消" }).click();
+  await expect(rows(page)).toHaveCount(3);
+
+  await page
+    .getByRole("button", { name: `刪除 ${dateDaysAgo(20)} 的快照` })
+    .click();
+  await page.getByRole("button", { name: "確認刪除" }).click();
+
+  await expect(page.getByTestId("save-message")).toHaveText(
+    `已刪除 ${dateDaysAgo(20)} 的快照。`
+  );
+  await expect(rows(page)).toHaveCount(2);
+  expect(await storedAmounts(page)).toEqual([
+    [dateDaysAgo(30), 100000],
+    [dateDaysAgo(10), 300000],
+  ]);
+});
+
+// PRD 第 9 節 #49b、#49c
+test("刪除到剩 1 筆時趨勢圖回到空狀態；刪光後顯示空狀態且新鮮度提示消失；刪除修正中的那筆會離開修正模式", async ({
+  page,
+}) => {
+  await seedHistory(page, [30, 20]);
+  await expect(page.getByTestId("data-freshness")).toBeVisible();
+
+  await page
+    .getByRole("button", { name: `刪除 ${dateDaysAgo(30)} 的快照` })
+    .click();
+  await page.getByRole("button", { name: "確認刪除" }).click();
+  await expect(
+    page.getByText("持續使用滿 2 天即可查看趨勢").first()
+  ).toBeVisible();
+
+  // 修正中刪除該筆 → 自動離開修正模式
+  await page
+    .getByRole("button", { name: `修正 ${dateDaysAgo(20)} 的快照` })
+    .click();
+  await expect(page.getByTestId("snapshot-edit-banner")).toBeVisible();
+  await page
+    .getByRole("button", { name: `刪除 ${dateDaysAgo(20)} 的快照` })
+    .click();
+  await page.getByRole("button", { name: "確認刪除" }).click();
+
+  await expect(page.getByTestId("snapshot-edit-banner")).toHaveCount(0);
+  await expect(page.getByTestId("snapshot-history-empty")).toHaveText(
+    "尚未有已存檔的快照"
+  );
+  await expect(page.getByTestId("data-freshness")).toHaveCount(0);
+});
+
+// PRD 第 9 節 #49d
+test("刪除今天已存檔的快照：表單內容保留，回到未存檔狀態", async ({ page }) => {
+  await seedHistory(page, [3, 0]);
+  await expect(page.getByTestId("save-button")).toBeDisabled();
+  await expect(page.getByTestId("total-assets")).toHaveText("$200,000");
+
+  await page
+    .getByRole("button", { name: `刪除 ${dateDaysAgo(0)} 的快照` })
+    .click();
+  await page.getByRole("button", { name: "確認刪除" }).click();
+
+  await expect(page.getByTestId("total-assets")).toHaveText("$200,000");
+  await expect(page.getByTestId("save-button")).toBeEnabled();
+  await expect(rows(page)).toHaveCount(1);
+});
+
+// PRD 第 9 節 #48k、#48l：展開後在固定高度內捲動，不撐長頁面
+test("歷史快照展開 400 筆後在區塊內捲動，頁面高度不隨筆數增加，並可用鍵盤聚焦", async ({
+  page,
+}) => {
+  await seedHistory(
+    page,
+    Array.from({ length: 400 }, (_, i) => 400 - i)
+  );
+  const list = page.getByTestId("snapshot-history-list");
+
+  // 收合：10 筆，沒有內部捲動
+  await expect(rows(page)).toHaveCount(10);
+  expect(await list.evaluate((el) => getComputedStyle(el).overflowY)).not.toBe(
+    "auto"
+  );
+  const collapsedPageHeight = await page.evaluate(
+    () => document.documentElement.scrollHeight
+  );
+
+  await page.getByRole("button", { name: "顯示全部（400 筆）" }).click();
+
+  // 展開：400 筆，但清單高度被限制在 24rem（384px）以內並可捲動
+  await expect(rows(page)).toHaveCount(400);
+  const metrics = await list.evaluate((el) => ({
+    overflowY: getComputedStyle(el).overflowY,
+    clientHeight: el.clientHeight,
+    scrollHeight: el.scrollHeight,
+  }));
+  expect(metrics.overflowY).toBe("auto");
+  expect(metrics.clientHeight).toBeLessThanOrEqual(384);
+  expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight * 5);
+
+  // 頁面整體高度只增加「清單上限」的量，不會隨 400 筆線性膨脹
+  const expandedPageHeight = await page.evaluate(
+    () => document.documentElement.scrollHeight
+  );
+  expect(expandedPageHeight - collapsedPageHeight).toBeLessThan(400);
+
+  // 可捲到最舊的一筆；鍵盤可聚焦捲動區
+  await list.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+  await expect(
+    page.getByTestId(`snapshot-row-${dateDaysAgo(400)}`)
+  ).toBeInViewport();
+  await page.getByRole("list", { name: "歷史快照清單" }).focus();
+  await expect(page.getByRole("list", { name: "歷史快照清單" })).toBeFocused();
+
+  // 收合後捲軸消失
+  await page.getByRole("button", { name: "收合" }).click();
+  await expect(rows(page)).toHaveCount(10);
+  expect(await list.evaluate((el) => getComputedStyle(el).overflowY)).not.toBe(
+    "auto"
   );
 });

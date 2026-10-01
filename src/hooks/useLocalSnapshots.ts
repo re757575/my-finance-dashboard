@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { advanceDebtsByMonths, calculateMetrics } from "@/lib/calculations";
 import {
   clearFinanceData,
@@ -101,6 +101,15 @@ export function useLocalSnapshots() {
   const [trendRange, setTrendRange] = useState<TrendRange>(DEFAULT_TREND_RANGE);
   /** 上次備份時間（ISO 8601），獨立於快照 schema（PRD 6.2 節）；從未備份為 null。 */
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
+  /**
+   * 修正模式（PRD 4.2「修正歷史快照」）：目前正在修正的歷史快照日期，null 代表一般狀態（表單＝今天）。
+   * 進入時把今日草稿暫存在 ref（只存在於記憶體，不寫入 LocalStorage），離開時還原。
+   */
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const stashedDraftRef = useRef<{
+    draft: Snapshot;
+    estimatedFields: EstimatedDebtFields;
+  } | null>(null);
 
   useEffect(() => {
     const result = loadFinanceData();
@@ -121,7 +130,8 @@ export function useLocalSnapshots() {
     [draft]
   );
 
-  const savedSnapshot = getSnapshotForDate(financeData, currentDate);
+  // 修正模式下，draft.date 是被修正的那一天，需與該日的已存檔快照比較
+  const savedSnapshot = getSnapshotForDate(financeData, draft.date);
   const isDirty =
     JSON.stringify(savedSnapshot ?? null) !== JSON.stringify(draft);
 
@@ -161,7 +171,72 @@ export function useLocalSnapshots() {
     [draft.debts, updateDraft]
   );
 
-  /** 「更新儀表板」：正式將今日草稿寫入 LocalStorage（PRD 4.2 節）。version-mismatch 狀態下拒絕覆蓋既有資料。 */
+  /** 離開修正模式並還原進入前暫存的今日草稿；非修正模式時什麼都不做。 */
+  const leaveEditing = useCallback(() => {
+    const stash = stashedDraftRef.current;
+    stashedDraftRef.current = null;
+    setEditingDate(null);
+    if (stash) {
+      setDraft(stash.draft);
+      setEstimatedDebtFields(stash.estimatedFields);
+    }
+  }, []);
+
+  /**
+   * 進入修正模式（PRD 4.2「修正歷史快照」）：表單載入該日快照，日期不可更改；今日草稿暫存待還原。
+   * 已在修正模式時直接切換對象，不重複暫存（仍保留最初進入前的今日草稿）。
+   * 今天的快照不走修正模式（本來就是主表單）、version-mismatch 狀態下不提供。
+   */
+  const startEditing = useCallback(
+    (date: string) => {
+      if (loadStatus === "version-mismatch" || date === currentDate) return;
+      const target = getSnapshotForDate(financeData, date);
+      if (!target) return;
+      if (stashedDraftRef.current === null) {
+        stashedDraftRef.current = {
+          draft,
+          estimatedFields: estimatedDebtFields,
+        };
+      }
+      setEditingDate(date);
+      // 修正歷史資料時不做負債自動估算，也不顯示「系統估算」標記
+      setEstimatedDebtFields({});
+      setDraft(target);
+    },
+    [loadStatus, currentDate, financeData, draft, estimatedDebtFields]
+  );
+
+  /**
+   * 刪除單筆歷史快照（PRD 4.2「刪除歷史快照」）：只移除該日期，其他日期不受影響；不更新上次備份時間。
+   * 二次確認由呼叫端（UI Dialog）負責。version-mismatch 狀態下拒絕，避免誤動版本不相容的既有資料。
+   */
+  const deleteSnapshot = useCallback(
+    (date: string): { ok: boolean; reason?: string } => {
+      if (loadStatus === "version-mismatch") {
+        return {
+          ok: false,
+          reason: "本地資料版本不符，為避免誤動既有資料，已暫停刪除。",
+        };
+      }
+      if (!getSnapshotForDate(financeData, date)) {
+        return { ok: false, reason: `找不到 ${date} 的快照。` };
+      }
+      const next: FinanceData = {
+        ...financeData,
+        snapshots: financeData.snapshots.filter((s) => s.date !== date),
+      };
+      persistFinanceData(next);
+      setFinanceData(next);
+      if (editingDate === date) leaveEditing();
+      return { ok: true };
+    },
+    [loadStatus, financeData, editingDate, leaveEditing]
+  );
+
+  /**
+   * 「更新儀表板」：正式將今日草稿寫入 LocalStorage（PRD 4.2 節）。version-mismatch 狀態下拒絕覆蓋既有資料。
+   * 修正模式下改為「儲存修正」：只覆蓋被修正的那一天，存檔後離開修正模式並還原今日草稿（PRD 4.2「修正歷史快照」）。
+   */
   const save = useCallback((): { ok: boolean; reason?: string } => {
     if (loadStatus === "version-mismatch") {
       return {
@@ -171,17 +246,21 @@ export function useLocalSnapshots() {
     }
     const finalized: Snapshot = {
       ...draft,
-      date: currentDate,
+      date: editingDate ?? currentDate,
       updatedAt: new Date().toISOString(),
     };
     const next = upsertSnapshot(financeData, finalized);
     persistFinanceData(next);
     setFinanceData(next);
-    setDraft(finalized);
-    setEstimatedDebtFields({});
     setLoadStatus("ok");
+    if (editingDate) {
+      leaveEditing();
+    } else {
+      setDraft(finalized);
+      setEstimatedDebtFields({});
+    }
     return { ok: true };
-  }, [draft, financeData, currentDate, loadStatus]);
+  }, [draft, financeData, currentDate, loadStatus, editingDate, leaveEditing]);
 
   /** 明文匯出；成功後記錄上次備份時間（PRD 4.2「備份提醒」）。 */
   const exportBackup = useCallback(() => {
@@ -241,6 +320,8 @@ export function useLocalSnapshots() {
         result.data,
         currentDate
       );
+      stashedDraftRef.current = null;
+      setEditingDate(null);
       setDraft(snapshot);
       setEstimatedDebtFields(estimatedFields);
       setLoadStatus("ok");
@@ -256,6 +337,8 @@ export function useLocalSnapshots() {
     setLastBackupAt(null);
     const empty = createEmptyFinanceData();
     setFinanceData(empty);
+    stashedDraftRef.current = null;
+    setEditingDate(null);
     setDraft(createEmptySnapshot(currentDate));
     setEstimatedDebtFields({});
     setLoadStatus("empty");
@@ -285,6 +368,10 @@ export function useLocalSnapshots() {
     estimatedDebtFields,
     updateDebts,
     save,
+    editingDate,
+    startEditing,
+    cancelEditing: leaveEditing,
+    deleteSnapshot,
     exportBackup,
     exportEncryptedBackup,
     importBackup,
@@ -293,6 +380,8 @@ export function useLocalSnapshots() {
     /** 已存檔快照中最早／最近一筆的日期，供備份提醒與資料新鮮度使用（PRD 4.2）。 */
     earliestSnapshotDate: allSnapshots[0]?.date,
     latestSnapshotDate: allSnapshots.at(-1)?.date,
+    /** 所有已存檔快照（日期遞增），供歷史快照清單使用（PRD 4.2「歷史快照清單」）。 */
+    snapshots: allSnapshots,
     snapshotCount: allSnapshots.length,
     visibleSnapshots,
     trendRange,
