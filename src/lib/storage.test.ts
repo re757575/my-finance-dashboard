@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createEmptyFinanceData,
   getCurrentDate,
@@ -7,10 +7,13 @@ import {
   getSnapshotsInRange,
   clearLastBackupAt,
   LAST_BACKUP_KEY,
+  loadFinanceData,
   loadLastBackupAt,
   monthsBetweenDates,
   parseFinanceData,
+  persistFinanceData,
   recordBackupNow,
+  STORAGE_KEY,
   upsertSnapshot,
 } from "@/lib/storage";
 import { createEmptySnapshot, CURRENT_SCHEMA_VERSION } from "@/types/schema";
@@ -88,6 +91,21 @@ describe("getSnapshotsInRange", () => {
     expect(recent[0].date).toBe(dates[8]); // 最後 7 筆的起點
     expect(recent.at(-1)?.date).toBe(dates.at(-1));
     expect(data.snapshots).toHaveLength(15);
+  });
+
+  // PRD 4.2「跨日自動換日」：範圍以傳入的「今天」為基準，換日後由呼叫端帶入新日期
+  it("可指定基準日，範圍從該日往前推算", () => {
+    let data = createEmptyFinanceData();
+    ["2026-09-24", "2026-09-25", "2026-10-01"].forEach((date, i) => {
+      data = upsertSnapshot(data, snapshot(date, i));
+    });
+
+    expect(
+      getSnapshotsInRange(data, 7, "2026-10-01").map((s) => s.date)
+    ).toEqual(["2026-09-25", "2026-10-01"]);
+    expect(
+      getSnapshotsInRange(data, 7, "2026-10-02").map((s) => s.date)
+    ).toEqual(["2026-10-01"]);
   });
 });
 
@@ -464,6 +482,77 @@ describe("上次備份時間", () => {
     clearLastBackupAt();
 
     expect(localStorage.getItem("my_finance_dashboard_data")).toBe("{}");
+  });
+});
+
+// PRD 4.2「寫入失敗防護」、6.1 節「讀寫失敗」、第 9 節 #51a～#51d
+describe("LocalStorage 讀寫失敗", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function failWrites() {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("quota exceeded", "QuotaExceededError");
+    });
+  }
+
+  function failReads() {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("access denied", "SecurityError");
+    });
+  }
+
+  it("persistFinanceData 寫入成功回傳 true，資料可讀回", () => {
+    const data = upsertSnapshot(
+      createEmptyFinanceData(),
+      snapshot("2026-10-02", 1000)
+    );
+
+    expect(persistFinanceData(data)).toBe(true);
+    expect(loadFinanceData()).toEqual({ status: "ok", data });
+  });
+
+  it("persistFinanceData 寫入失敗回傳 false，不拋出例外", () => {
+    failWrites();
+
+    expect(persistFinanceData(createEmptyFinanceData())).toBe(false);
+  });
+
+  it("persistFinanceData 寫入失敗不會改動既有資料", () => {
+    const existing = upsertSnapshot(
+      createEmptyFinanceData(),
+      snapshot("2026-10-01", 1000)
+    );
+    persistFinanceData(existing);
+    failWrites();
+
+    persistFinanceData(upsertSnapshot(existing, snapshot("2026-10-02", 2000)));
+
+    vi.restoreAllMocks();
+    expect(loadFinanceData()).toEqual({ status: "ok", data: existing });
+  });
+
+  it("loadFinanceData 在瀏覽器拒絕存取時視為無資料，不拋出例外", () => {
+    localStorage.setItem(STORAGE_KEY, "{}");
+    failReads();
+
+    expect(loadFinanceData()).toEqual({ status: "empty" });
+  });
+
+  it("loadLastBackupAt 在瀏覽器拒絕存取時視為從未備份", () => {
+    recordBackupNow();
+    failReads();
+
+    expect(loadLastBackupAt()).toBeNull();
+  });
+
+  it("recordBackupNow 寫入失敗仍回傳 ISO 字串，不拋出例外", () => {
+    failWrites();
+
+    expect(recordBackupNow(new Date("2026-10-02T08:30:00.000Z"))).toBe(
+      "2026-10-02T08:30:00.000Z"
+    );
   });
 });
 

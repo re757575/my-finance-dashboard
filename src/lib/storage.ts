@@ -257,12 +257,28 @@ export function parseFinanceData(raw: string | null): LoadResult {
   return { status: "version-mismatch", foundVersion: data.schemaVersion };
 }
 
+/** 瀏覽器拒絕存取 LocalStorage（如停用網站資料）時視為無資料，不拋出例外（PRD 6.1 節「讀寫失敗」）。 */
 export function loadFinanceData(): LoadResult {
-  return parseFinanceData(localStorage.getItem(STORAGE_KEY));
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return { status: "empty" };
+  }
+  return parseFinanceData(raw);
 }
 
-export function persistFinanceData(data: FinanceData): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+/**
+ * 寫入全部快照；儲存空間已滿或被停用時回傳 false 而不拋出例外，
+ * 由呼叫端顯示訊息並維持「未存檔」狀態（PRD 4.2「寫入失敗防護」）。
+ */
+export function persistFinanceData(data: FinanceData): boolean {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function clearFinanceData(): void {
@@ -271,15 +287,27 @@ export function clearFinanceData(): void {
 
 /** 讀取上次備份時間；鍵不存在或不是合法日期字串一律視為「從未備份」（回傳 null）。 */
 export function loadLastBackupAt(): string | null {
-  const raw = localStorage.getItem(LAST_BACKUP_KEY);
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(LAST_BACKUP_KEY);
+  } catch {
+    return null;
+  }
   if (raw === null || Number.isNaN(new Date(raw).getTime())) return null;
   return raw;
 }
 
-/** 記錄「現在」為上次備份時間，回傳寫入的 ISO 字串。 */
+/**
+ * 記錄「現在」為上次備份時間，回傳寫入的 ISO 字串。
+ * 寫入失敗不拋出例外：備份檔已下載，不應因此讓匯出流程中斷（PRD 4.2「寫入失敗防護」）。
+ */
 export function recordBackupNow(now: Date = new Date()): string {
   const iso = now.toISOString();
-  localStorage.setItem(LAST_BACKUP_KEY, iso);
+  try {
+    localStorage.setItem(LAST_BACKUP_KEY, iso);
+  } catch {
+    // 本次瀏覽仍以回傳值顯示上次備份時間
+  }
   return iso;
 }
 
@@ -346,8 +374,9 @@ function subtractDays(date: string, days: number): string {
 /** 趨勢圖範圍：最近 N 天（含今天），資料本身不刪除（PRD 4.2、5.4 節）。 */
 export function getSnapshotsInRange(
   data: FinanceData,
-  days: number
+  days: number,
+  today: string = getCurrentDate()
 ): Snapshot[] {
-  const cutoff = subtractDays(getCurrentDate(), days - 1);
+  const cutoff = subtractDays(today, days - 1);
   return sortedByDate(data.snapshots).filter((s) => s.date >= cutoff);
 }

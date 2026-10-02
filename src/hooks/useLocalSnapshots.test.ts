@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getCurrentDate,
   loadFinanceData,
@@ -1165,5 +1165,605 @@ describe("useLocalSnapshots：修正與刪除歷史快照", () => {
       result.current.setTrendRange(7);
     });
     expect(result.current.snapshots).toHaveLength(3);
+  });
+});
+
+// PRD 4.2「寫入失敗防護」「未存檔離開提醒」「多分頁資料同步」「跨日自動換日」、第 9 節 #51a～#54d
+describe("useLocalSnapshots：資料安全防護", () => {
+  function snap(date: string, amount: number) {
+    return {
+      ...createEmptySnapshot(date),
+      updatedAt: `${date}T00:00:00.000Z`,
+      cashSources: [{ id: "c1", name: "銀行", amount, restricted: false }],
+    };
+  }
+
+  function seed(...snapshots: ReturnType<typeof snap>[]) {
+    persistFinanceData({ schemaVersion: 7, snapshots });
+  }
+
+  function storedDates() {
+    const loaded = loadFinanceData();
+    return loaded.status === "ok"
+      ? loaded.data.snapshots.map((s) => s.date)
+      : [];
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  describe("寫入失敗", () => {
+    function failWrites() {
+      return vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new DOMException("quota exceeded", "QuotaExceededError");
+      });
+    }
+
+    it("save 寫入失敗：回傳原因，草稿保留且維持未存檔，排除後可重試", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ twStockValue: 50000 });
+      });
+      const spy = failWrites();
+
+      let response: { ok: boolean; reason?: string } | undefined;
+      act(() => {
+        response = result.current.save();
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(response?.reason).toContain("無法寫入瀏覽器儲存空間");
+      expect(result.current.draft.twStockValue).toBe(50000);
+      expect(result.current.isDirty).toBe(true);
+      expect(result.current.hasUnsavedEdits).toBe(true);
+      expect(result.current.snapshotCount).toBe(0);
+
+      spy.mockRestore();
+      act(() => {
+        response = result.current.save();
+      });
+      expect(response?.ok).toBe(true);
+      expect(result.current.isDirty).toBe(false);
+      expect(storedDates()).toEqual([getCurrentDate()]);
+    });
+
+    it("儲存修正寫入失敗：仍停留在修正模式，該日快照不變", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 999 });
+      });
+      failWrites();
+
+      let response: { ok: boolean; reason?: string } | undefined;
+      act(() => {
+        response = result.current.save();
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(result.current.editingDate).toBe("2026-01-10");
+      expect(result.current.draft.monthlyExpense).toBe(999);
+      expect(result.current.snapshots[0].monthlyExpense).toBe(0);
+    });
+
+    it("deleteSnapshot 寫入失敗：回傳原因，快照仍在", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      failWrites();
+
+      let response: { ok: boolean; reason?: string } | undefined;
+      act(() => {
+        response = result.current.deleteSnapshot("2026-01-10");
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(response?.reason).toContain("無法寫入瀏覽器儲存空間");
+      expect(result.current.snapshots.map((s) => s.date)).toEqual([
+        "2026-01-10",
+        "2026-02-10",
+      ]);
+    });
+
+    it("importBackup 寫入失敗：回傳原因，既有資料與表單不變", async () => {
+      seed(snap("2026-01-10", 100000));
+      vi.mocked(parseBackupFile).mockResolvedValue({
+        status: "ok",
+        data: { schemaVersion: 7, snapshots: [snap("2026-05-05", 55555)] },
+      });
+      const { result } = renderHook(() => useLocalSnapshots());
+      failWrites();
+
+      let response: { ok: boolean; reason?: string } | undefined;
+      await act(async () => {
+        response = await result.current.importBackup(
+          new File(["x"], "backup.json")
+        );
+      });
+
+      expect(response?.ok).toBe(false);
+      expect(response?.reason).toContain("無法寫入瀏覽器儲存空間");
+      expect(result.current.snapshots.map((s) => s.date)).toEqual([
+        "2026-01-10",
+      ]);
+      expect(result.current.draft.cashSources[0].amount).toBe(100000);
+    });
+
+    it("exportBackup：上次備份時間寫入失敗不拋錯，備份檔照常下載", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      failWrites();
+
+      expect(() => {
+        act(() => {
+          result.current.exportBackup();
+        });
+      }).not.toThrow();
+      expect(downloadBackup).toHaveBeenCalledTimes(1);
+      expect(result.current.lastBackupAt).not.toBeNull();
+    });
+
+    it("瀏覽器拒絕讀取 LocalStorage：視為無資料的初始狀態，不拋錯", () => {
+      seed(snap("2026-01-10", 100000));
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new DOMException("access denied", "SecurityError");
+      });
+
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.loadStatus).toBe("empty");
+      expect(result.current.snapshotCount).toBe(0);
+      expect(result.current.lastBackupAt).toBeNull();
+    });
+  });
+
+  describe("未存檔離開提醒", () => {
+    /** 模擬離開頁面，回傳瀏覽器是否會跳出確認（事件被 preventDefault）。 */
+    function leavePagePrompts() {
+      const event = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }
+
+    it("系統帶入、使用者沒動過的今日草稿：雖未存檔但不提醒", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.isDirty).toBe(true);
+      expect(result.current.hasUnsavedEdits).toBe(false);
+      expect(leavePagePrompts()).toBe(false);
+    });
+
+    it("全新使用者的空白表單不提醒", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.hasUnsavedEdits).toBe(false);
+      expect(leavePagePrompts()).toBe(false);
+    });
+
+    it("手動編輯後提醒；改回原值後不再提醒", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      act(() => {
+        result.current.updateDraft({ twStockValue: 50000 });
+      });
+      expect(result.current.hasUnsavedEdits).toBe(true);
+      expect(leavePagePrompts()).toBe(true);
+
+      act(() => {
+        result.current.updateDraft({ twStockValue: 0 });
+      });
+      expect(result.current.hasUnsavedEdits).toBe(false);
+      expect(leavePagePrompts()).toBe(false);
+    });
+
+    it("存檔成功後不再提醒", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ twStockValue: 50000 });
+      });
+
+      act(() => {
+        result.current.save();
+      });
+
+      expect(result.current.hasUnsavedEdits).toBe(false);
+      expect(leavePagePrompts()).toBe(false);
+    });
+
+    it("修正模式：暫存的今日草稿有未存檔編輯時仍提醒，取消修正後也是", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+      expect(result.current.isDirty).toBe(false);
+      expect(result.current.hasUnsavedEdits).toBe(true);
+      expect(leavePagePrompts()).toBe(true);
+
+      act(() => {
+        result.current.cancelEditing();
+      });
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+      expect(result.current.hasUnsavedEdits).toBe(true);
+    });
+
+    it("修正模式：修改被修正的快照會提醒，儲存修正後不再提醒", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+      expect(result.current.hasUnsavedEdits).toBe(false);
+
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 999 });
+      });
+      expect(result.current.hasUnsavedEdits).toBe(true);
+      expect(leavePagePrompts()).toBe(true);
+
+      act(() => {
+        result.current.save();
+      });
+      expect(result.current.hasUnsavedEdits).toBe(false);
+      expect(leavePagePrompts()).toBe(false);
+    });
+
+    it("匯入還原與清空資料後不再提醒", async () => {
+      vi.mocked(parseBackupFile).mockResolvedValue({
+        status: "ok",
+        data: { schemaVersion: 7, snapshots: [snap("2026-05-05", 55555)] },
+      });
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ twStockValue: 50000 });
+      });
+
+      await act(async () => {
+        await result.current.importBackup(new File(["x"], "backup.json"));
+      });
+      expect(result.current.hasUnsavedEdits).toBe(false);
+
+      act(() => {
+        result.current.updateDraft({ twStockValue: 1 });
+      });
+      act(() => {
+        result.current.clearAllData();
+      });
+      expect(result.current.hasUnsavedEdits).toBe(false);
+    });
+  });
+
+  describe("多分頁資料同步", () => {
+    const TODAY = getCurrentDate();
+
+    /** 模擬另一個分頁寫入 LocalStorage：本分頁只會收到 storage 事件。 */
+    function otherTabWrites(key: string, value: string | null) {
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+      act(() => {
+        window.dispatchEvent(
+          new StorageEvent("storage", { key, storageArea: localStorage })
+        );
+      });
+    }
+
+    function otherTabSaves(...snapshots: ReturnType<typeof snap>[]) {
+      otherTabWrites(
+        STORAGE_KEY,
+        JSON.stringify({ schemaVersion: 7, snapshots })
+      );
+    }
+
+    it("沒有未存檔編輯：另一分頁存檔今天後，已存檔資料與表單一併更新", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      otherTabSaves(snap("2026-01-10", 100000), snap(TODAY, 777));
+
+      expect(result.current.snapshots.map((s) => s.date)).toEqual([
+        "2026-01-10",
+        TODAY,
+      ]);
+      expect(result.current.draft.cashSources[0].amount).toBe(777);
+      expect(result.current.isDirty).toBe(false);
+      expect(result.current.hasUnsavedEdits).toBe(false);
+    });
+
+    it("有未存檔編輯：保留編輯內容，存檔只覆蓋今天，不會把另一分頁刪除的快照寫回來", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+
+      // 另一分頁刪除 01-10、修正 02-10
+      otherTabSaves(snap("2026-02-10", 222222));
+
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+      expect(result.current.hasUnsavedEdits).toBe(true);
+      expect(result.current.snapshots.map((s) => s.date)).toEqual([
+        "2026-02-10",
+      ]);
+
+      act(() => {
+        result.current.save();
+      });
+      expect(storedDates()).toEqual(["2026-02-10", TODAY]);
+      expect(result.current.snapshots[0].cashSources[0].amount).toBe(222222);
+    });
+
+    it("修正模式：被修正的快照在另一分頁被刪除時，自動離開修正模式並還原今日草稿", () => {
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      otherTabSaves(snap("2026-02-10", 200000));
+
+      expect(result.current.editingDate).toBeNull();
+      expect(result.current.draft.date).toBe(TODAY);
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+    });
+
+    it("修正模式：被修正的快照仍在且尚未修改時，載入另一分頁的最新內容", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.startEditing("2026-01-10");
+      });
+
+      otherTabSaves(snap("2026-01-10", 123456));
+
+      expect(result.current.editingDate).toBe("2026-01-10");
+      expect(result.current.draft.cashSources[0].amount).toBe(123456);
+      expect(result.current.isDirty).toBe(false);
+    });
+
+    it("另一分頁清空資料：沒有未存檔編輯時表單回到空白", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      otherTabWrites(STORAGE_KEY, null);
+
+      expect(result.current.loadStatus).toBe("empty");
+      expect(result.current.snapshotCount).toBe(0);
+      expect(result.current.draft.cashSources).toEqual([]);
+    });
+
+    it("另一分頁寫入版本不相容的資料：暫停存檔，不覆蓋該資料", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      const raw = JSON.stringify({ schemaVersion: 999, snapshots: [] });
+
+      otherTabWrites(STORAGE_KEY, raw);
+
+      expect(result.current.loadStatus).toBe("version-mismatch");
+      let response: { ok: boolean; reason?: string } | undefined;
+      act(() => {
+        response = result.current.save();
+      });
+      expect(response?.ok).toBe(false);
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(raw);
+    });
+
+    it("另一分頁匯出備份：同步上次備份時間", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      expect(result.current.lastBackupAt).toBeNull();
+
+      otherTabWrites(LAST_BACKUP_KEY, "2026-09-30T08:30:00.000Z");
+
+      expect(result.current.lastBackupAt).toBe("2026-09-30T08:30:00.000Z");
+    });
+
+    it("無關的鍵不會觸發重新讀取", () => {
+      seed(snap("2026-01-10", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      // 繞過 storage 事件直接改動資料，確認無關的鍵不會讓 hook 重新讀取
+      seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
+
+      otherTabWrites("some_other_key", "x");
+
+      expect(result.current.snapshotCount).toBe(1);
+    });
+  });
+
+  describe("跨日自動換日", () => {
+    function setToday(date: string) {
+      vi.setSystemTime(new Date(`${date}T10:00:00`));
+    }
+
+    /** 模擬使用者切回這個分頁。 */
+    function returnToPage() {
+      act(() => {
+        window.dispatchEvent(new Event("focus"));
+      });
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      setToday("2026-10-01");
+    });
+
+    it("未跨日時回到前景不會改動任何內容", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ twStockValue: 50000 });
+      });
+      const before = result.current.draft;
+
+      returnToPage();
+
+      expect(result.current.currentDate).toBe("2026-10-01");
+      expect(result.current.draft).toBe(before);
+    });
+
+    it("沒有任何前景事件就跨日：存檔仍寫入實際存檔當天，前一天的快照不變", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ twStockValue: 10000 });
+      });
+      act(() => {
+        result.current.save();
+      });
+      expect(storedDates()).toEqual(["2026-10-01"]);
+
+      setToday("2026-10-02");
+      act(() => {
+        result.current.updateDraft({ twStockValue: 20000 });
+      });
+      act(() => {
+        result.current.save();
+      });
+
+      expect(storedDates()).toEqual(["2026-10-01", "2026-10-02"]);
+      expect(result.current.snapshots.map((s) => s.twStockValue)).toEqual([
+        10000, 20000,
+      ]);
+      expect(result.current.currentDate).toBe("2026-10-02");
+      expect(result.current.draft.date).toBe("2026-10-02");
+      expect(result.current.isDirty).toBe(false);
+    });
+
+    it("回到前景時換日：沒有未存檔編輯就重新帶入最近一筆，跨月時負債自動估算", () => {
+      setToday("2026-09-30");
+      persistFinanceData({
+        schemaVersion: 7,
+        snapshots: [
+          {
+            ...createEmptySnapshot("2026-09-15"),
+            debts: [
+              {
+                ...oneDebt(100000),
+                repaymentMethod: "interestOnly",
+                remainingMonths: 12,
+              },
+            ],
+          },
+        ],
+      });
+      const { result } = renderHook(() => useLocalSnapshots());
+      expect(result.current.draft.debts[0].remainingMonths).toBe(12);
+
+      setToday("2026-10-01");
+      returnToPage();
+
+      expect(result.current.currentDate).toBe("2026-10-01");
+      expect(result.current.draft.date).toBe("2026-10-01");
+      expect(result.current.draft.debts[0].remainingMonths).toBe(11);
+      expect(result.current.estimatedDebtFields).toEqual({
+        d1: { remainingMonths: true },
+      });
+      expect(result.current.hasUnsavedEdits).toBe(false);
+    });
+
+    it("visibilitychange 也會觸發換日", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      setToday("2026-10-02");
+      act(() => {
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+
+      expect(result.current.currentDate).toBe("2026-10-02");
+    });
+
+    it("回到前景時換日：有未存檔編輯就保留內容，成為新一天的草稿", () => {
+      seed(snap("2026-09-20", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+
+      setToday("2026-10-02");
+      returnToPage();
+
+      expect(result.current.currentDate).toBe("2026-10-02");
+      expect(result.current.draft.date).toBe("2026-10-02");
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+      expect(result.current.hasUnsavedEdits).toBe(true);
+
+      act(() => {
+        result.current.save();
+      });
+      expect(storedDates()).toEqual(["2026-09-20", "2026-10-02"]);
+    });
+
+    it("已存檔當天的快照後跨日：新一天的草稿沿用前一天數值，且為未存檔", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ twStockValue: 10000 });
+      });
+      act(() => {
+        result.current.save();
+      });
+
+      setToday("2026-10-02");
+      returnToPage();
+
+      expect(result.current.draft.date).toBe("2026-10-02");
+      expect(result.current.draft.twStockValue).toBe(10000);
+      expect(result.current.isDirty).toBe(true);
+      expect(result.current.latestSnapshotDate).toBe("2026-10-01");
+    });
+
+    it("修正模式中跨日：仍在修正原本那一天，儲存修正後還原的今日草稿為新的一天", () => {
+      seed(snap("2026-09-20", 100000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+      act(() => {
+        result.current.startEditing("2026-09-20");
+      });
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 999 });
+      });
+
+      setToday("2026-10-02");
+      returnToPage();
+
+      expect(result.current.editingDate).toBe("2026-09-20");
+      expect(result.current.draft.date).toBe("2026-09-20");
+      expect(result.current.draft.monthlyExpense).toBe(999);
+
+      act(() => {
+        result.current.save();
+      });
+      expect(storedDates()).toEqual(["2026-09-20"]);
+      expect(result.current.editingDate).toBeNull();
+      expect(result.current.draft.date).toBe("2026-10-02");
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+    });
+
+    it("趨勢圖範圍以換日後的今天為基準", () => {
+      seed(snap("2026-09-25", 1), snap("2026-10-01", 2));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.setTrendRange(7);
+      });
+      expect(result.current.visibleSnapshots.map((s) => s.date)).toEqual([
+        "2026-09-25",
+        "2026-10-01",
+      ]);
+
+      setToday("2026-10-02");
+      returnToPage();
+
+      expect(result.current.visibleSnapshots.map((s) => s.date)).toEqual([
+        "2026-10-01",
+      ]);
+    });
   });
 });
