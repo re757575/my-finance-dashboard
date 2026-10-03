@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChartExpandButton } from "@/components/charts/ChartExpandButton";
 import { ChartTooltip } from "@/components/charts/ChartTooltip";
+import { DeltaText } from "@/components/charts/DeltaText";
 import { EmptyTrendCard } from "@/components/charts/EmptyTrendCard";
 import { formatShortDate } from "@/lib/format";
 
@@ -67,30 +68,6 @@ function computeDelta(base: number, current: number) {
   const delta = current - base;
   const percent = base > 0 ? (delta / base) * 100 : null;
   return { delta, percent };
-}
-
-/** 增減比對的文字呈現：增加以 rose 紅色＋▲、減少以 emerald 綠色＋▼ 表示（沿用台股漲跌配色慣例），數值相同時顯示中性文字「持平」。 */
-function DeltaText({
-  delta,
-  percent,
-  formatValue,
-}: {
-  delta: number;
-  percent: number | null;
-  formatValue: (value: number) => string;
-}) {
-  if (delta === 0) {
-    return <span className="text-slate-400">持平</span>;
-  }
-
-  const isUp = delta > 0;
-  return (
-    <span className={isUp ? "text-rose-600" : "text-emerald-600"}>
-      {isUp ? "▲" : "▼"} {formatValue(Math.abs(delta))}
-      {percent !== null &&
-        ` (${isUp ? "+" : "-"}${Math.abs(percent).toFixed(1)}%)`}
-    </span>
-  );
 }
 
 /** 淨資產趨勢圖專用：與篩選範圍內倒數第二個節點比較增減（PRD 4.2 節「淨資產趨勢圖增減比對」）。 */

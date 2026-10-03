@@ -68,6 +68,10 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 - 負債比 = 總負債 / 總資產 × 100，總資產為 0 時強制為 0（避免除以零），並以 `calculateDebtRatioStatus` 分四級（`debt-free` / `healthy` / `elevated` / `high-risk`，門檻與文案見該檔）。
 - 除負債比外，另有緊急預備金月數、儲蓄率、資產配置比例、質押整戶維持率（`calculatePledgeMaintenance`：質押類別負債的 `collateralValue` 合計 ÷ 質押本金合計，追繳線 130%）、FIRE／淨資產目標進度等多項健康指標；另有 `calculateStressScenario` 股票壓力測試（−10%／−20%／−30% 即時試算，台股／美股與質押股票市值同步下跌、現金／不動產／負債不變，不寫入任何資料，見 `StressTestCard`），計算式與分級門檻皆定義在 `calculateMetrics()` 回傳的 `CalculatedMetrics`，實作細節見該檔逐一函式與 [docs/PRD.md](docs/PRD.md) 第 5 節。
 
+### 快照比較（`src/lib/snapshotComparison.ts`）
+
+`compareSnapshots(base, target)` 是純函式：兩筆快照各自經 `calculateMetrics()` 後逐項相減（對象日 − 基準日），現金來源與負債以項目 `id` 對應（缺少的一方為 `null`、以 0 計算增減）；基準值 ≤ 0 時 `percent` 為 `null`，負債比的增減是百分點。`SnapshotComparison` 元件只比較已存檔快照（不含今日草稿），預設比較最新兩筆，不寫入任何資料。增減的呈現沿用趨勢圖共用的 `charts/DeltaText`（增加 ▲ rose、減少 ▼ emerald、相同顯示「持平」），且以畫面顯示的四捨五入後數值相減，確保表格內數字自己對得起來（PRD 4.2「快照比較」、5.10 節）。
+
 ### AI 分析提示詞（`src/lib/promptBuilder.ts`）
 
 `buildFinancePrompt()` 依 `PromptMode`（財務健康檢查／投資方向評估／負債清償策略／定期回顧報告／資產配置再平衡建議共 5 種）組出給外部 AI 使用的 Markdown 文字，由 `CopyPromptButton` 觸發複製到剪貼簿。全程不對外發送任何請求，使用者需自行貼到外部 AI 工具（見 [docs/PRD.md](docs/PRD.md) 4.2 節）。

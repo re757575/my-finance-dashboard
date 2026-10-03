@@ -355,3 +355,72 @@ test("匯入全功能 fixture：趨勢圖選「全部」會涵蓋 60 筆資料",
     page.getByRole("img", { name: /折線圖，共 60 筆資料/ }).first()
   ).toBeVisible();
 });
+
+// PRD 4.2「快照比較」、第 9 節 #55b～#55j
+test("匯入全功能 fixture：快照比較預設比較最新兩筆，可切換日期與反映刪除", async ({
+  page,
+}) => {
+  await page.setInputFiles('input[type="file"]', financeDataFixture);
+  await page.getByText("確認覆蓋匯入").click();
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+
+  const section = page.getByTestId("snapshot-comparison");
+  const row = (key: string) => section.getByTestId(`comparison-row-${key}`);
+
+  // 預設：倒數第二筆 → 最新一筆
+  await expect(page.getByLabel("比較基準日")).toHaveValue("2026-08-31");
+  await expect(page.getByLabel("比較對象日")).toHaveValue("2026-09-30");
+  await expect(row("net-worth")).toContainText("$12,256,228");
+  await expect(row("net-worth")).toContainText("$12,351,781");
+  await expect(row("net-worth")).toContainText("▲ $95,553 (+0.8%)");
+  await expect(row("debt-ratio")).toContainText("▼ 0.3 個百分點");
+  await expect(row("cash-source-cash-2")).toContainText("持平");
+  await expect(row("debt-debt-4")).toContainText("▼ $10,000 (-50.0%)");
+
+  // 切換基準日為最早一筆
+  await page.getByLabel("比較基準日").selectOption("2021-10-31");
+  await expect(row("net-worth")).toContainText("▲ $6,519,816 (+111.8%)");
+  await expect(row("debt-ratio")).toContainText("▼ 23.8 個百分點");
+
+  // 選到同一天：不顯示表格
+  await page.getByLabel("比較對象日").selectOption("2021-10-31");
+  await expect(section.getByTestId("snapshot-comparison-same-date")).toHaveText(
+    "請選擇兩筆不同的快照"
+  );
+  await expect(section.getByTestId("snapshot-comparison-table")).toHaveCount(0);
+
+  // 被選取的快照遭刪除：該下拉選單回到預設值（最新一筆）
+  await page.getByLabel("比較對象日").selectOption("2026-09-30");
+  await page.getByRole("button", { name: "刪除 2026-09-30 的快照" }).click();
+  await page.getByRole("button", { name: "確認刪除" }).click();
+  await expect(page.getByLabel("比較對象日")).toHaveValue("2026-08-31");
+  await expect(page.getByLabel("比較基準日")).toHaveValue("2021-10-31");
+
+  // 手機寬度：每個項目排成兩行，頁面不會橫向溢出
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(row("net-worth")).toBeVisible();
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth
+  );
+  expect(overflow).toBe(0);
+});
+
+// PRD 第 9 節 #55a、#55k
+test("快照比較：少於 2 筆時顯示提示，且不含今日未存檔的草稿", async ({
+  page,
+}) => {
+  const section = page.getByTestId("snapshot-comparison");
+  await expect(section.getByTestId("snapshot-comparison-empty")).toHaveText(
+    "至少需要 2 筆已存檔的快照才能比較"
+  );
+
+  // 只有 1 筆已存檔快照時，修改表單（未存檔）不會讓比較區出現
+  await page.locator('label:has-text("台股市值") input').fill("1000");
+  await page.getByTestId("save-button").click();
+  await expect(page.getByTestId("save-message")).toBeVisible();
+  await page.locator('label:has-text("台股市值") input').fill("2000");
+  await expect(section.getByTestId("snapshot-comparison-empty")).toBeVisible();
+  await expect(page.getByLabel("比較基準日")).toHaveCount(0);
+});

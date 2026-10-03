@@ -19,6 +19,7 @@ import { PledgeMaintenanceCard } from "@/components/PledgeMaintenanceCard";
 import { PwaUpdatePrompt } from "@/components/PwaUpdatePrompt";
 import { RealEstateInput } from "@/components/RealEstateInput";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
+import { SnapshotComparison } from "@/components/SnapshotComparison";
 import { SnapshotEditBanner } from "@/components/SnapshotEditBanner";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { StockInputs } from "@/components/StockInputs";
@@ -292,6 +293,8 @@ function App() {
               onRangeChange={setTrendRange}
               targetNetWorth={draft.targetNetWorth}
             />
+
+            <SnapshotComparison snapshots={snapshots} />
 
             <SnapshotHistory
               snapshots={snapshots}
