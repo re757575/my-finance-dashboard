@@ -10,6 +10,7 @@ import {
   getLatestSnapshot,
   getSnapshotForDate,
   getSnapshotsInRange,
+  getSnapshotsYearToDate,
   loadFinanceData,
   loadLastBackupAt,
   monthsBetweenDates,
@@ -32,7 +33,11 @@ import {
   type Snapshot,
 } from "@/types/schema";
 
-export type TrendRange = 7 | 30 | 90 | "all";
+/**
+ * 趨勢圖範圍（PRD 4.2「趨勢圖範圍選項」）：數字為「最近 N 天（含今天）」，365 即「1 年」；
+ * "ytd" 為「今年以來」（今天所屬年份的 1 月 1 日起）；"all" 為全部快照。
+ */
+export type TrendRange = 7 | 30 | 90 | 365 | "ytd" | "all";
 
 const DEFAULT_TREND_RANGE: TrendRange = 90;
 
@@ -517,13 +522,14 @@ export function useLocalSnapshots() {
     [financeData]
   );
   /** 趨勢圖與「一鍵複製 AI 分析提示詞」共用同一個範圍（PRD 5.4 節）。 */
-  const visibleSnapshots = useMemo(
-    () =>
-      trendRange === "all"
-        ? allSnapshots
-        : getSnapshotsInRange(financeData, trendRange, currentDate),
-    [financeData, allSnapshots, trendRange, currentDate]
-  );
+  const visibleSnapshots = useMemo(() => {
+    if (trendRange === "all") return allSnapshots;
+    // 「今年以來」的年份取自 currentDate（state），跨年換日後自動改以新年度起算
+    if (trendRange === "ytd") {
+      return getSnapshotsYearToDate(financeData, currentDate);
+    }
+    return getSnapshotsInRange(financeData, trendRange, currentDate);
+  }, [financeData, allSnapshots, trendRange, currentDate]);
 
   return {
     currentDate,

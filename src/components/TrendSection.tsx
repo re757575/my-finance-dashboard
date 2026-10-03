@@ -15,10 +15,13 @@ interface TrendSectionProps {
   targetNetWorth: number;
 }
 
+/** 範圍下拉選單的選項，順序固定（PRD 4.2「趨勢圖範圍選項」）；365 為「1 年」、"ytd" 為「今年以來」。 */
 const RANGE_OPTIONS: { value: TrendRange; label: string }[] = [
   { value: 7, label: "7 天" },
   { value: 30, label: "30 天" },
   { value: 90, label: "90 天" },
+  { value: 365, label: "1 年" },
+  { value: "ytd", label: "今年以來" },
   { value: "all", label: "全部" },
 ];
 
@@ -63,10 +66,11 @@ export function TrendSection({
             aria-label="趨勢圖範圍"
             value={trendRange}
             onChange={(e) => {
-              const value = e.target.value;
-              onRangeChange(
-                value === "all" ? "all" : (Number(value) as TrendRange)
+              // <option> 的 value 一律是字串，從選項表對回原本的型別（數字天數或 "ytd"／"all"）
+              const selected = RANGE_OPTIONS.find(
+                (option) => String(option.value) === e.target.value
               );
+              if (selected) onRangeChange(selected.value);
             }}
             className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
           >

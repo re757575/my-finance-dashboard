@@ -380,3 +380,15 @@ export function getSnapshotsInRange(
   const cutoff = subtractDays(today, days - 1);
   return sortedByDate(data.snapshots).filter((s) => s.date >= cutoff);
 }
+
+/**
+ * 趨勢圖範圍「今年以來」：日期落在「今天所屬年份的 1 月 1 日」（含）之後的快照，資料本身不刪除
+ * （PRD 4.2「趨勢圖範圍選項」、5.4 節）。基準日由呼叫端帶入，跨年後自動改以新年度起算。
+ */
+export function getSnapshotsYearToDate(
+  data: FinanceData,
+  today: string = getCurrentDate()
+): Snapshot[] {
+  const cutoff = `${today.slice(0, 4)}-01-01`;
+  return sortedByDate(data.snapshots).filter((s) => s.date >= cutoff);
+}

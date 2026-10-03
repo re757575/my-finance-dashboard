@@ -160,6 +160,92 @@ describe("TrendSection", () => {
     expect(screen.getByLabelText("趨勢圖範圍")).toHaveValue("30");
   });
 
+  // PRD 4.2「趨勢圖範圍選項」、第 9 節 #57a
+  describe("趨勢圖範圍選項", () => {
+    function renderWithRange(
+      trendRange: Parameters<typeof TrendSection>[0]["trendRange"]
+    ) {
+      const onRangeChange = vi.fn();
+      render(
+        <TrendSection
+          visibleSnapshots={[
+            baseSnapshot(),
+            baseSnapshot({ date: "2026-01-02" }),
+          ]}
+          snapshotCount={2}
+          trendRange={trendRange}
+          onRangeChange={onRangeChange}
+          targetNetWorth={0}
+        />
+      );
+      return { select: screen.getByLabelText("趨勢圖範圍"), onRangeChange };
+    }
+
+    it("選項順序固定為 7 天／30 天／90 天／1 年／今年以來／全部", () => {
+      const { select } = renderWithRange(90);
+
+      const options = within(select).getAllByRole("option");
+      expect(options.map((option) => option.textContent)).toEqual([
+        "7 天",
+        "30 天",
+        "90 天",
+        "1 年",
+        "今年以來",
+        "全部",
+      ]);
+      expect(options.map((option) => option.getAttribute("value"))).toEqual([
+        "7",
+        "30",
+        "90",
+        "365",
+        "ytd",
+        "all",
+      ]);
+    });
+
+    it.each([
+      [365, "365", "1 年"],
+      ["ytd", "ytd", "今年以來"],
+      ["all", "all", "全部"],
+    ] as const)(
+      "目前範圍為 %s 時，下拉選單顯示「%s」",
+      (range, value, label) => {
+        const { select } = renderWithRange(range);
+
+        expect(select).toHaveValue(value);
+        expect(
+          (
+            within(select).getByRole("option", {
+              name: label,
+            }) as HTMLOptionElement
+          ).selected
+        ).toBe(true);
+      }
+    );
+
+    it.each([
+      ["7", 7],
+      ["30", 30],
+      ["90", 90],
+      ["365", 365],
+      ["ytd", "ytd"],
+      ["all", "all"],
+    ] as const)(
+      "選取 value=%s 時，以對應型別的範圍值通知上層（數字天數不會變成字串）",
+      (value, expected) => {
+        // 起始範圍刻意選一個不同的值，確保每個案例都真的觸發 change
+        const { select, onRangeChange } = renderWithRange(
+          expected === 7 ? 30 : 7
+        );
+
+        fireEvent.change(select, { target: { value } });
+
+        expect(onRangeChange).toHaveBeenCalledTimes(1);
+        expect(onRangeChange).toHaveBeenCalledWith(expected);
+      }
+    );
+  });
+
   // PRD 4.2「儲蓄率趨勢圖」「每月應還款趨勢圖」「資產配置趨勢圖」、第 9 節 #50～#50k
   describe("儲蓄率／每月應還款／資產配置趨勢", () => {
     const debt = (principal: number, months: number) => ({

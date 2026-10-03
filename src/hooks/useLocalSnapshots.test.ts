@@ -1767,3 +1767,130 @@ describe("useLocalSnapshots：資料安全防護", () => {
     });
   });
 });
+
+// PRD 4.2「趨勢圖範圍選項」、5.4 節、第 9 節 #57a～#57f
+describe("useLocalSnapshots：趨勢圖範圍", () => {
+  function snap(date: string, amount: number) {
+    return {
+      ...createEmptySnapshot(date),
+      updatedAt: `${date}T00:00:00.000Z`,
+      cashSources: [{ id: "c1", name: "銀行", amount, restricted: false }],
+    };
+  }
+
+  function seed(...snapshots: ReturnType<typeof snap>[]) {
+    persistFinanceData({ schemaVersion: 7, snapshots });
+  }
+
+  function setToday(date: string) {
+    vi.setSystemTime(new Date(`${date}T10:00:00`));
+  }
+
+  /** 模擬使用者切回這個分頁。 */
+  function returnToPage() {
+    act(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
+  }
+
+  function visibleDates(result: {
+    current: ReturnType<typeof useLocalSnapshots>;
+  }) {
+    return result.current.visibleSnapshots.map((s) => s.date);
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    setToday("2026-10-03");
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("預設範圍為 90 天", () => {
+    // 2026-10-03 往前 89 天是 2026-07-06
+    seed(snap("2026-07-05", 1), snap("2026-07-06", 2), snap("2026-10-03", 3));
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    expect(result.current.trendRange).toBe(90);
+    expect(visibleDates(result)).toEqual(["2026-07-06", "2026-10-03"]);
+  });
+
+  it("1 年：只納入最近 365 天（含今天）的快照", () => {
+    seed(snap("2025-10-03", 1), snap("2025-10-04", 2), snap("2026-10-03", 3));
+    const { result } = renderHook(() => useLocalSnapshots());
+    act(() => {
+      result.current.setTrendRange(365);
+    });
+
+    expect(visibleDates(result)).toEqual(["2025-10-04", "2026-10-03"]);
+  });
+
+  it("今年以來：納入今年 1/1（含）之後的快照，前一年 12/31 不納入", () => {
+    seed(snap("2025-12-31", 1), snap("2026-01-01", 2), snap("2026-09-30", 3));
+    const { result } = renderHook(() => useLocalSnapshots());
+    act(() => {
+      result.current.setTrendRange("ytd");
+    });
+
+    expect(visibleDates(result)).toEqual(["2026-01-01", "2026-09-30"]);
+  });
+
+  it("今年以來：跨年換日後改以新年度的 1/1 起算，已存檔資料不變", () => {
+    setToday("2026-12-31");
+    seed(snap("2026-06-30", 1), snap("2026-12-31", 2));
+    const { result } = renderHook(() => useLocalSnapshots());
+    act(() => {
+      result.current.setTrendRange("ytd");
+    });
+    expect(visibleDates(result)).toEqual(["2026-06-30", "2026-12-31"]);
+
+    setToday("2027-01-01");
+    returnToPage();
+
+    expect(result.current.currentDate).toBe("2027-01-01");
+    expect(visibleDates(result)).toEqual([]);
+    expect(result.current.snapshots.map((s) => s.date)).toEqual([
+      "2026-06-30",
+      "2026-12-31",
+    ]);
+
+    // 新年度存檔後，只有新年度的快照落在「今年以來」
+    act(() => {
+      result.current.save();
+    });
+    expect(visibleDates(result)).toEqual(["2027-01-01"]);
+    expect(result.current.snapshotCount).toBe(3);
+  });
+
+  it("切換範圍只影響 visibleSnapshots，snapshots 永遠是全部歷史", () => {
+    seed(
+      snap("2024-05-01", 1),
+      snap("2025-12-31", 2),
+      snap("2026-01-01", 3),
+      snap("2026-10-03", 4)
+    );
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    act(() => {
+      result.current.setTrendRange(365);
+    });
+    expect(visibleDates(result)).toEqual([
+      "2025-12-31",
+      "2026-01-01",
+      "2026-10-03",
+    ]);
+
+    act(() => {
+      result.current.setTrendRange("ytd");
+    });
+    expect(visibleDates(result)).toEqual(["2026-01-01", "2026-10-03"]);
+
+    act(() => {
+      result.current.setTrendRange("all");
+    });
+    expect(visibleDates(result)).toHaveLength(4);
+    expect(result.current.snapshots).toHaveLength(4);
+  });
+});

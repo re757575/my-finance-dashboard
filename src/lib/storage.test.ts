@@ -5,6 +5,7 @@ import {
   getLatestSnapshot,
   getSnapshotForDate,
   getSnapshotsInRange,
+  getSnapshotsYearToDate,
   clearLastBackupAt,
   LAST_BACKUP_KEY,
   loadFinanceData,
@@ -71,7 +72,7 @@ describe("getLatestSnapshot", () => {
 });
 
 describe("getSnapshotsInRange", () => {
-  // PRD 第 4.2、5.4 節：趨勢圖範圍下拉選單（7/30/90 天），資料本身不刪除
+  // PRD 第 4.2、5.4 節：趨勢圖範圍下拉選單（7／30／90 天、1 年），資料本身不刪除
   it("只取最近 N 天（含今天）的快照，但不影響底層資料", () => {
     const today = new Date();
     // 產生連續 15 天的快照：今天往前推 14 天 ~ 今天
@@ -106,6 +107,95 @@ describe("getSnapshotsInRange", () => {
     expect(
       getSnapshotsInRange(data, 7, "2026-10-02").map((s) => s.date)
     ).toEqual(["2026-10-01"]);
+  });
+
+  // PRD 4.2「趨勢圖範圍選項」、第 9 節 #57b：「1 年」為最近 365 天（含今天）
+  it("1 年（365 天）：納入 364 天前的快照，365 天前的不納入", () => {
+    let data = createEmptyFinanceData();
+    ["2025-10-03", "2025-10-04", "2026-10-03"].forEach((date, i) => {
+      data = upsertSnapshot(data, snapshot(date, i));
+    });
+
+    expect(
+      getSnapshotsInRange(data, 365, "2026-10-03").map((s) => s.date)
+    ).toEqual(["2025-10-04", "2026-10-03"]);
+    expect(data.snapshots).toHaveLength(3);
+  });
+
+  it("1 年固定為 365 天，跨過閏日時不多算一天", () => {
+    let data = createEmptyFinanceData();
+    // 2024 為閏年：2024-06-30 往前 364 天是 2023-07-02
+    ["2023-07-01", "2023-07-02", "2024-06-30"].forEach((date, i) => {
+      data = upsertSnapshot(data, snapshot(date, i));
+    });
+
+    expect(
+      getSnapshotsInRange(data, 365, "2024-06-30").map((s) => s.date)
+    ).toEqual(["2023-07-02", "2024-06-30"]);
+  });
+});
+
+// PRD 4.2「趨勢圖範圍選項」、5.4 節、第 9 節 #57c、#57d
+describe("getSnapshotsYearToDate", () => {
+  it("只取今天所屬年份 1 月 1 日（含）之後的快照，前一年 12/31 不納入，且不影響底層資料", () => {
+    let data = createEmptyFinanceData();
+    // 刻意打亂寫入順序，確認回傳結果依日期遞增
+    ["2026-09-30", "2025-12-31", "2026-01-01", "2025-06-15"].forEach(
+      (date, i) => {
+        data = upsertSnapshot(data, snapshot(date, i));
+      }
+    );
+
+    expect(
+      getSnapshotsYearToDate(data, "2026-10-03").map((s) => s.date)
+    ).toEqual(["2026-01-01", "2026-09-30"]);
+    expect(data.snapshots).toHaveLength(4);
+  });
+
+  it("今天就是 1 月 1 日：只納入當天（含）之後的快照", () => {
+    let data = createEmptyFinanceData();
+    ["2025-12-31", "2026-01-01"].forEach((date, i) => {
+      data = upsertSnapshot(data, snapshot(date, i));
+    });
+
+    expect(
+      getSnapshotsYearToDate(data, "2026-01-01").map((s) => s.date)
+    ).toEqual(["2026-01-01"]);
+  });
+
+  it("今天是 12 月 31 日：納入整年度的快照", () => {
+    let data = createEmptyFinanceData();
+    ["2025-12-31", "2026-01-01", "2026-12-31"].forEach((date, i) => {
+      data = upsertSnapshot(data, snapshot(date, i));
+    });
+
+    expect(
+      getSnapshotsYearToDate(data, "2026-12-31").map((s) => s.date)
+    ).toEqual(["2026-01-01", "2026-12-31"]);
+  });
+
+  it("跨年後改以新年度起算：新年度尚無快照時回傳空陣列", () => {
+    let data = createEmptyFinanceData();
+    ["2026-06-30", "2026-12-31"].forEach((date, i) => {
+      data = upsertSnapshot(data, snapshot(date, i));
+    });
+
+    expect(getSnapshotsYearToDate(data, "2026-12-31")).toHaveLength(2);
+    expect(getSnapshotsYearToDate(data, "2027-01-01")).toEqual([]);
+  });
+
+  it("未指定基準日時以實際的今天為準", () => {
+    const today = getCurrentDate();
+    const year = Number(today.slice(0, 4));
+    let data = createEmptyFinanceData();
+    [`${year - 1}-12-31`, `${year}-01-01`, today].forEach((date, i) => {
+      data = upsertSnapshot(data, snapshot(date, i));
+    });
+
+    const dates = getSnapshotsYearToDate(data).map((s) => s.date);
+    expect(dates).not.toContain(`${year - 1}-12-31`);
+    expect(dates).toContain(`${year}-01-01`);
+    expect(dates).toContain(today);
   });
 });
 

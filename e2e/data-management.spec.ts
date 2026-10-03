@@ -100,11 +100,11 @@ function dateDaysAgo(n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** 直接寫入 LocalStorage：每個日期一筆快照（現金 123,456），並可指定上次備份時間。 */
-async function seedSnapshots(
+/** 直接寫入 LocalStorage：每個日期（YYYY-MM-DD）一筆快照（現金 123,456），並可指定上次備份時間。 */
+async function seedSnapshotDates(
   page: Page,
-  snapshotDaysAgo: number[],
-  lastBackupDaysAgo: number | null
+  dates: string[],
+  backupIso: string | null = null
 ) {
   await page.evaluate(
     ({ dates, backupIso }) => {
@@ -133,15 +133,24 @@ async function seedSnapshots(
         localStorage.setItem("my_finance_dashboard_last_backup", backupIso);
       }
     },
-    {
-      dates: snapshotDaysAgo.map(dateDaysAgo),
-      backupIso:
-        lastBackupDaysAgo === null
-          ? null
-          : new Date(Date.now() - lastBackupDaysAgo * 86400000).toISOString(),
-    }
+    { dates, backupIso }
   );
   await page.reload();
+}
+
+/** 同 seedSnapshotDates，但快照日期與上次備份時間皆以「今天往前推 n 天」指定。 */
+async function seedSnapshots(
+  page: Page,
+  snapshotDaysAgo: number[],
+  lastBackupDaysAgo: number | null
+) {
+  await seedSnapshotDates(
+    page,
+    snapshotDaysAgo.map(dateDaysAgo),
+    lastBackupDaysAgo === null
+      ? null
+      : new Date(Date.now() - lastBackupDaysAgo * 86400000).toISOString()
+  );
 }
 
 // PRD 第 9 節 #45、#45a～#45d：加密匯出後，檔案不含明文；匯入時要求密碼，錯誤密碼不會覆蓋資料
@@ -354,6 +363,111 @@ test("匯入全功能 fixture：趨勢圖選「全部」會涵蓋 60 筆資料",
   await expect(
     page.getByRole("img", { name: /折線圖，共 60 筆資料/ }).first()
   ).toBeVisible();
+});
+
+// PRD 4.2「趨勢圖範圍選項」、第 9 節 #57a～#57c、#57e、#57f
+test("匯入全功能 fixture：趨勢圖範圍六個選項依序排列，1 年／今年以來同步影響趨勢圖與 AI 提示詞", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  // 固定今天的日期：各範圍的起算日都從今天推算（fixture 為 2021-10-31～2026-09-30 的月底快照）
+  await page.clock.install({ time: new Date("2026-10-03T10:00:00") });
+  await page.reload();
+  await page.setInputFiles('input[type="file"]', financeDataFixture);
+  await page.getByText("確認覆蓋匯入").click();
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+
+  const range = page.getByLabel("趨勢圖範圍");
+  const lineChart = (count: number) =>
+    page
+      .getByRole("img", { name: new RegExp(`折線圖，共 ${count} 筆資料`) })
+      .first();
+  /** 複製「財務健康檢查」提示詞，回傳剪貼簿內容。 */
+  const copyPrompt = async () => {
+    await page.getByTestId("copy-prompt-button").click();
+    await expect(page.getByTestId("copy-prompt-message")).toHaveText(
+      "已複製到剪貼簿，可貼給 AI 分析。"
+    );
+    return page.evaluate(() => navigator.clipboard.readText());
+  };
+
+  await expect(range.locator("option")).toHaveText([
+    "7 天",
+    "30 天",
+    "90 天",
+    "1 年",
+    "今年以來",
+    "全部",
+  ]);
+  // 預設 90 天：2026-07-06 起，含 07-31、08-31、09-30 三筆
+  await expect(range).toHaveValue("90");
+  await expect(lineChart(3)).toBeVisible();
+
+  // 1 年：最近 365 天（2025-10-04 起），含 2025-10-31～2026-09-30 共 12 筆
+  await range.selectOption({ label: "1 年" });
+  await expect(range).toHaveValue("365");
+  await expect(lineChart(12)).toBeVisible();
+  const yearPrompt = await copyPrompt();
+  expect(yearPrompt).toContain("## 近 12 筆歷史趨勢（已儲存資料）");
+  expect(yearPrompt).toContain("2025-10-31");
+  expect(yearPrompt).not.toContain("2025-09-30");
+
+  // 今年以來：2026-01-01 起，含 2026-01-31～2026-09-30 共 9 筆；前一年 12/31 不納入
+  await range.selectOption({ label: "今年以來" });
+  await expect(range).toHaveValue("ytd");
+  await expect(lineChart(9)).toBeVisible();
+  const ytdPrompt = await copyPrompt();
+  expect(ytdPrompt).toContain("## 近 9 筆歷史趨勢（已儲存資料）");
+  expect(ytdPrompt).toContain("2026-01-31");
+  expect(ytdPrompt).not.toContain("2025-12-31");
+
+  // 範圍不影響歷史快照清單與快照比較，也不刪除任何已存檔資料
+  await expect(
+    page.getByRole("button", { name: /顯示全部（60 筆）/ })
+  ).toBeVisible();
+  await expect(page.getByLabel("比較基準日").locator("option")).toHaveCount(60);
+  const storedCount = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("my_finance_dashboard_data") ?? "{}")
+        .snapshots.length
+  );
+  expect(storedCount).toBe(60);
+});
+
+// PRD 4.2「趨勢圖範圍選項」「跨日自動換日」、第 9 節 #57d
+test("今年以來：頁面開著跨年後回到前景，改以新年度的 1 月 1 日起算", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-12-31T10:00:00") });
+  await page.reload();
+  await seedSnapshotDates(page, ["2025-12-31", "2026-06-30", "2026-12-30"]);
+
+  const range = page.getByLabel("趨勢圖範圍");
+  const lineChart = (count: number) =>
+    page
+      .getByRole("img", { name: new RegExp(`折線圖，共 ${count} 筆資料`) })
+      .first();
+
+  // 2026 年底：今年以來只含 2026 年的兩筆，前一年 12/31 不納入
+  await range.selectOption("ytd");
+  await expect(lineChart(2)).toBeVisible();
+
+  // 跨年後回到前景：選項維持「今年以來」，但 2027 年尚無快照，趨勢圖回到空狀態
+  await page.clock.setFixedTime(new Date("2027-01-01T09:00:00"));
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.getByText("目前檢視日期：2027-01-01")).toBeVisible();
+  await expect(range).toHaveValue("ytd");
+  await expect(page.getByRole("img", { name: /折線圖，共/ })).toHaveCount(0);
+  await expect(
+    page.getByText("持續使用滿 2 天即可查看趨勢").first()
+  ).toBeVisible();
+
+  // 已存檔資料不受影響：歷史快照仍在，改選「1 年」即可看到 2026 年的兩筆
+  await expect(page.getByTestId("snapshot-row-2025-12-31")).toBeVisible();
+  await expect(page.getByTestId("snapshot-row-2026-12-30")).toBeVisible();
+  await range.selectOption("365");
+  await expect(lineChart(2)).toBeVisible();
 });
 
 // PRD 4.2「快照比較」、第 9 節 #55b～#55j
