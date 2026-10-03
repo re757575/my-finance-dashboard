@@ -2,6 +2,20 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.11](https://github.com/re757575/my-finance-dashboard/compare/v0.3.10...v0.3.11) (2026-10-03)
+
+### Features
+
+- **儀表板:** 新增快照比較 ([ba8e661](https://github.com/re757575/my-finance-dashboard/commit/ba8e661f117b0ed733f871a8a5c3d9b0e9c2ec42))
+- **儀表板:** 新增深色模式 ([8466eba](https://github.com/re757575/my-finance-dashboard/commit/8466eba7f960333ff11d0b77db09c35cc19250b2))
+- **儀表板:** 新增目標達成時間預估 ([4a7ec06](https://github.com/re757575/my-finance-dashboard/commit/4a7ec0698f079588ce9d19ab08968ca81bc4b933))
+- **儀表板:** 歷史趨勢圖改為分組分頁 ([2995c62](https://github.com/re757575/my-finance-dashboard/commit/2995c6213dd162499e8794310a66a12ed0914417))
+- **儀表板:** 趨勢圖範圍新增 1 年與今年以來 ([ff5fd8d](https://github.com/re757575/my-finance-dashboard/commit/ff5fd8d81ccf8617c1d6292a08772b82c8f4bd9f))
+
+### Bug Fixes
+
+- **儀表板:** 補強寫入失敗、未存檔離開、多分頁與跨日的資料防護 ([3091cb8](https://github.com/re757575/my-finance-dashboard/commit/3091cb82d07f289c58e2a5b133c0d110bee171d1))
+
 ## [0.3.10](https://github.com/re757575/my-finance-dashboard/compare/v0.3.9...v0.3.10) (2026-10-01)
 
 ### Features
