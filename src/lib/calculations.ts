@@ -5,6 +5,7 @@ import type {
   DebtCategory,
   DebtRatioStatus,
   EmergencyFundStatus,
+  GoalEtaStatus,
   IncomeSource,
   PledgeMaintenanceStatus,
   RepaymentMethod,
@@ -12,6 +13,7 @@ import type {
   Snapshot,
   StockCurrency,
 } from "@/types/schema";
+import { daysBetweenDates } from "@/lib/dataFreshness";
 
 /** 非數字或空值一律視為 0（PRD 4.2 輸入防呆規則） */
 export function toSafeNumber(value: unknown): number {
@@ -231,6 +233,148 @@ export function calculateGoalProgress(
   const target = toSafeNumber(targetNetWorth);
   if (target === 0) return null;
   return (netWorth / target) * 100;
+}
+
+/** 目標達成時間預估的上限（月）：超過 100 年不顯示具體時間（PRD 5.7a 節）。 */
+export const GOAL_ETA_MAX_MONTHS = 1200;
+/** 以歷史快照估算淨資產增加速度時的回看天數上限（PRD 5.7a 節）。 */
+export const GOAL_PACE_LOOKBACK_DAYS = 365;
+/** 起點與終點快照至少要相隔的天數，間隔太短的變化不具代表性（PRD 5.7a 節）。 */
+export const GOAL_PACE_MIN_SPAN_DAYS = 30;
+/** 平均每月天數，用於把「每日變化」換算成「每月變化」。 */
+const AVERAGE_DAYS_PER_MONTH = 365.25 / 12;
+
+/**
+ * 單筆負債本月償還的本金 = 每月應還款金額 − 當月利息（PRD 5.7a 節），下限 0、上限為剩餘本金。
+ * 只計息或已到期（剩餘期數 ≤ 0）的負債為 0。
+ */
+export function calculateMonthlyPrincipalRepayment(debt: Debt): number {
+  if (debt.repaymentMethod === "interestOnly") return 0;
+  const principal = toSafeNumber(debt.principal);
+  const interest = principal * (toSafeNumber(debt.annualRate) / 100 / 12);
+  return Math.min(
+    principal,
+    Math.max(0, calculateMonthlyPayment(debt) - interest)
+  );
+}
+
+export function calculateTotalMonthlyPrincipalRepayment(debts: Debt[]): number {
+  return debts.reduce(
+    (sum, debt) => sum + calculateMonthlyPrincipalRepayment(debt),
+    0
+  );
+}
+
+/**
+ * 依歷史快照估算每月淨資產增加額（PRD 5.7a 節）：終點為最近一筆快照；起點為距終點至少
+ * GOAL_PACE_MIN_SPAN_DAYS 天的快照中、落在回看範圍內最早的一筆，範圍內沒有時改取範圍外最接近的一筆。
+ * 沒有可用的起點時回傳 null。每筆快照的淨資產以該筆自己的欄位計算。
+ */
+export function calculateHistoricalMonthlyPace(
+  snapshots: Snapshot[]
+): { monthlyPace: number; fromDate: string; toDate: string } | null {
+  const sorted = [...snapshots].sort((a, b) => a.date.localeCompare(b.date));
+  const end = sorted.at(-1);
+  if (!end) return null;
+
+  const candidates = sorted
+    .map((snapshot) => ({
+      snapshot,
+      days: daysBetweenDates(snapshot.date, end.date),
+    }))
+    .filter(({ days }) => days >= GOAL_PACE_MIN_SPAN_DAYS);
+  const start =
+    candidates.find(({ days }) => days <= GOAL_PACE_LOOKBACK_DAYS) ??
+    candidates.at(-1);
+  if (!start) return null;
+
+  const change =
+    calculateMetrics(end).netWorth - calculateMetrics(start.snapshot).netWorth;
+  return {
+    monthlyPace: (change / start.days) * AVERAGE_DAYS_PER_MONTH,
+    fromDate: start.snapshot.date,
+    toDate: end.date,
+  };
+}
+
+/** 單一種速度的達成時間預估結果（PRD 5.7a 節）。 */
+export interface GoalEta {
+  status: GoalEtaStatus;
+  /** 估算所用的每月淨資產增加額；沒有可用資料（no-data）時為 null。 */
+  monthlyPace: number | null;
+  /** 還需要的月數（無條件進位）；只有 status 為 "ok" 時有值。 */
+  months: number | null;
+}
+
+/**
+ * 以固定的每月淨資產增加額線性推算還需要幾個月達成目標（PRD 5.7a 節）。
+ * 不預測投資報酬、通膨或收支變動。
+ */
+export function calculateGoalEta(
+  netWorth: number,
+  targetNetWorth: number,
+  monthlyPace: number | null
+): GoalEta {
+  const target = toSafeNumber(targetNetWorth);
+  const done = (status: GoalEtaStatus, months: number | null = null) => ({
+    status,
+    monthlyPace,
+    months,
+  });
+
+  if (target <= 0) return done("unset");
+  if (netWorth >= target) return done("achieved");
+  if (monthlyPace === null) return done("no-data");
+  if (monthlyPace <= 0) return done("not-growing");
+
+  const months = Math.ceil((target - netWorth) / monthlyPace);
+  return months > GOAL_ETA_MAX_MONTHS ? done("too-far") : done("ok", months);
+}
+
+export interface GoalEstimates {
+  /** 推算預計達成月份的起算日：表單所對應的日期（一般為今天，修正模式為被修正的那一天）。 */
+  baseDate: string;
+  /** 依目前收支：每月增加額 = 現金流 + 本月償還的負債本金。 */
+  budget: GoalEta & { cashFlow: number; principalRepayment: number };
+  /** 依歷史變化：以已存檔快照的淨資產實際變化推算；fromDate／toDate 為所比較的兩筆快照。 */
+  history: GoalEta & { fromDate: string | null; toDate: string | null };
+}
+
+/**
+ * 目標達成時間預估（PRD 4.2、5.7a 節）：淨資產與目標取自表單（draft），
+ * 「依歷史變化」只看已存檔快照（savedSnapshots），不含今日未存檔的草稿。純即時計算，不寫入任何資料。
+ */
+export function calculateGoalEstimates(
+  draft: Snapshot,
+  savedSnapshots: Snapshot[]
+): GoalEstimates {
+  const { netWorth, cashFlow } = calculateMetrics(draft);
+  const principalRepayment = calculateTotalMonthlyPrincipalRepayment(
+    draft.debts
+  );
+  const history = calculateHistoricalMonthlyPace(savedSnapshots);
+
+  return {
+    baseDate: draft.date,
+    budget: {
+      ...calculateGoalEta(
+        netWorth,
+        draft.targetNetWorth,
+        cashFlow + principalRepayment
+      ),
+      cashFlow,
+      principalRepayment,
+    },
+    history: {
+      ...calculateGoalEta(
+        netWorth,
+        draft.targetNetWorth,
+        history?.monthlyPace ?? null
+      ),
+      fromDate: history?.fromDate ?? null,
+      toDate: history?.toDate ?? null,
+    },
+  };
 }
 
 /** 質押追繳線（%）：採台灣股票質借常見的 130%，各機構標準不同，僅作參考（PRD 5.8 節）。 */

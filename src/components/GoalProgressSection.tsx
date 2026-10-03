@@ -1,6 +1,10 @@
 import { FormulaInfoButton } from "@/components/FormulaInfoButton";
+import { GoalEta } from "@/components/GoalEta";
 import { Button } from "@/components/ui/button";
-import { calculateSuggestedTargetNetWorth } from "@/lib/calculations";
+import {
+  calculateSuggestedTargetNetWorth,
+  type GoalEstimates,
+} from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
 
 interface GoalProgressSectionProps {
@@ -8,19 +12,22 @@ interface GoalProgressSectionProps {
   targetNetWorth: number;
   monthlyExpense: number;
   progress: number | null;
+  /** 目標達成時間預估（PRD 5.7a 節）；未提供時不顯示「預估達成時間」。 */
+  estimates?: GoalEstimates;
   onSetTarget: (value: number) => void;
 }
 
 /**
  * FIRE／淨資產目標進度（PRD 5.7 節）：獨立段落，呈現當下切面，不開新趨勢圖。
  * 目標為 0（未設定）時顯示引導文字＋「使用建議值」按鈕；達成或超過目標時進度條夾在 100%，
- * 但百分比數字不封頂；淨資產為負數時進度條夾在 0%。
+ * 但百分比數字不封頂；淨資產為負數時進度條夾在 0%。進度條下方為「預估達成時間」（PRD 5.7a 節）。
  */
 export function GoalProgressSection({
   netWorth,
   targetNetWorth,
   monthlyExpense,
   progress,
+  estimates,
   onSetTarget,
 }: GoalProgressSectionProps) {
   if (progress === null) {
@@ -103,6 +110,13 @@ export function GoalProgressSection({
           style={{ width: `${width}%` }}
         />
       </div>
+      {estimates && (
+        <GoalEta
+          estimates={estimates}
+          netWorth={netWorth}
+          targetNetWorth={targetNetWorth}
+        />
+      )}
     </div>
   );
 }

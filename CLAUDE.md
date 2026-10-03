@@ -67,6 +67,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 - 總資產 = 金融資產（現金 + 股票市值合計）+ 不動產市值（`realEstateValue`）；**金融資產**是現金比例與資產配置比例的分母（不含不動產）。現金來源可標記 `restricted`（不可動用，如期貨保證金）：仍計入總資產，但緊急預備金月數與現金比例只計 `liquidCash`（可動用現金）。
 - 負債比 = 總負債 / 總資產 × 100，總資產為 0 時強制為 0（避免除以零），並以 `calculateDebtRatioStatus` 分四級（`debt-free` / `healthy` / `elevated` / `high-risk`，門檻與文案見該檔）。
 - 除負債比外，另有緊急預備金月數、儲蓄率、資產配置比例、質押整戶維持率（`calculatePledgeMaintenance`：質押類別負債的 `collateralValue` 合計 ÷ 質押本金合計，追繳線 130%）、FIRE／淨資產目標進度等多項健康指標；另有 `calculateStressScenario` 股票壓力測試（−10%／−20%／−30% 即時試算，台股／美股與質押股票市值同步下跌、現金／不動產／負債不變，不寫入任何資料，見 `StressTestCard`），計算式與分級門檻皆定義在 `calculateMetrics()` 回傳的 `CalculatedMetrics`，實作細節見該檔逐一函式與 [docs/PRD.md](docs/PRD.md) 第 5 節。
+- **目標達成時間預估**（`calculateGoalEstimates(draft, savedSnapshots)`，PRD 5.7a 節）：以固定的每月淨資產增加額線性推算還需幾個月（`calculateGoalEta`，無條件進位，超過 `GOAL_ETA_MAX_MONTHS` 回 `too-far`、增加額 ≤ 0 回 `not-growing`）。兩種速度並列：「依目前收支」＝現金流＋本月償還的負債本金（`calculateMonthlyPrincipalRepayment`；還本金不改變淨資產，所以要加回），「依歷史變化」＝`calculateHistoricalMonthlyPace`，只看已存檔快照、取近 365 天內且相隔至少 30 天的最早一筆為起點。不屬於 `CalculatedMetrics`，由 `App.tsx` 另外計算後傳給 `GoalProgressSection`（內含 `GoalEta` 元件）。
 
 ### 快照比較（`src/lib/snapshotComparison.ts`）
 

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import rawFinanceData from "../../fixtures/finance-data.json?raw";
-import { calculateMetrics, PLEDGE_MARGIN_CALL_RATIO } from "@/lib/calculations";
+import {
+  calculateGoalEstimates,
+  calculateMetrics,
+  PLEDGE_MARGIN_CALL_RATIO,
+} from "@/lib/calculations";
 import { getLatestSnapshot, parseFinanceData } from "@/lib/storage";
 import { CURRENT_SCHEMA_VERSION } from "@/types/schema";
 
@@ -92,5 +96,26 @@ describe("fixtures/finance-data.json", () => {
     const first = calculateMetrics(snapshots[0]).totalAssets;
     const last = calculateMetrics(snapshots[snapshots.length - 1]).totalAssets;
     expect(last).toBeGreaterThan(first);
+  });
+
+  // PRD 5.7a 節：fixture 有目標淨資產、收支、攤還中的負債與跨一年以上的歷史，兩種估算都可算
+  it("目標達成時間預估：依目前收支與依歷史變化皆可估算", () => {
+    const data = loadFixture();
+    const latest = getLatestSnapshot(data)!;
+
+    const estimates = calculateGoalEstimates(latest, data.snapshots);
+
+    expect(estimates.baseDate).toBe("2026-09-30");
+    expect(estimates.budget.status).toBe("ok");
+    expect(estimates.budget.principalRepayment).toBeGreaterThan(0);
+    expect(estimates.budget.monthlyPace).toBeCloseTo(
+      estimates.budget.cashFlow + estimates.budget.principalRepayment
+    );
+    expect(estimates.history).toMatchObject({
+      status: "ok",
+      fromDate: "2025-09-30",
+      toDate: "2026-09-30",
+    });
+    expect(estimates.history.months).toBeGreaterThan(0);
   });
 });

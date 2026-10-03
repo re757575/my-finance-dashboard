@@ -424,3 +424,65 @@ test("快照比較：少於 2 筆時顯示提示，且不含今日未存檔的�
   await expect(section.getByTestId("snapshot-comparison-empty")).toBeVisible();
   await expect(page.getByLabel("比較基準日")).toHaveCount(0);
 });
+
+// PRD 4.2「目標達成時間預估」、第 9 節 #56a～#56l
+test("匯入全功能 fixture：目標達成時間預估並列兩種估算，並隨表單即時更新", async ({
+  page,
+}) => {
+  // 固定今天的日期：今日草稿的負債會依距最近一筆快照的月數自動攤還，日期不同數字就不同
+  await page.clock.install({ time: new Date("2026-10-03T10:00:00") });
+  await page.reload();
+  await page.setInputFiles('input[type="file"]', financeDataFixture);
+  await page.getByText("確認覆蓋匯入").click();
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+
+  const budget = page.getByTestId("goal-eta-budget");
+  const history = page.getByTestId("goal-eta-history");
+
+  await expect(budget).toContainText("約 23 年 2 個月（預計 2049 年 12 月）");
+  await expect(budget).toContainText("每月約增加 $63,468（現金流＋償還本金）");
+  await expect(history).toContainText("約 7 年 5 個月（預計 2034 年 3 月）");
+  await expect(history).toContainText(
+    "每月約增加 $198,793（2025-09-30 → 2026-09-30）"
+  );
+  await expect(page.getByTestId("goal-eta")).toContainText(
+    "線性估算，未計入未來的投資報酬、通膨與收支變動，僅供參考"
+  );
+
+  // 公式說明列出每月增加額的組成
+  await page.getByLabel("預估達成時間計算公式說明").click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "$34,027 + $29,441 = $63,468"
+  );
+  await page.keyboard.press("Escape");
+
+  // 支出大於收入：依目前收支無法估算；依歷史變化只看已存檔快照，不受影響
+  await page.locator('label:has-text("本月支出") input').fill("500000");
+  await expect(budget).toContainText("淨資產沒有增加，無法估算");
+  await expect(budget).toContainText("每月約減少 $392,043");
+  await expect(history).toContainText("每月約增加 $198,793");
+
+  // 目標調到低於目前淨資產：已達成，不再顯示預估
+  await page.getByRole("textbox", { name: "目標淨資產" }).fill("1000000");
+  await expect(page.getByTestId("goal-progress-achieved")).toBeVisible();
+  await expect(page.getByTestId("goal-eta")).toHaveCount(0);
+});
+
+// PRD 第 9 節 #56i
+test("目標達成時間預估：沒有歷史快照時只估算目前收支", async ({ page }) => {
+  await page.clock.install({ time: new Date("2026-10-03T10:00:00") });
+  await page.reload();
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByLabel("金額").fill("4000000");
+  await page.getByText("+ 新增收入").click();
+  await page.getByLabel("收入金額").fill("100000");
+  await page.locator('label:has-text("本月支出") input').fill("40000");
+  await page.getByRole("textbox", { name: "目標淨資產" }).fill("10000000");
+
+  await expect(page.getByTestId("goal-eta-budget")).toContainText(
+    "約 8 年 4 個月（預計 2035 年 2 月）"
+  );
+  await expect(page.getByTestId("goal-eta-history")).toContainText(
+    "需要相隔至少 30 天的兩筆已存檔快照"
+  );
+});

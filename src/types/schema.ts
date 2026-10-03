@@ -77,6 +77,13 @@ export type EmergencyFundStatus =
 export type SavingsRateStatus = "negative" | "low" | "healthy" | "high";
 
 /**
+ * 目標達成時間預估的狀態（PRD 5.7a 節）："unset" 未設定目標、"achieved" 已達成、
+ * "no-data" 沒有可用的歷史快照、"not-growing" 每月增加額 ≤ 0、"too-far" 超過 100 年、"ok" 可估算。
+ */
+export type GoalEtaStatus =
+  "unset" | "achieved" | "no-data" | "not-growing" | "too-far" | "ok";
+
+/**
  * 質押整戶維持率健康度（PRD 5.8 節）。"none" 代表無質押負債（不顯示卡片）、
  * "unset" 代表有質押負債但尚未填寫質押股票市值（只顯示引導文字，不分級）。
  */

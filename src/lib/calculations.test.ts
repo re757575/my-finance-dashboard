@@ -3,9 +3,13 @@ import {
   advanceDebtByMonths,
   calculateEmergencyFundMonths,
   calculateEmergencyFundStatus,
+  calculateGoalEstimates,
+  calculateGoalEta,
   calculateGoalProgress,
+  calculateHistoricalMonthlyPace,
   calculateMetrics,
   calculateMonthlyPayment,
+  calculateMonthlyPrincipalRepayment,
   calculatePledgeMaintenance,
   calculatePledgeMaintenanceStatus,
   calculateSavingsRate,
@@ -13,10 +17,18 @@ import {
   calculateSavingsRateStatus,
   calculateSuggestedTargetNetWorth,
   calculateTotalMonthlyDebtPayment,
+  calculateTotalMonthlyPrincipalRepayment,
+  GOAL_ETA_MAX_MONTHS,
   STRESS_TEST_DROPS,
   toSafeNumber,
 } from "@/lib/calculations";
-import type { CashSource, Debt, IncomeSource } from "@/types/schema";
+import {
+  createEmptySnapshot,
+  type CashSource,
+  type Debt,
+  type IncomeSource,
+  type Snapshot,
+} from "@/types/schema";
 
 function baseDebt(overrides: Partial<Debt> = {}): Debt {
   return {
@@ -977,5 +989,448 @@ describe("calculateStressScenario", () => {
 
     expect(snapshot.twStockValue).toBe(1000000);
     expect(debts[0].collateralValue).toBe(800000);
+  });
+});
+
+// PRD 5.7a 節：本月償還的本金 = 每月應還款金額 − 當月利息
+describe("calculateMonthlyPrincipalRepayment", () => {
+  // 第 9 節 #56b
+  it("本息平均攤還、利率為 0：月付金額全部是本金", () => {
+    const debt = baseDebt({ principal: 1200000, remainingMonths: 120 });
+
+    expect(calculateMonthlyPrincipalRepayment(debt)).toBe(10000);
+  });
+
+  it("本息平均攤還、有利率：月付金額扣除當月利息", () => {
+    const debt = baseDebt({
+      principal: 1000000,
+      annualRate: 12,
+      remainingMonths: 12,
+    });
+
+    // 月利率 1%：當月利息 10,000，PMT 約 88,848.79
+    expect(calculateMonthlyPrincipalRepayment(debt)).toBeCloseTo(78848.79, 1);
+    expect(calculateMonthlyPrincipalRepayment(debt)).toBeCloseTo(
+      calculateMonthlyPayment(debt) - 10000
+    );
+  });
+
+  // 第 9 節 #56c
+  it("只計息不償還本金", () => {
+    const debt = baseDebt({
+      principal: 1200000,
+      annualRate: 2.4,
+      remainingMonths: 12,
+      repaymentMethod: "interestOnly",
+    });
+
+    expect(calculateMonthlyPrincipalRepayment(debt)).toBe(0);
+  });
+
+  it("已到期（剩餘期數 ≤ 0）為 0，不會出現負數", () => {
+    const debt = baseDebt({
+      principal: 500000,
+      annualRate: 3,
+      remainingMonths: 0,
+    });
+
+    expect(calculateMonthlyPrincipalRepayment(debt)).toBe(0);
+  });
+
+  it("最後一期償還的本金不超過剩餘本金", () => {
+    const debt = baseDebt({
+      principal: 10000,
+      annualRate: 5,
+      remainingMonths: 1,
+    });
+
+    expect(calculateMonthlyPrincipalRepayment(debt)).toBeCloseTo(10000);
+    expect(calculateMonthlyPrincipalRepayment(debt)).toBeLessThanOrEqual(10000);
+  });
+
+  it("多筆負債加總，只計息的不計入", () => {
+    const debts = [
+      baseDebt({ id: "a", principal: 1200000, remainingMonths: 120 }),
+      baseDebt({ id: "b", principal: 600000, remainingMonths: 60 }),
+      baseDebt({
+        id: "c",
+        principal: 1200000,
+        annualRate: 2.4,
+        remainingMonths: 12,
+        repaymentMethod: "interestOnly",
+      }),
+    ];
+
+    expect(calculateTotalMonthlyPrincipalRepayment(debts)).toBe(20000);
+    expect(calculateTotalMonthlyPrincipalRepayment([])).toBe(0);
+  });
+});
+
+// PRD 5.7a 節：以固定的每月淨資產增加額線性推算還需幾個月
+describe("calculateGoalEta", () => {
+  // 第 9 節 #56a
+  it("缺口 ÷ 每月增加額", () => {
+    expect(calculateGoalEta(4000000, 10000000, 60000)).toEqual({
+      status: "ok",
+      monthlyPace: 60000,
+      months: 100,
+    });
+  });
+
+  // 第 9 節 #56d
+  it("無條件進位為整數月；剛好整除時不多加一個月", () => {
+    expect(calculateGoalEta(0, 1000000, 300000).months).toBe(4);
+    expect(calculateGoalEta(0, 600000, 60000).months).toBe(10);
+    expect(calculateGoalEta(999999, 1000000, 60000).months).toBe(1);
+  });
+
+  it("淨資產為負數時，缺口從負數算起", () => {
+    expect(calculateGoalEta(-1000000, 1000000, 100000).months).toBe(20);
+  });
+
+  // 第 9 節 #56k
+  it("未設定目標（0 或負數）回傳 unset", () => {
+    expect(calculateGoalEta(100, 0, 60000).status).toBe("unset");
+    expect(calculateGoalEta(100, -5, 60000).status).toBe("unset");
+  });
+
+  // 第 9 節 #56k
+  it("淨資產達到或超過目標回傳 achieved", () => {
+    expect(calculateGoalEta(10000000, 10000000, 60000)).toEqual({
+      status: "achieved",
+      monthlyPace: 60000,
+      months: null,
+    });
+    expect(calculateGoalEta(12000000, 10000000, -100).status).toBe("achieved");
+  });
+
+  // 第 9 節 #56i
+  it("沒有每月增加額（null）回傳 no-data", () => {
+    expect(calculateGoalEta(4000000, 10000000, null)).toEqual({
+      status: "no-data",
+      monthlyPace: null,
+      months: null,
+    });
+  });
+
+  // 第 9 節 #56e
+  it("每月增加額為 0 或負數回傳 not-growing，並保留該增加額", () => {
+    expect(calculateGoalEta(4000000, 10000000, 0)).toEqual({
+      status: "not-growing",
+      monthlyPace: 0,
+      months: null,
+    });
+    expect(calculateGoalEta(4000000, 10000000, -5000)).toEqual({
+      status: "not-growing",
+      monthlyPace: -5000,
+      months: null,
+    });
+  });
+
+  // 第 9 節 #56f
+  it("超過 100 年回傳 too-far；剛好 100 年仍可估算", () => {
+    expect(GOAL_ETA_MAX_MONTHS).toBe(1200);
+    expect(calculateGoalEta(0, 10000000, 1000)).toEqual({
+      status: "too-far",
+      monthlyPace: 1000,
+      months: null,
+    });
+    expect(calculateGoalEta(0, 1200000, 1000)).toMatchObject({
+      status: "ok",
+      months: 1200,
+    });
+    expect(calculateGoalEta(0, 1200001, 1000).status).toBe("too-far");
+  });
+});
+
+describe("目標達成時間預估：歷史速度與整合", () => {
+  /** 淨資產等於 cash 的快照（可另外指定負債）。 */
+  function snapshotOn(
+    date: string,
+    cash: number,
+    debts: Debt[] = []
+  ): Snapshot {
+    return {
+      ...createEmptySnapshot(date),
+      cashSources: [{ id: "c", name: "銀行", amount: cash, restricted: false }],
+      debts,
+    };
+  }
+
+  const DAYS_PER_MONTH = 365.25 / 12;
+
+  describe("calculateHistoricalMonthlyPace", () => {
+    // 第 9 節 #56i
+    it("沒有快照、只有 1 筆、或相隔不足 30 天時回傳 null", () => {
+      expect(calculateHistoricalMonthlyPace([])).toBeNull();
+      expect(
+        calculateHistoricalMonthlyPace([snapshotOn("2026-10-01", 100)])
+      ).toBeNull();
+      expect(
+        calculateHistoricalMonthlyPace([
+          snapshotOn("2026-09-02", 100),
+          snapshotOn("2026-10-01", 200),
+        ])
+      ).toBeNull();
+    });
+
+    it("剛好相隔 30 天即可估算", () => {
+      const result = calculateHistoricalMonthlyPace([
+        snapshotOn("2026-09-01", 100000),
+        snapshotOn("2026-10-01", 130000),
+      ]);
+
+      expect(result?.fromDate).toBe("2026-09-01");
+      expect(result?.monthlyPace).toBeCloseTo((30000 / 30) * DAYS_PER_MONTH);
+    });
+
+    // 第 9 節 #56g
+    it("淨資產差 ÷ 相隔天數 × 平均每月天數", () => {
+      const result = calculateHistoricalMonthlyPace([
+        snapshotOn("2025-10-01", 3000000),
+        snapshotOn("2026-10-01", 3600000),
+      ]);
+
+      expect(result).toEqual({
+        monthlyPace: expect.closeTo(50034.25, 1),
+        fromDate: "2025-10-01",
+        toDate: "2026-10-01",
+      });
+    });
+
+    // 第 9 節 #56h
+    it("起點取 365 天內、距終點至少 30 天者中最早的一筆", () => {
+      const result = calculateHistoricalMonthlyPace([
+        snapshotOn("2024-01-01", 1),
+        snapshotOn("2025-11-01", 2),
+        snapshotOn("2026-06-01", 3),
+        snapshotOn("2026-09-20", 4),
+        snapshotOn("2026-10-01", 5),
+      ]);
+
+      expect(result?.fromDate).toBe("2025-11-01");
+      expect(result?.toDate).toBe("2026-10-01");
+    });
+
+    it("剛好 365 天前的快照在回看範圍內，366 天前的不採用", () => {
+      const result = calculateHistoricalMonthlyPace([
+        snapshotOn("2025-09-30", 1),
+        snapshotOn("2025-10-01", 2),
+        snapshotOn("2026-10-01", 3),
+      ]);
+
+      expect(result?.fromDate).toBe("2025-10-01");
+    });
+
+    // 第 9 節 #56j
+    it("365 天內沒有可用起點時，改取 365 天以前最接近的一筆，以實際天數換算", () => {
+      const result = calculateHistoricalMonthlyPace([
+        snapshotOn("2023-01-01", 0),
+        snapshotOn("2024-01-01", 1000000),
+        snapshotOn("2026-09-25", 1900000),
+        snapshotOn("2026-10-01", 2004000),
+      ]);
+
+      expect(result?.fromDate).toBe("2024-01-01");
+      // 2024-01-01 → 2026-10-01 相隔 1,004 天
+      expect(result?.monthlyPace).toBeCloseTo(
+        (1004000 / 1004) * DAYS_PER_MONTH
+      );
+    });
+
+    it("與傳入順序無關，且不改動傳入的陣列", () => {
+      const snapshots = [
+        snapshotOn("2026-10-01", 3600000),
+        snapshotOn("2025-10-01", 3000000),
+      ];
+
+      const result = calculateHistoricalMonthlyPace(snapshots);
+
+      expect(result?.fromDate).toBe("2025-10-01");
+      expect(snapshots.map((s) => s.date)).toEqual([
+        "2026-10-01",
+        "2025-10-01",
+      ]);
+    });
+
+    it("淨資產減少時每月增加額為負數", () => {
+      const result = calculateHistoricalMonthlyPace([
+        snapshotOn("2026-04-01", 500000),
+        snapshotOn("2026-10-01", 200000),
+      ]);
+
+      expect(result?.monthlyPace).toBeLessThan(0);
+    });
+
+    it("各筆快照的淨資產以該筆自己的欄位計算（含負債）", () => {
+      const result = calculateHistoricalMonthlyPace([
+        snapshotOn("2026-09-01", 1000000, [baseDebt({ principal: 400000 })]),
+        snapshotOn("2026-10-01", 1000000, [baseDebt({ principal: 370000 })]),
+      ]);
+
+      // 現金不變、負債減少 30,000 → 淨資產增加 30,000
+      expect(result?.monthlyPace).toBeCloseTo((30000 / 30) * DAYS_PER_MONTH);
+    });
+  });
+
+  describe("calculateGoalEstimates", () => {
+    function draftWith(overrides: Partial<Snapshot> = {}): Snapshot {
+      return {
+        ...snapshotOn("2026-10-03", 4000000),
+        incomeSources: [{ id: "i", name: "薪資", amount: 100000 }],
+        monthlyExpense: 40000,
+        targetNetWorth: 10000000,
+        ...overrides,
+      };
+    }
+
+    // 第 9 節 #56a
+    it("依目前收支：無負債時每月增加額等於現金流", () => {
+      const result = calculateGoalEstimates(draftWith(), []);
+
+      expect(result.baseDate).toBe("2026-10-03");
+      expect(result.budget).toEqual({
+        status: "ok",
+        monthlyPace: 60000,
+        months: 100,
+        cashFlow: 60000,
+        principalRepayment: 0,
+      });
+    });
+
+    // 第 9 節 #56b
+    it("依目前收支：償還的本金要加回每月增加額", () => {
+      const result = calculateGoalEstimates(
+        draftWith({
+          debts: [baseDebt({ principal: 1200000, remainingMonths: 120 })],
+        }),
+        []
+      );
+
+      // 現金流 100,000 − 40,000 − 10,000 = 50,000；本金 10,000 加回後仍為 60,000
+      expect(result.budget).toEqual({
+        status: "ok",
+        monthlyPace: 60000,
+        months: 120,
+        cashFlow: 50000,
+        principalRepayment: 10000,
+      });
+    });
+
+    // 第 9 節 #56c
+    it("依目前收支：只計息負債的利息是支出，不加回", () => {
+      const result = calculateGoalEstimates(
+        draftWith({
+          debts: [
+            baseDebt({
+              principal: 1200000,
+              annualRate: 2.4,
+              remainingMonths: 12,
+              repaymentMethod: "interestOnly",
+            }),
+          ],
+        }),
+        []
+      );
+
+      expect(result.budget.principalRepayment).toBe(0);
+      expect(result.budget.cashFlow).toBeCloseTo(57600);
+      expect(result.budget.monthlyPace).toBeCloseTo(57600);
+    });
+
+    // 第 9 節 #56e
+    it("依目前收支：支出大於收入時為 not-growing", () => {
+      const result = calculateGoalEstimates(
+        draftWith({ monthlyExpense: 150000 }),
+        []
+      );
+
+      expect(result.budget).toMatchObject({
+        status: "not-growing",
+        monthlyPace: -50000,
+        months: null,
+      });
+    });
+
+    // 第 9 節 #56i
+    it("依歷史變化：沒有可用的已存檔快照時為 no-data，不影響依目前收支", () => {
+      const result = calculateGoalEstimates(draftWith(), [
+        snapshotOn("2026-10-01", 3900000),
+      ]);
+
+      expect(result.history).toEqual({
+        status: "no-data",
+        monthlyPace: null,
+        months: null,
+        fromDate: null,
+        toDate: null,
+      });
+      expect(result.budget.status).toBe("ok");
+    });
+
+    // 第 9 節 #56g
+    it("依歷史變化：以已存檔快照的速度推算表單淨資產到目標的時間", () => {
+      const result = calculateGoalEstimates(
+        draftWith({
+          cashSources: [
+            { id: "c", name: "銀行", amount: 3600000, restricted: false },
+          ],
+          targetNetWorth: 6000000,
+        }),
+        [snapshotOn("2025-10-01", 3000000), snapshotOn("2026-10-01", 3600000)]
+      );
+
+      expect(result.history).toEqual({
+        status: "ok",
+        monthlyPace: expect.closeTo(50034.25, 1),
+        months: 48,
+        fromDate: "2025-10-01",
+        toDate: "2026-10-01",
+      });
+    });
+
+    // 第 9 節 #56l
+    it("依歷史變化只看已存檔快照：修改表單的收支不會改變其每月增加額", () => {
+      const saved = [
+        snapshotOn("2025-10-01", 3000000),
+        snapshotOn("2026-10-01", 3600000),
+      ];
+
+      const before = calculateGoalEstimates(draftWith(), saved);
+      const after = calculateGoalEstimates(
+        draftWith({ monthlyExpense: 90000 }),
+        saved
+      );
+
+      expect(after.budget.monthlyPace).not.toBe(before.budget.monthlyPace);
+      expect(after.history.monthlyPace).toBe(before.history.monthlyPace);
+      expect(after.history.fromDate).toBe("2025-10-01");
+    });
+
+    // 第 9 節 #56k
+    it("未設定目標或已達成時，兩種估算皆回傳對應狀態", () => {
+      const unset = calculateGoalEstimates(
+        draftWith({ targetNetWorth: 0 }),
+        []
+      );
+      expect(unset.budget.status).toBe("unset");
+      expect(unset.history.status).toBe("unset");
+
+      const achieved = calculateGoalEstimates(
+        draftWith({ targetNetWorth: 4000000 }),
+        []
+      );
+      expect(achieved.budget.status).toBe("achieved");
+      expect(achieved.history.status).toBe("achieved");
+    });
+
+    it("預計達成月份的起算日為表單的日期（修正模式下為被修正的那一天）", () => {
+      const result = calculateGoalEstimates(
+        { ...draftWith(), date: "2026-01-15" },
+        []
+      );
+
+      expect(result.baseDate).toBe("2026-01-15");
+    });
   });
 });

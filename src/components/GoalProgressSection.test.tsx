@@ -1,6 +1,25 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { GoalProgressSection } from "@/components/GoalProgressSection";
+import type { GoalEstimates } from "@/lib/calculations";
+
+const ESTIMATES: GoalEstimates = {
+  baseDate: "2026-10-03",
+  budget: {
+    status: "ok",
+    monthlyPace: 60000,
+    months: 100,
+    cashFlow: 60000,
+    principalRepayment: 0,
+  },
+  history: {
+    status: "no-data",
+    monthlyPace: null,
+    months: null,
+    fromDate: null,
+    toDate: null,
+  },
+};
 
 describe("GoalProgressSection", () => {
   // PRD 第 9 節 #31a：目標未設定時顯示引導文字＋「使用建議值」按鈕
@@ -83,6 +102,85 @@ describe("GoalProgressSection", () => {
 
     expect(screen.getByTestId("goal-progress-bar-fill")).toHaveStyle({
       width: "0%",
+    });
+  });
+
+  // PRD 4.2「目標達成時間預估」
+  describe("預估達成時間", () => {
+    it("有傳入估算且尚未達成時，於進度條下方顯示", () => {
+      render(
+        <GoalProgressSection
+          netWorth={4000000}
+          targetNetWorth={10000000}
+          monthlyExpense={40000}
+          progress={40}
+          estimates={ESTIMATES}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("goal-eta-budget")).toHaveTextContent(
+        "約 8 年 4 個月（預計 2035 年 2 月）"
+      );
+      expect(screen.getByTestId("goal-eta-history")).toHaveTextContent(
+        "需要相隔至少 30 天的兩筆已存檔快照"
+      );
+    });
+
+    it("未傳入估算時不顯示", () => {
+      render(
+        <GoalProgressSection
+          netWorth={4000000}
+          targetNetWorth={10000000}
+          monthlyExpense={40000}
+          progress={40}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByTestId("goal-eta")).not.toBeInTheDocument();
+    });
+
+    // 第 9 節 #56k
+    it("尚未設定目標時只顯示引導文字，不顯示預估達成時間", () => {
+      render(
+        <GoalProgressSection
+          netWorth={4000000}
+          targetNetWorth={0}
+          monthlyExpense={40000}
+          progress={null}
+          estimates={{
+            ...ESTIMATES,
+            budget: { ...ESTIMATES.budget, status: "unset", months: null },
+            history: { ...ESTIMATES.history, status: "unset" },
+          }}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("goal-progress-empty")).toBeInTheDocument();
+      expect(screen.queryByTestId("goal-eta")).not.toBeInTheDocument();
+    });
+
+    // 第 9 節 #56k
+    it("已達成目標時不顯示預估達成時間", () => {
+      render(
+        <GoalProgressSection
+          netWorth={12000000}
+          targetNetWorth={10000000}
+          monthlyExpense={40000}
+          progress={120}
+          estimates={{
+            ...ESTIMATES,
+            budget: { ...ESTIMATES.budget, status: "achieved", months: null },
+            history: { ...ESTIMATES.history, status: "achieved" },
+          }}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("goal-progress-achieved")).toBeInTheDocument();
+      expect(screen.queryByTestId("goal-eta")).not.toBeInTheDocument();
     });
   });
 });

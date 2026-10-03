@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AssetAllocationBar } from "@/components/AssetAllocationBar";
 import { BackupReminderBanner } from "@/components/BackupReminderBanner";
 import { CashFlowIndicator } from "@/components/CashFlowIndicator";
@@ -30,6 +30,7 @@ import { TargetNetWorthInput } from "@/components/TargetNetWorthInput";
 import { TrendSection } from "@/components/TrendSection";
 import { Button } from "@/components/ui/button";
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
+import { calculateGoalEstimates } from "@/lib/calculations";
 import { getBackupReminder, getDataFreshness } from "@/lib/dataFreshness";
 import { getCurrentDate } from "@/lib/storage";
 
@@ -63,6 +64,12 @@ function App() {
   } = useLocalSnapshots();
 
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // 目標達成時間預估（PRD 5.7a）：收支取自表單，歷史速度只看已存檔快照
+  const goalEstimates = useMemo(
+    () => calculateGoalEstimates(draft, snapshots),
+    [draft, snapshots]
+  );
 
   // 資料新鮮度與備份提醒（PRD 4.2）：只看已存檔快照，與今日草稿是否有未存檔異動無關
   const freshness = getDataFreshness(latestSnapshotDate, currentDate);
@@ -283,6 +290,7 @@ function App() {
               targetNetWorth={draft.targetNetWorth}
               monthlyExpense={draft.monthlyExpense}
               progress={metrics.goalProgress}
+              estimates={goalEstimates}
               onSetTarget={(targetNetWorth) => updateDraft({ targetNetWorth })}
             />
 
