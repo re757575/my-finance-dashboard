@@ -823,6 +823,10 @@ async function seedRichHistory(page: Page, daysAgo: number[]) {
 const trendCard = (page: Page, title: string) =>
   page.locator("div.rounded-xl").filter({ hasText: title }).first();
 
+/** 切換歷史趨勢圖區的分頁：圖表依分頁分組，一次只顯示一組（PRD 4.2「趨勢圖分組分頁」）。 */
+const selectTrendTab = (page: Page, name: "資產" | "負債" | "配置與儲蓄") =>
+  page.getByRole("tab", { name, exact: true }).click();
+
 // PRD 第 9 節 #50、#50b、#50d：儲蓄率、每月應還款、資產配置三張新趨勢圖
 test("新增的儲蓄率、每月應還款、資產配置趨勢圖顯示對應數值", async ({
   page,
@@ -830,10 +834,15 @@ test("新增的儲蓄率、每月應還款、資產配置趨勢圖顯示對應�
   // i=0：月付 10,000、支出 40,000 → 儲蓄率 50%；i=1：月付 7,500、支出 30,000 → 儲蓄率 62.5%
   await seedRichHistory(page, [10, 5]);
 
-  await expect(trendCard(page, "儲蓄率趨勢")).toContainText("62.5%");
+  // 每月應還款在「負債」分頁
+  await selectTrendTab(page, "負債");
   const debtCard = trendCard(page, "每月應還款趨勢");
   await expect(debtCard).toContainText("$7,500");
   await expect(debtCard).toContainText("▼ $2,500 (-25.0%)");
+
+  // 儲蓄率、資產配置在「配置與儲蓄」分頁
+  await selectTrendTab(page, "配置與儲蓄");
+  await expect(trendCard(page, "儲蓄率趨勢")).toContainText("62.5%");
   await expect(page.getByTestId("allocation-legend")).toContainText(
     "現金 50.0%"
   );
@@ -853,6 +862,7 @@ test("資產配置趨勢圖：點擊節點顯示各類占比，全螢幕顯示 0
 }) => {
   await seedRichHistory(page, [10, 5]);
 
+  await selectTrendTab(page, "配置與儲蓄");
   await page.getByRole("button", { name: "資產配置趨勢全螢幕檢視" }).click();
   const dialog = page.getByRole("dialog");
   for (const tick of ["0%", "25%", "50%", "75%", "100%"]) {
@@ -863,9 +873,19 @@ test("資產配置趨勢圖：點擊節點顯示各類占比，全螢幕顯示 0
   await expect(dialog.getByTestId("chart-tooltip")).toContainText("台股 50.0%");
 });
 
-// PRD 第 9 節 #50k：只有 1 筆快照時，所有趨勢卡片都是空狀態
+// PRD 第 9 節 #50k、#58g：只有 1 筆快照時，三個分頁共八張趨勢卡片都是空狀態
 test("只有 1 筆快照時，八張趨勢卡片都顯示空狀態", async ({ page }) => {
   await seedRichHistory(page, [3]);
 
-  await expect(page.getByText("持續使用滿 2 天即可查看趨勢")).toHaveCount(8);
+  const emptyHint = page.getByText("持續使用滿 2 天即可查看趨勢");
+  // 資產：淨資產、現金、股票
+  await expect(emptyHint).toHaveCount(3);
+  // 負債：負債比、資產負債對比、每月應還款
+  await selectTrendTab(page, "負債");
+  await expect(page.getByText("每月應還款趨勢")).toBeVisible();
+  await expect(emptyHint).toHaveCount(3);
+  // 配置與儲蓄：資產配置、儲蓄率
+  await selectTrendTab(page, "配置與儲蓄");
+  await expect(page.getByText("儲蓄率趨勢")).toBeVisible();
+  await expect(emptyHint).toHaveCount(2);
 });

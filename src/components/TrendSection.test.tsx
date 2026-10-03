@@ -1,5 +1,11 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { TrendSection } from "@/components/TrendSection";
 import type { Snapshot } from "@/types/schema";
 
@@ -26,8 +32,30 @@ function cardFor(title: string) {
   return screen.getByText(title).closest(".rounded-xl") as HTMLElement;
 }
 
+type TrendTabName = "資產" | "負債" | "配置與儲蓄";
+
+const tab = (name: TrendTabName) => screen.getByRole("tab", { name });
+
+/** 切換趨勢圖分頁（Radix 的分頁在 mousedown 而非 click 時切換）。 */
+function selectTab(name: TrendTabName) {
+  fireEvent.mouseDown(tab(name));
+}
+
+/** 目前分頁內的圖表卡片標題（依 DOM 順序）。 */
+function visibleChartTitles() {
+  const panel = screen.getByRole("tabpanel");
+  return Array.from(panel.children).map(
+    (card) => card.querySelector("p")?.textContent
+  );
+}
+
+const ASSET_CHARTS = ["淨資產趨勢", "現金趨勢", "股票趨勢"];
+const LIABILITY_CHARTS = ["負債比趨勢", "資產負債對比", "每月應還款趨勢"];
+const ALLOCATION_CHARTS = ["資產配置趨勢", "儲蓄率趨勢"];
+
 describe("TrendSection", () => {
-  it("尚無快照時，八張卡片皆顯示空狀態提示，且不顯示範圍下拉選單", () => {
+  // PRD 第 9 節 #58g
+  it("尚無快照時，三個分頁共八張卡片皆顯示空狀態提示，且不顯示範圍下拉選單", () => {
     render(
       <TrendSection
         visibleSnapshots={[]}
@@ -38,15 +66,184 @@ describe("TrendSection", () => {
       />
     );
 
-    expect(screen.getByText("淨資產趨勢")).toBeInTheDocument();
-    expect(screen.getByText("現金趨勢")).toBeInTheDocument();
-    expect(screen.getByText("股票趨勢")).toBeInTheDocument();
-    expect(screen.getByText("負債比趨勢")).toBeInTheDocument();
-    expect(screen.getByText("資產配置趨勢")).toBeInTheDocument();
-    expect(screen.getByText("儲蓄率趨勢")).toBeInTheDocument();
-    expect(screen.getByText("每月應還款趨勢")).toBeInTheDocument();
-    expect(screen.getAllByText("持續使用滿 2 天即可查看趨勢")).toHaveLength(8);
     expect(screen.queryByLabelText("趨勢圖範圍")).not.toBeInTheDocument();
+    // 分頁列照常顯示
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+
+    expect(visibleChartTitles()).toEqual(ASSET_CHARTS);
+    expect(screen.getAllByText("持續使用滿 2 天即可查看趨勢")).toHaveLength(3);
+
+    selectTab("負債");
+    expect(visibleChartTitles()).toEqual(LIABILITY_CHARTS);
+    expect(screen.getAllByText("持續使用滿 2 天即可查看趨勢")).toHaveLength(3);
+
+    selectTab("配置與儲蓄");
+    expect(visibleChartTitles()).toEqual(ALLOCATION_CHARTS);
+    expect(screen.getAllByText("持續使用滿 2 天即可查看趨勢")).toHaveLength(2);
+  });
+
+  // PRD 4.2「趨勢圖分組分頁」、第 9 節 #58a～#58f
+  describe("分組分頁", () => {
+    const snapshots: Snapshot[] = [
+      baseSnapshot({ date: "2026-01-01" }),
+      baseSnapshot({ date: "2026-01-02" }),
+    ];
+
+    function renderSection(onRangeChange = vi.fn()) {
+      return render(
+        <TrendSection
+          visibleSnapshots={snapshots}
+          snapshotCount={2}
+          trendRange="all"
+          onRangeChange={onRangeChange}
+          targetNetWorth={0}
+        />
+      );
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("分頁列有 tablist／tab／tabpanel 語意，預設選取「資產」", () => {
+      renderSection();
+
+      const tablist = screen.getByRole("tablist", { name: "趨勢圖分組" });
+      expect(
+        within(tablist)
+          .getAllByRole("tab")
+          .map((t) => t.textContent)
+      ).toEqual(["資產", "負債", "配置與儲蓄"]);
+      expect(tab("資產")).toHaveAttribute("aria-selected", "true");
+      expect(tab("負債")).toHaveAttribute("aria-selected", "false");
+      expect(tab("配置與儲蓄")).toHaveAttribute("aria-selected", "false");
+      expect(
+        screen.getByRole("tabpanel", { name: "資產" })
+      ).toBeInTheDocument();
+    });
+
+    it("預設只渲染「資產」分頁的三張圖，其他分頁的圖不在 DOM 中", () => {
+      renderSection();
+
+      expect(visibleChartTitles()).toEqual(ASSET_CHARTS);
+      for (const title of [...LIABILITY_CHARTS, ...ALLOCATION_CHARTS]) {
+        expect(screen.queryByText(title)).not.toBeInTheDocument();
+      }
+      expect(screen.getAllByRole("tabpanel")).toHaveLength(1);
+    });
+
+    it("切換到「負債」分頁後依序顯示負債比、資產負債對比、每月應還款", () => {
+      renderSection();
+
+      selectTab("負債");
+
+      expect(tab("負債")).toHaveAttribute("aria-selected", "true");
+      expect(tab("資產")).toHaveAttribute("aria-selected", "false");
+      expect(
+        screen.getByRole("tabpanel", { name: "負債" })
+      ).toBeInTheDocument();
+      expect(visibleChartTitles()).toEqual(LIABILITY_CHARTS);
+      for (const title of [...ASSET_CHARTS, ...ALLOCATION_CHARTS]) {
+        expect(screen.queryByText(title)).not.toBeInTheDocument();
+      }
+    });
+
+    it("切換到「配置與儲蓄」分頁後依序顯示資產配置、儲蓄率", () => {
+      renderSection();
+
+      selectTab("配置與儲蓄");
+
+      expect(tab("配置與儲蓄")).toHaveAttribute("aria-selected", "true");
+      expect(visibleChartTitles()).toEqual(ALLOCATION_CHARTS);
+      for (const title of [...ASSET_CHARTS, ...LIABILITY_CHARTS]) {
+        expect(screen.queryByText(title)).not.toBeInTheDocument();
+      }
+    });
+
+    it("可切回「資產」分頁", () => {
+      renderSection();
+
+      selectTab("負債");
+      selectTab("資產");
+
+      expect(tab("資產")).toHaveAttribute("aria-selected", "true");
+      expect(visibleChartTitles()).toEqual(ASSET_CHARTS);
+    });
+
+    it("鍵盤左右方向鍵可切換分頁，焦點跟著移動", async () => {
+      renderSection();
+
+      tab("資產").focus();
+      fireEvent.keyDown(tab("資產"), { key: "ArrowRight" });
+      await waitFor(() =>
+        expect(tab("負債")).toHaveAttribute("aria-selected", "true")
+      );
+      expect(tab("負債")).toHaveFocus();
+      expect(visibleChartTitles()).toEqual(LIABILITY_CHARTS);
+
+      fireEvent.keyDown(tab("負債"), { key: "ArrowRight" });
+      await waitFor(() =>
+        expect(tab("配置與儲蓄")).toHaveAttribute("aria-selected", "true")
+      );
+      expect(visibleChartTitles()).toEqual(ALLOCATION_CHARTS);
+
+      fireEvent.keyDown(tab("配置與儲蓄"), { key: "ArrowLeft" });
+      await waitFor(() =>
+        expect(tab("負債")).toHaveAttribute("aria-selected", "true")
+      );
+      expect(tab("負債")).toHaveFocus();
+      expect(tab("資產")).toHaveAttribute("aria-selected", "false");
+      expect(tab("配置與儲蓄")).toHaveAttribute("aria-selected", "false");
+    });
+
+    it("範圍下拉選單在每個分頁都在，切換分頁不會改變範圍", () => {
+      const onRangeChange = vi.fn();
+      renderSection(onRangeChange);
+
+      for (const name of ["資產", "負債", "配置與儲蓄"] as const) {
+        selectTab(name);
+        expect(screen.getByLabelText("趨勢圖範圍")).toHaveValue("all");
+      }
+      expect(onRangeChange).not.toHaveBeenCalled();
+    });
+
+    it("在非預設分頁切換範圍：回報新範圍，重新渲染後仍停留在該分頁", () => {
+      const onRangeChange = vi.fn();
+      const { rerender } = renderSection(onRangeChange);
+
+      selectTab("負債");
+      fireEvent.change(screen.getByLabelText("趨勢圖範圍"), {
+        target: { value: "7" },
+      });
+      expect(onRangeChange).toHaveBeenCalledWith(7);
+
+      rerender(
+        <TrendSection
+          visibleSnapshots={snapshots}
+          snapshotCount={2}
+          trendRange={7}
+          onRangeChange={onRangeChange}
+          targetNetWorth={0}
+        />
+      );
+
+      expect(screen.getByLabelText("趨勢圖範圍")).toHaveValue("7");
+      expect(tab("負債")).toHaveAttribute("aria-selected", "true");
+      expect(visibleChartTitles()).toEqual(LIABILITY_CHARTS);
+    });
+
+    it("選取的分頁只存在記憶體：不寫入 LocalStorage，重新掛載後回到「資產」", () => {
+      const setItem = vi.spyOn(Storage.prototype, "setItem");
+      const { unmount } = renderSection();
+
+      selectTab("配置與儲蓄");
+      expect(setItem).not.toHaveBeenCalled();
+
+      unmount();
+      renderSection();
+      expect(tab("資產")).toHaveAttribute("aria-selected", "true");
+      expect(visibleChartTitles()).toEqual(ASSET_CHARTS);
+    });
   });
 
   // 現金趨勢／股票趨勢卡片各自對應快照的 totalCash／totalStockValue，彼此不互相污染
@@ -100,6 +297,8 @@ describe("TrendSection", () => {
     expect(
       within(cardFor("股票趨勢")).getByText("$80,000")
     ).toBeInTheDocument();
+
+    selectTab("負債");
     expect(
       within(cardFor("負債比趨勢")).getByText("10.0%")
     ).toBeInTheDocument();
@@ -286,7 +485,11 @@ describe("TrendSection", () => {
       }),
     ];
 
-    function renderSection(visibleSnapshots: Snapshot[]) {
+    /** 渲染後切到指定分頁：儲蓄率／資產配置在「配置與儲蓄」（預設），每月應還款在「負債」。 */
+    function renderSection(
+      visibleSnapshots: Snapshot[],
+      tabName: TrendTabName = "配置與儲蓄"
+    ) {
       render(
         <TrendSection
           visibleSnapshots={visibleSnapshots}
@@ -296,6 +499,7 @@ describe("TrendSection", () => {
           targetNetWorth={0}
         />
       );
+      selectTab(tabName);
     }
 
     it("儲蓄率趨勢顯示最新一筆儲蓄率，且不顯示增減比對", () => {
@@ -333,7 +537,7 @@ describe("TrendSection", () => {
     });
 
     it("每月應還款趨勢顯示最新月付，並附與上一筆比對的增減", () => {
-      renderSection(twoSnapshots);
+      renderSection(twoSnapshots, "負債");
 
       const card = cardFor("每月應還款趨勢");
       // 最新月付 90,000 ÷ 10 = 9,000；前一筆 120,000 ÷ 12 = 10,000 → 減少 $1,000 (−10.0%)
@@ -342,7 +546,10 @@ describe("TrendSection", () => {
     });
 
     it("每月應還款以各筆快照自己的負債計算，不受其他快照影響", () => {
-      renderSection([twoSnapshots[0], { ...twoSnapshots[1], debts: [] }]);
+      renderSection(
+        [twoSnapshots[0], { ...twoSnapshots[1], debts: [] }],
+        "負債"
+      );
 
       expect(
         within(cardFor("每月應還款趨勢")).getAllByText("$0")[0]
@@ -400,10 +607,13 @@ describe("TrendSection", () => {
     });
 
     it("被排除的快照仍會出現在其他趨勢圖（只排除資產配置圖）", () => {
-      renderSection([
-        baseSnapshot({ date: "2026-01-01", realEstateValue: 5000000 }),
-        twoSnapshots[1],
-      ]);
+      renderSection(
+        [
+          baseSnapshot({ date: "2026-01-01", realEstateValue: 5000000 }),
+          twoSnapshots[1],
+        ],
+        "資產"
+      );
 
       // 淨資產趨勢含 2 個節點，所以有圖而不是空狀態
       expect(
@@ -435,6 +645,8 @@ describe("TrendSection", () => {
         screen.getByLabelText("資產配置趨勢全螢幕檢視")
       ).toBeInTheDocument();
       expect(screen.getByLabelText("儲蓄率趨勢全螢幕檢視")).toBeInTheDocument();
+
+      selectTab("負債");
       expect(
         screen.getByLabelText("每月應還款趨勢全螢幕檢視")
       ).toBeInTheDocument();
@@ -451,6 +663,7 @@ describe("TrendSection", () => {
           targetNetWorth={1000000}
         />
       );
+      selectTab("配置與儲蓄");
 
       fireEvent.click(screen.getByLabelText("儲蓄率趨勢全螢幕檢視"));
 

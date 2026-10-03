@@ -1,6 +1,7 @@
 import { AllocationAreaChart } from "@/components/charts/AllocationAreaChart";
 import { AssetsLiabilitiesBarChart } from "@/components/charts/AssetsLiabilitiesBarChart";
 import { TrendLineChart } from "@/components/charts/TrendLineChart";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateMetrics } from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import type { TrendRange } from "@/hooks/useLocalSnapshots";
@@ -25,7 +26,21 @@ const RANGE_OPTIONS: { value: TrendRange; label: string }[] = [
   { value: "all", label: "全部" },
 ];
 
-/** 歷史趨勢圖區：淨資產／現金／股票／負債比／資產負債對比／資產配置／儲蓄率／每月應還款八張獨立卡片；現金、股票趨勢排在淨資產旁，方便對照淨資產變化是現金減少還是轉為股票（PRD 4.2、6 節）。 */
+/** 趨勢圖分組分頁（PRD 4.2「趨勢圖分組分頁」）：八張圖表分成三組，一次只顯示一組。 */
+const TREND_TABS = [
+  { value: "assets", label: "資產" },
+  { value: "liabilities", label: "負債" },
+  { value: "allocation", label: "配置與儲蓄" },
+] as const;
+
+/** 各分頁共用的圖表卡片格線：桌面三欄、行動端單欄（PRD 第 7 節）。 */
+const CHART_GRID_CLASS_NAME = "grid grid-cols-1 gap-3 md:grid-cols-3";
+
+/**
+ * 歷史趨勢圖區：八張獨立卡片分成三個分頁——資產（淨資產／現金／股票）、負債（負債比／資產負債對比／每月應還款）、
+ * 配置與儲蓄（資產配置／儲蓄率），避免一次攤開八張卡片。現金、股票趨勢排在淨資產旁，方便對照淨資產變化是
+ * 現金減少還是轉為股票（PRD 4.2、6 節）。
+ */
 export function TrendSection({
   visibleSnapshots,
   snapshotCount,
@@ -82,63 +97,78 @@ export function TrendSection({
           </select>
         )}
       </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <TrendLineChart
-          title="淨資產趨勢"
-          points={points.map((p) => ({ date: p.date, value: p.netWorth }))}
-          formatValue={formatCurrency}
-          colorClassName="text-blue-500"
-          showDelta
-          targetValue={targetNetWorth}
-        />
-        <TrendLineChart
-          title="現金趨勢"
-          points={points.map((p) => ({ date: p.date, value: p.totalCash }))}
-          formatValue={formatCurrency}
-          colorClassName="text-teal-500"
-          showDelta
-        />
-        <TrendLineChart
-          title="股票趨勢"
-          points={points.map((p) => ({
-            date: p.date,
-            value: p.totalStockValue,
-          }))}
-          formatValue={formatCurrency}
-          colorClassName="text-violet-500"
-          showDelta
-        />
-        <TrendLineChart
-          title="負債比趨勢"
-          points={points.map((p) => ({ date: p.date, value: p.debtRatio }))}
-          formatValue={formatPercent}
-          colorClassName="text-amber-500"
-        />
-        <AssetsLiabilitiesBarChart
-          points={points.map((p) => ({
-            date: p.date,
-            assets: p.totalAssets,
-            liabilities: p.totalLiabilities,
-          }))}
-        />
-        <AllocationAreaChart points={allocationPoints} />
-        <TrendLineChart
-          title="儲蓄率趨勢"
-          points={points.map((p) => ({ date: p.date, value: p.savingsRate }))}
-          formatValue={formatPercent}
-          colorClassName="text-sky-500"
-        />
-        <TrendLineChart
-          title="每月應還款趨勢"
-          points={points.map((p) => ({
-            date: p.date,
-            value: p.totalMonthlyDebtPayment,
-          }))}
-          formatValue={formatCurrency}
-          colorClassName="text-orange-500"
-          showDelta
-        />
-      </div>
+      {/* 選取的分頁只存在元件 state（不寫入 LocalStorage），重新整理後回到「資產」；
+          未選取分頁的內容不會被渲染，圖表不在 DOM 中（PRD 4.2「趨勢圖分組分頁」） */}
+      <Tabs defaultValue={TREND_TABS[0].value} className="space-y-3">
+        <TabsList aria-label="趨勢圖分組">
+          {TREND_TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="assets" className={CHART_GRID_CLASS_NAME}>
+          <TrendLineChart
+            title="淨資產趨勢"
+            points={points.map((p) => ({ date: p.date, value: p.netWorth }))}
+            formatValue={formatCurrency}
+            colorClassName="text-blue-500"
+            showDelta
+            targetValue={targetNetWorth}
+          />
+          <TrendLineChart
+            title="現金趨勢"
+            points={points.map((p) => ({ date: p.date, value: p.totalCash }))}
+            formatValue={formatCurrency}
+            colorClassName="text-teal-500"
+            showDelta
+          />
+          <TrendLineChart
+            title="股票趨勢"
+            points={points.map((p) => ({
+              date: p.date,
+              value: p.totalStockValue,
+            }))}
+            formatValue={formatCurrency}
+            colorClassName="text-violet-500"
+            showDelta
+          />
+        </TabsContent>
+        <TabsContent value="liabilities" className={CHART_GRID_CLASS_NAME}>
+          <TrendLineChart
+            title="負債比趨勢"
+            points={points.map((p) => ({ date: p.date, value: p.debtRatio }))}
+            formatValue={formatPercent}
+            colorClassName="text-amber-500"
+          />
+          <AssetsLiabilitiesBarChart
+            points={points.map((p) => ({
+              date: p.date,
+              assets: p.totalAssets,
+              liabilities: p.totalLiabilities,
+            }))}
+          />
+          <TrendLineChart
+            title="每月應還款趨勢"
+            points={points.map((p) => ({
+              date: p.date,
+              value: p.totalMonthlyDebtPayment,
+            }))}
+            formatValue={formatCurrency}
+            colorClassName="text-orange-500"
+            showDelta
+          />
+        </TabsContent>
+        <TabsContent value="allocation" className={CHART_GRID_CLASS_NAME}>
+          <AllocationAreaChart points={allocationPoints} />
+          <TrendLineChart
+            title="儲蓄率趨勢"
+            points={points.map((p) => ({ date: p.date, value: p.savingsRate }))}
+            formatValue={formatPercent}
+            colorClassName="text-sky-500"
+          />
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }
