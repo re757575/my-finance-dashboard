@@ -18,9 +18,11 @@ export function CashFlowIndicator({
   const isNegative = cashFlow < 0;
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-center gap-1">
-        <p className="text-sm text-slate-500">本月預估現金流</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-400">
+          本月預估現金流
+        </p>
         <FormulaInfoButton
           title="本月預估現金流"
           formula="現金流 = 收入合計 − 本月支出 − 本月應還款總額"
@@ -34,11 +36,11 @@ export function CashFlowIndicator({
         />
         <p
           data-testid="cash-flow-value"
-          className={`text-2xl font-bold ${isNegative ? "text-rose-600" : "text-slate-900"}`}
+          className={`text-2xl font-bold ${isNegative ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-neutral-50"}`}
         >
           {formatCurrency(cashFlow)}
         </p>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-slate-500 dark:text-neutral-400">
           {isNegative ? "入不敷出" : "收支為正"}
         </span>
       </div>

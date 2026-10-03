@@ -29,14 +29,18 @@ export function IncomeSourceList({ value, onChange }: IncomeSourceListProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-700">每月收入清單</span>
+        <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
+          每月收入清單
+        </span>
         <Button type="button" variant="outline" size="sm" onClick={addSource}>
           + 新增收入
         </Button>
       </div>
 
       {value.length === 0 && (
-        <p className="text-sm text-slate-400">尚未新增收入</p>
+        <p className="text-sm text-slate-400 dark:text-neutral-400">
+          尚未新增收入
+        </p>
       )}
 
       <div className="space-y-2">
@@ -50,7 +54,7 @@ export function IncomeSourceList({ value, onChange }: IncomeSourceListProps) {
         ))}
       </div>
 
-      <p className="text-right text-sm text-slate-500">
+      <p className="text-right text-sm text-slate-500 dark:text-neutral-400">
         收入合計：{formatCurrency(sumIncomeSources(value))}
       </p>
     </div>
@@ -94,7 +98,7 @@ function IncomeSourceRow({ source, onUpdate, onRemove }: IncomeSourceRowProps) {
         type="button"
         onClick={onRemove}
         aria-label={`刪除 ${source.name || "此筆收入"}`}
-        className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+        className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-rose-50 dark:hover:bg-rose-950 hover:text-rose-500 dark:hover:text-rose-400"
       >
         🗑️
       </button>

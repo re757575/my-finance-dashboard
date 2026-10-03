@@ -32,31 +32,33 @@ function EtaRow({
 }) {
   return (
     <div data-testid={testId} className="sm:flex sm:justify-between sm:gap-x-3">
-      <dt className="text-sm text-slate-500">{label}</dt>
+      <dt className="text-sm text-slate-500 dark:text-neutral-400">{label}</dt>
       <dd className="sm:text-right">
         {eta.status === "ok" && eta.months !== null && (
-          <p className="text-sm font-medium text-slate-900">
+          <p className="text-sm font-medium text-slate-900 dark:text-neutral-50">
             約 {formatYearsAndMonths(eta.months)}
-            <span className="ml-1 font-normal text-slate-500">
+            <span className="ml-1 font-normal text-slate-500 dark:text-neutral-400">
               （預計 {formatMonthAfter(baseDate, eta.months)}）
             </span>
           </p>
         )}
         {eta.status === "too-far" && (
-          <p className="text-sm font-medium text-slate-900">超過 100 年</p>
+          <p className="text-sm font-medium text-slate-900 dark:text-neutral-50">
+            超過 100 年
+          </p>
         )}
         {eta.status === "not-growing" && (
-          <p className="text-sm font-medium text-amber-700">
+          <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
             淨資產沒有增加，無法估算
           </p>
         )}
         {eta.status === "no-data" && (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-400 dark:text-neutral-400">
             需要相隔至少 30 天的兩筆已存檔快照
           </p>
         )}
         {eta.monthlyPace !== null && (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-neutral-400">
             每月約{eta.monthlyPace < 0 ? "減少" : "增加"}{" "}
             {formatCurrency(Math.abs(eta.monthlyPace))}
             {detail && `（${detail}）`}
@@ -80,10 +82,12 @@ export function GoalEta({ estimates, netWorth, targetNetWorth }: GoalEtaProps) {
   return (
     <div
       data-testid="goal-eta"
-      className="mt-3 space-y-2 border-t border-slate-100 pt-3"
+      className="mt-3 space-y-2 border-t border-slate-100 dark:border-border pt-3"
     >
       <div className="flex items-center gap-1">
-        <p className="text-sm text-slate-500">預估達成時間</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-400">
+          預估達成時間
+        </p>
         <FormulaInfoButton
           title="預估達成時間"
           formula={
@@ -120,7 +124,7 @@ export function GoalEta({ estimates, netWorth, targetNetWorth }: GoalEtaProps) {
           }
         />
       </dl>
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-slate-400 dark:text-neutral-400">
         線性估算，未計入未來的投資報酬、通膨與收支變動，僅供參考
       </p>
     </div>

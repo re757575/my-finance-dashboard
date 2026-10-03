@@ -7,12 +7,23 @@ const STATUS_STYLES: Record<
   EmergencyFundStatus,
   { bar: string; badge: string }
 > = {
-  "no-need": { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700" },
-  insufficient: { bar: "bg-rose-500", badge: "bg-rose-50 text-rose-700" },
-  basic: { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" },
+  "no-need": {
+    bar: "bg-emerald-500",
+    badge:
+      "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300",
+  },
+  insufficient: {
+    bar: "bg-rose-500",
+    badge: "bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300",
+  },
+  basic: {
+    bar: "bg-amber-500",
+    badge: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300",
+  },
   sufficient: {
     bar: "bg-emerald-500",
-    badge: "bg-emerald-50 text-emerald-700",
+    badge:
+      "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300",
   },
 };
 
@@ -54,10 +65,12 @@ export function EmergencyFundCard({
       : `${formatCurrency(liquidCash)} ÷ (${formatCurrency(monthlyExpense)} + ${formatCurrency(totalMonthlyDebtPayment)}) = ${formatMonths(months)}`;
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-1">
-          <p className="text-sm text-slate-500">緊急預備金月數</p>
+          <p className="text-sm text-slate-500 dark:text-neutral-400">
+            緊急預備金月數
+          </p>
           <FormulaInfoButton
             title="緊急預備金月數"
             formula="緊急預備金月數 = 可動用現金 ÷（本月支出 + 本月應還款總額）"
@@ -74,11 +87,11 @@ export function EmergencyFundCard({
       </div>
       <p
         data-testid="emergency-fund-value"
-        className="mt-1 text-2xl font-bold text-slate-900"
+        className="mt-1 text-2xl font-bold text-slate-900 dark:text-neutral-50"
       >
         {formatMonths(months)}
       </p>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-muted">
         <div
           data-testid="emergency-fund-bar-fill"
           className={`h-full rounded-full transition-all duration-100 ${style.bar}`}
@@ -88,7 +101,7 @@ export function EmergencyFundCard({
       {restrictedCash !== 0 && (
         <p
           data-testid="emergency-fund-restricted-note"
-          className="mt-2 text-xs text-slate-400"
+          className="mt-2 text-xs text-slate-400 dark:text-neutral-400"
         >
           不含不可動用現金 {formatCurrency(restrictedCash)}
         </p>

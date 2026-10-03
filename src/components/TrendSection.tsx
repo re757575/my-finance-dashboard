@@ -75,7 +75,9 @@ export function TrendSection({
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-800">歷史趨勢</h2>
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-neutral-100">
+          歷史趨勢
+        </h2>
         {snapshotCount > 0 && (
           <select
             aria-label="趨勢圖範圍"
@@ -87,7 +89,7 @@ export function TrendSection({
               );
               if (selected) onRangeChange(selected.value);
             }}
-            className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+            className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-sm"
           >
             {RANGE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>

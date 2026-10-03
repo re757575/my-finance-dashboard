@@ -16,9 +16,11 @@ export function PwaUpdatePrompt() {
   return (
     <div
       data-testid="pwa-update-prompt"
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-xl bg-white p-3 shadow-lg ring-1 ring-slate-200 sm:right-4 sm:left-auto"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-xl bg-white dark:bg-card p-3 shadow-lg ring-1 ring-slate-200 dark:ring-border sm:right-4 sm:left-auto"
     >
-      <p className="text-sm text-slate-700">有新版本可用</p>
+      <p className="text-sm text-slate-700 dark:text-neutral-200">
+        有新版本可用
+      </p>
       <div className="flex shrink-0 items-center gap-2">
         <Button
           type="button"

@@ -15,20 +15,21 @@ import type { DebtRatioStatus, PledgeMaintenanceStatus } from "@/types/schema";
 const DEFAULT_DROP = 20;
 
 const DEBT_STATUS_STYLE: Record<DebtRatioStatus, string> = {
-  "debt-free": "bg-emerald-50 text-emerald-700",
-  healthy: "bg-green-50 text-green-700",
-  elevated: "bg-amber-50 text-amber-700",
-  "high-risk": "bg-rose-50 text-rose-700",
+  "debt-free":
+    "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300",
+  healthy: "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300",
+  elevated: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300",
+  "high-risk": "bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300",
 };
 
 const PLEDGE_STATUS_STYLE: Record<
   Exclude<PledgeMaintenanceStatus, "none" | "unset">,
   string
 > = {
-  safe: "bg-emerald-50 text-emerald-700",
-  watch: "bg-green-50 text-green-700",
-  warning: "bg-amber-50 text-amber-700",
-  "margin-call": "bg-rose-50 text-rose-700",
+  safe: "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300",
+  watch: "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300",
+  warning: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300",
+  "margin-call": "bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300",
 };
 
 interface StressTestCardProps {
@@ -59,10 +60,12 @@ export function StressTestCard({ snapshot }: StressTestCardProps) {
     netWorthChangeRate === null ? "" : `，${formatPercent(netWorthChangeRate)}`;
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-1">
-          <p className="text-sm text-slate-500">壓力測試</p>
+          <p className="text-sm text-slate-500 dark:text-neutral-400">
+            壓力測試
+          </p>
           <FormulaInfoButton
             title="壓力測試"
             formula={
@@ -79,7 +82,7 @@ export function StressTestCard({ snapshot }: StressTestCardProps) {
         <div
           role="group"
           aria-label="股票下跌情境"
-          className="inline-flex rounded-full border border-slate-200 p-0.5 text-xs"
+          className="inline-flex rounded-full border border-slate-200 dark:border-border p-0.5 text-xs"
         >
           {STRESS_TEST_DROPS.map((value) => (
             <button
@@ -90,8 +93,8 @@ export function StressTestCard({ snapshot }: StressTestCardProps) {
               className={cn(
                 "rounded-full px-2.5 py-0.5 font-medium transition-colors",
                 drop === value
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-slate-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
+                  : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200"
               )}
             >
               {`\u2212${value}%`}
@@ -110,13 +113,15 @@ export function StressTestCard({ snapshot }: StressTestCardProps) {
         <Row label="淨資產">
           <span
             data-testid="stress-test-net-worth"
-            className={cn(after.netWorth < 0 && "text-rose-600")}
+            className={cn(
+              after.netWorth < 0 && "text-rose-600 dark:text-rose-400"
+            )}
           >
             {formatCurrency(before.netWorth)} → {formatCurrency(after.netWorth)}
           </span>
           <span
             data-testid="stress-test-net-worth-change"
-            className="ml-2 text-xs text-slate-500"
+            className="ml-2 text-xs text-slate-500 dark:text-neutral-400"
           >
             （{formatCurrency(netWorthChange)}
             {rateNote}）
@@ -156,13 +161,13 @@ export function StressTestCard({ snapshot }: StressTestCardProps) {
       {marginCall && (
         <p
           data-testid="stress-test-margin-call-warning"
-          className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700"
+          className="mt-3 rounded-lg bg-rose-50 dark:bg-rose-950 px-3 py-2 text-sm font-medium text-rose-700 dark:text-rose-300"
         >
           此情境下質押維持率將低於 {PLEDGE_MARGIN_CALL_RATIO}% 追繳線
         </p>
       )}
 
-      <p className="mt-3 text-xs text-slate-400">
+      <p className="mt-3 text-xs text-slate-400 dark:text-neutral-400">
         僅為簡化的即時試算，未考量匯率變動、個股差異與融資追繳的實際規定
       </p>
     </div>
@@ -178,8 +183,10 @@ function Row({
 }) {
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="font-medium text-slate-900">{children}</dd>
+      <dt className="text-slate-500 dark:text-neutral-400">{label}</dt>
+      <dd className="font-medium text-slate-900 dark:text-neutral-50">
+        {children}
+      </dd>
     </div>
   );
 }

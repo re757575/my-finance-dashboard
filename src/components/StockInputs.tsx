@@ -46,7 +46,9 @@ export function StockInputs({
 
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-700">美股市值</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
+            美股市值
+          </span>
           <CurrencyToggle
             value={usStockCurrency}
             onChange={(nextCurrency) =>
@@ -71,7 +73,7 @@ export function StockInputs({
         />
       )}
 
-      <p className="text-right text-sm text-slate-500">
+      <p className="text-right text-sm text-slate-500 dark:text-neutral-400">
         股票市值合計：{formatCurrency(totalStockValue)}
       </p>
     </div>
@@ -89,7 +91,7 @@ function CurrencyToggle({
     <div
       role="group"
       aria-label="美股市值計價幣別"
-      className="inline-flex rounded-full border border-slate-200 p-0.5 text-xs"
+      className="inline-flex rounded-full border border-slate-200 dark:border-border p-0.5 text-xs"
     >
       {(["USD", "TWD"] as const).map((currency) => (
         <button
@@ -100,8 +102,8 @@ function CurrencyToggle({
           className={cn(
             "rounded-full px-2.5 py-0.5 font-medium transition-colors",
             value === currency
-              ? "bg-slate-900 text-white"
-              : "text-slate-500 hover:text-slate-700"
+              ? "bg-slate-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
+              : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200"
           )}
         >
           {currency}
@@ -139,7 +141,7 @@ function UsStockValueInput({
         className="pr-14"
         aria-label="美股市值"
       />
-      <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">
+      <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400 dark:text-neutral-400">
         {currency}
       </span>
     </div>

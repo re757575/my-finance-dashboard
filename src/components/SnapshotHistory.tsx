@@ -68,23 +68,25 @@ export function SnapshotHistory({
 
   return (
     <section className="space-y-3" data-testid="snapshot-history">
-      <h2 className="text-lg font-semibold text-slate-800">歷史快照</h2>
+      <h2 className="text-lg font-semibold text-slate-800 dark:text-neutral-100">
+        歷史快照
+      </h2>
 
       {sorted.length === 0 ? (
         <p
           data-testid="snapshot-history-empty"
-          className="rounded-xl bg-white p-4 text-sm text-slate-400 shadow-sm"
+          className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
         >
           尚未有已存檔的快照
         </p>
       ) : (
-        <div className="rounded-xl bg-white p-2 shadow-sm">
+        <div className="rounded-xl bg-white dark:bg-card p-2 shadow-sm">
           <ul
             data-testid="snapshot-history-list"
             // 捲動區需可用鍵盤聚焦，鍵盤使用者才能捲動（PRD 4.2、7 節）
             tabIndex={expanded ? 0 : undefined}
             aria-label={expanded ? "歷史快照清單" : undefined}
-            className={`divide-y divide-slate-100 ${expanded ? EXPANDED_LIST_CLASS : ""}`}
+            className={`divide-y divide-slate-100 dark:divide-border ${expanded ? EXPANDED_LIST_CLASS : ""}`}
           >
             {rows.map(({ snapshot, netWorth, totalAssets }) => {
               const isToday = snapshot.date === currentDate;
@@ -96,23 +98,27 @@ export function SnapshotHistory({
                   className="flex flex-wrap items-center justify-between gap-2 px-2 py-2 text-sm"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-900">
+                    <p className="font-medium text-slate-900 dark:text-neutral-50">
                       {snapshot.date}
                       {isToday && (
-                        <span className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700">
+                        <span className="ml-2 rounded-full bg-sky-50 dark:bg-sky-950 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300">
                           今天
                         </span>
                       )}
                       {isEditing && (
-                        <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        <span className="ml-2 rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                           修正中
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-neutral-400">
                       淨資產{" "}
                       <span
-                        className={netWorth < 0 ? "text-rose-600" : undefined}
+                        className={
+                          netWorth < 0
+                            ? "text-rose-600 dark:text-rose-400"
+                            : undefined
+                        }
                       >
                         {formatCurrency(netWorth)}
                       </span>

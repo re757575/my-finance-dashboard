@@ -14,7 +14,10 @@ export function DataFreshnessNotice({ freshness }: DataFreshnessNoticeProps) {
 
   if (freshness.status === "today") {
     return (
-      <p data-testid="data-freshness" className="text-sm text-slate-500">
+      <p
+        data-testid="data-freshness"
+        className="text-sm text-slate-500 dark:text-neutral-400"
+      >
         今日已更新
       </p>
     );
@@ -25,7 +28,11 @@ export function DataFreshnessNotice({ freshness }: DataFreshnessNoticeProps) {
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
       <p
         data-testid="data-freshness"
-        className={stale ? "text-amber-700" : "text-slate-500"}
+        className={
+          stale
+            ? "text-amber-700 dark:text-amber-300"
+            : "text-slate-500 dark:text-neutral-400"
+        }
       >
         距上次更新 {freshness.days} 天（{freshness.lastDate}）
       </p>
@@ -33,11 +40,11 @@ export function DataFreshnessNotice({ freshness }: DataFreshnessNoticeProps) {
         <>
           <span
             data-testid="data-freshness-stale-badge"
-            className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-amber-700"
+            className="rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-amber-700 dark:text-amber-300"
           >
             資料可能已過期
           </span>
-          <span className="text-xs text-amber-700">
+          <span className="text-xs text-amber-700 dark:text-amber-300">
             請更新股票市值、現金與負債後再存檔
           </span>
         </>

@@ -148,10 +148,15 @@ export function DataManagement({
   }
 
   return (
-    <div className="space-y-2 border-t border-slate-200 pt-4">
-      <p className="text-sm font-medium text-slate-700">資料管理</p>
+    <div className="space-y-2 border-t border-slate-200 dark:border-border pt-4">
+      <p className="text-sm font-medium text-slate-700 dark:text-neutral-200">
+        資料管理
+      </p>
       {backupStatus && (
-        <p data-testid="last-backup" className="text-xs text-slate-500">
+        <p
+          data-testid="last-backup"
+          className="text-xs text-slate-500 dark:text-neutral-400"
+        >
           上次備份：{formatLastBackup(backupStatus)}
         </p>
       )}
@@ -206,7 +211,7 @@ export function DataManagement({
             <div className="space-y-2">
               <p
                 data-testid="import-needs-password"
-                className="text-sm text-slate-600"
+                className="text-sm text-slate-600 dark:text-neutral-300"
               >
                 此備份檔已加密，請輸入密碼
               </p>
@@ -220,7 +225,9 @@ export function DataManagement({
             </div>
           )}
           {importError && (
-            <p className="text-sm text-rose-600">{importError}</p>
+            <p className="text-sm text-rose-600 dark:text-rose-400">
+              {importError}
+            </p>
           )}
           <DialogFooter>
             <Button
@@ -247,7 +254,7 @@ export function DataManagement({
           </DialogHeader>
           <div className="space-y-2">
             <label className="block space-y-1">
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-neutral-200">
                 密碼（至少 {MIN_BACKUP_PASSWORD_LENGTH} 個字元）
               </span>
               <Input
@@ -259,7 +266,9 @@ export function DataManagement({
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-sm text-slate-700">確認密碼</span>
+              <span className="text-sm text-slate-700 dark:text-neutral-200">
+                確認密碼
+              </span>
               <Input
                 type="password"
                 autoComplete="new-password"
@@ -270,7 +279,10 @@ export function DataManagement({
             </label>
           </div>
           {encryptError && (
-            <p data-testid="encrypt-error" className="text-sm text-rose-600">
+            <p
+              data-testid="encrypt-error"
+              className="text-sm text-rose-600 dark:text-rose-400"
+            >
               {encryptError}
             </p>
           )}

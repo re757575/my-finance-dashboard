@@ -24,9 +24,11 @@ export function MonthlyDebtPaymentCard({
           .join(" + ")} = ${formatCurrency(amount)}`;
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-center gap-1">
-        <p className="text-sm text-slate-500">本月應還款總額</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-400">
+          本月應還款總額
+        </p>
         <FormulaInfoButton
           title="本月應還款總額"
           formula="本月應還款總額 = 各筆負債的「每月應還款金額」加總"
@@ -35,7 +37,7 @@ export function MonthlyDebtPaymentCard({
       </div>
       <p
         data-testid="total-monthly-debt-payment"
-        className="mt-1 text-2xl font-bold text-slate-900"
+        className="mt-1 text-2xl font-bold text-slate-900 dark:text-neutral-50"
       >
         {formatCurrency(amount)}
       </p>

@@ -19,7 +19,7 @@ export function BackupReminderBanner({ reminder }: BackupReminderBannerProps) {
     <div
       data-testid="backup-reminder"
       role="status"
-      className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800"
+      className="mb-4 rounded-lg bg-amber-50 dark:bg-amber-950 p-3 text-sm text-amber-800 dark:text-amber-200"
     >
       {lead}，建議至左側「資料管理」匯出備份，以免瀏覽器資料被清除時遺失。
     </div>

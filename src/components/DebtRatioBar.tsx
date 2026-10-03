@@ -6,11 +6,21 @@ import type { DebtRatioStatus } from "@/types/schema";
 const STATUS_STYLES: Record<DebtRatioStatus, { bar: string; badge: string }> = {
   "debt-free": {
     bar: "bg-emerald-500",
-    badge: "bg-emerald-50 text-emerald-700",
+    badge:
+      "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300",
   },
-  healthy: { bar: "bg-green-500", badge: "bg-green-50 text-green-700" },
-  elevated: { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700" },
-  "high-risk": { bar: "bg-rose-500", badge: "bg-rose-50 text-rose-700" },
+  healthy: {
+    bar: "bg-green-500",
+    badge: "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300",
+  },
+  elevated: {
+    bar: "bg-amber-500",
+    badge: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300",
+  },
+  "high-risk": {
+    bar: "bg-rose-500",
+    badge: "bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300",
+  },
 };
 
 interface DebtRatioBarProps {
@@ -34,10 +44,10 @@ export function DebtRatioBar({
   const style = STATUS_STYLES[status];
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-1">
-          <p className="text-sm text-slate-500">負債比</p>
+          <p className="text-sm text-slate-500 dark:text-neutral-400">負債比</p>
           <FormulaInfoButton
             title="負債比"
             formula="負債比 = 總負債 ÷ 總資產 × 100%"
@@ -54,11 +64,11 @@ export function DebtRatioBar({
       </div>
       <p
         data-testid="debt-ratio-value"
-        className="mt-1 text-2xl font-bold text-slate-900"
+        className="mt-1 text-2xl font-bold text-slate-900 dark:text-neutral-50"
       >
         {formatPercent(ratio)}
       </p>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-muted">
         <div
           data-testid="debt-ratio-bar-fill"
           className={`h-full rounded-full transition-all duration-100 ${style.bar}`}

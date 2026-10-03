@@ -32,7 +32,7 @@ export function TargetNetWorthInput({
     <div className="space-y-1">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-1">
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
             目標淨資產（選填，FIRE 進度）
           </span>
           <FormulaInfoButton

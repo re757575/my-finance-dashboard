@@ -27,9 +27,11 @@ import { StressTestCard } from "@/components/StressTestCard";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TargetCashRatioInput } from "@/components/TargetCashRatioInput";
 import { TargetNetWorthInput } from "@/components/TargetNetWorthInput";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { TrendSection } from "@/components/TrendSection";
 import { Button } from "@/components/ui/button";
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
+import { useTheme } from "@/hooks/useTheme";
 import { calculateGoalEstimates } from "@/lib/calculations";
 import { getBackupReminder, getDataFreshness } from "@/lib/dataFreshness";
 import { getCurrentDate } from "@/lib/storage";
@@ -62,6 +64,10 @@ function App() {
     trendRange,
     setTrendRange,
   } = useLocalSnapshots();
+
+  // 介面主題（PRD 4.2「深色模式」）：獨立於快照資料，不受匯入還原、清空本地資料影響
+  const { preference: themePreference, setPreference: setThemePreference } =
+    useTheme();
 
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -115,32 +121,42 @@ function App() {
   }
 
   return (
-    <div className="min-h-svh bg-[#F9FAFB]">
+    <div className="min-h-svh bg-[#F9FAFB] dark:bg-background">
       <div className="mx-auto max-w-6xl px-4 py-8">
         <header className="mb-6">
-          <h1 className="text-xl font-bold text-slate-900">
-            個人資產負債儀表板
-          </h1>
-          <p className="text-sm text-slate-500">目前檢視日期：{currentDate}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-neutral-50">
+                個人資產負債儀表板
+              </h1>
+              <p className="text-sm text-slate-500 dark:text-neutral-400">
+                目前檢視日期：{currentDate}
+              </p>
+            </div>
+            <ThemeToggle
+              value={themePreference}
+              onChange={setThemePreference}
+            />
+          </div>
           <DataFreshnessNotice freshness={freshness} />
         </header>
 
         <BackupReminderBanner reminder={backupReminder} />
 
         {loadStatus === "corrupted" && (
-          <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="mb-4 rounded-lg bg-amber-50 dark:bg-amber-950 p-3 text-sm text-amber-800 dark:text-amber-200">
             本地資料無法讀取，已重置。請重新輸入本月資料。
           </div>
         )}
         {loadStatus === "version-mismatch" && (
-          <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="mb-4 rounded-lg bg-amber-50 dark:bg-amber-950 p-3 text-sm text-amber-800 dark:text-amber-200">
             偵測到本地資料版本不相容，為避免覆蓋既有資料，暫停顯示與存檔功能。
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* 左欄：輸入區 */}
-          <div className="space-y-4 rounded-xl bg-white p-4 shadow-sm md:col-span-1 md:self-start">
+          <div className="space-y-4 rounded-xl bg-white dark:bg-card p-4 shadow-sm md:col-span-1 md:self-start">
             <SnapshotEditBanner date={editingDate} onCancel={cancelEditing} />
             <CashSourceList
               value={draft.cashSources}
@@ -195,7 +211,7 @@ function App() {
               {saveMessage && (
                 <p
                   data-testid="save-message"
-                  className="text-center text-xs text-slate-500"
+                  className="text-center text-xs text-slate-500 dark:text-neutral-400"
                 >
                   {saveMessage}
                 </p>

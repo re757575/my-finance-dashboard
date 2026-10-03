@@ -101,7 +101,7 @@ function BarChartSvg({ points, variant }: BarChartSvgProps) {
                     x={groupX + groupWidth / 2}
                     y={FULLSCREEN_CHART_HEIGHT + 16}
                     textAnchor="middle"
-                    className="fill-slate-400 text-[10px]"
+                    className="fill-slate-400 dark:fill-neutral-400 text-[10px]"
                   >
                     {formatShortDate(p.date)}
                   </text>
@@ -124,7 +124,7 @@ function BarChartSvg({ points, variant }: BarChartSvgProps) {
         )}
       </div>
       {!isFullscreen && (
-        <div className="mt-1 flex justify-between text-xs text-slate-400">
+        <div className="mt-1 flex justify-between text-xs text-slate-400 dark:text-neutral-400">
           <span>{points[0].date}</span>
           <span>{points.at(-1)?.date}</span>
         </div>
@@ -142,11 +142,13 @@ export function AssetsLiabilitiesBarChart({
   }
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">資產負債對比</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-400">
+          資產負債對比
+        </p>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 text-xs text-slate-500">
+          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-neutral-400">
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-blue-500" />
               資產

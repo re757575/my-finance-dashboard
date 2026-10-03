@@ -25,7 +25,9 @@ export function NumberField({
 
   return (
     <label className="block space-y-1">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
+        {label}
+      </span>
       <div className="relative">
         <Input
           type="text"
@@ -38,7 +40,7 @@ export function NumberField({
           className={suffix ? "pr-14" : undefined}
         />
         {suffix && (
-          <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">
+          <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400 dark:text-neutral-400">
             {suffix}
           </span>
         )}

@@ -42,11 +42,11 @@ export function AssetAllocationBar({
 }: AssetAllocationBarProps) {
   if (financialAssets === 0) {
     return (
-      <div className="rounded-xl bg-white p-4 shadow-sm">
-        <p className="text-sm text-slate-500">資產配置</p>
+      <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
+        <p className="text-sm text-slate-500 dark:text-neutral-400">資產配置</p>
         <div
           data-testid="asset-allocation-empty"
-          className="mt-2 flex h-16 items-center justify-center rounded-lg bg-slate-50 px-4 text-center text-sm text-slate-400"
+          className="mt-2 flex h-16 items-center justify-center rounded-lg bg-slate-50 dark:bg-muted/50 px-4 text-center text-sm text-slate-400 dark:text-neutral-400"
         >
           尚未輸入任何資產
         </div>
@@ -76,9 +76,9 @@ export function AssetAllocationBar({
   ];
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-center gap-1">
-        <p className="text-sm text-slate-500">資產配置</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-400">資產配置</p>
         <FormulaInfoButton
           title="資產配置比例"
           formula={"各類佔比 = 該類金額 ÷ 金融資產 × 100%"}
@@ -87,7 +87,7 @@ export function AssetAllocationBar({
         />
       </div>
       <div
-        className="mt-3 flex h-6 w-full gap-0.5 overflow-hidden rounded-full bg-slate-100"
+        className="mt-3 flex h-6 w-full gap-0.5 overflow-hidden rounded-full bg-slate-100 dark:bg-muted"
         role="img"
         aria-label={`資產配置：${segments
           .map(
@@ -111,7 +111,7 @@ export function AssetAllocationBar({
           );
         })}
       </div>
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-neutral-300">
         {segments.map((segment) => (
           <span key={segment.key} className="flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-full ${segment.color}`} />
@@ -129,7 +129,7 @@ function RealEstateNote({ realEstateValue }: { realEstateValue: number }) {
   return (
     <p
       data-testid="asset-allocation-real-estate-note"
-      className="mt-2 text-xs text-slate-400"
+      className="mt-2 text-xs text-slate-400 dark:text-neutral-400"
     >
       不動產 {formatCurrency(realEstateValue)}（不計入配置比例）
     </p>

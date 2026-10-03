@@ -49,14 +49,18 @@ export function DebtList({ value, onChange, estimatedFields }: DebtListProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-700">負債清單</span>
+        <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
+          負債清單
+        </span>
         <Button type="button" variant="outline" size="sm" onClick={addDebt}>
           + 新增負債
         </Button>
       </div>
 
       {value.length === 0 && (
-        <p className="text-sm text-slate-400">尚未新增負債</p>
+        <p className="text-sm text-slate-400 dark:text-neutral-400">
+          尚未新增負債
+        </p>
       )}
 
       <div className="space-y-2">
@@ -85,7 +89,7 @@ function EstimatedBadge() {
   return (
     <span
       title="此數值由系統依經過的月數自動估算，請確認是否正確"
-      className="ml-1 rounded bg-sky-50 px-1 py-0.5 text-[10px] font-medium text-sky-600"
+      className="ml-1 rounded bg-sky-50 dark:bg-sky-950 px-1 py-0.5 text-[10px] font-medium text-sky-600 dark:text-sky-300"
     >
       系統估算
     </span>
@@ -122,7 +126,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
       : null;
 
   return (
-    <div className="space-y-2 rounded-lg border border-slate-200 p-3">
+    <div className="space-y-2 rounded-lg border border-slate-200 dark:border-border p-3">
       <div className="flex items-center gap-2">
         <select
           aria-label="負債類別"
@@ -134,7 +138,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
               repaymentMethod: DEFAULT_REPAYMENT_METHOD_BY_CATEGORY[category],
             });
           }}
-          className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm"
+          className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-sm"
         >
           {DEBT_CATEGORIES.map((category) => (
             <option key={category} value={category}>
@@ -153,7 +157,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
           type="button"
           onClick={onRemove}
           aria-label={`刪除 ${debt.name || "此筆負債"}`}
-          className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+          className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-rose-50 dark:hover:bg-rose-950 hover:text-rose-500 dark:hover:text-rose-400"
         >
           🗑️
         </button>
@@ -161,7 +165,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
 
       <div className="grid grid-cols-3 gap-2">
         <label className="block space-y-1">
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 dark:text-neutral-400">
             剩餘本金
             {estimated?.principal && <EstimatedBadge />}
           </span>
@@ -177,7 +181,9 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs text-slate-500">年利率 %</span>
+          <span className="text-xs text-slate-500 dark:text-neutral-400">
+            年利率 %
+          </span>
           <Input
             type="text"
             inputMode="decimal"
@@ -190,7 +196,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 dark:text-neutral-400">
             剩餘期數（月）
             {estimated?.remainingMonths && <EstimatedBadge />}
           </span>
@@ -210,7 +216,9 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
       {isPledge && (
         <div className="grid grid-cols-3 items-end gap-2">
           <label className="col-span-2 block space-y-1">
-            <span className="text-xs text-slate-500">質押股票市值</span>
+            <span className="text-xs text-slate-500 dark:text-neutral-400">
+              質押股票市值
+            </span>
             <Input
               type="text"
               inputMode="decimal"
@@ -222,11 +230,11 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
               aria-label="質押股票市值"
             />
           </label>
-          <p className="pb-2 text-right text-xs text-slate-500">
+          <p className="pb-2 text-right text-xs text-slate-500 dark:text-neutral-400">
             維持率：
             <span
               data-testid="debt-maintenance-ratio"
-              className="font-medium text-slate-900"
+              className="font-medium text-slate-900 dark:text-neutral-50"
             >
               {maintenanceRatio === null
                 ? "—"
@@ -241,11 +249,11 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
           value={debt.repaymentMethod}
           onChange={(repaymentMethod) => onUpdate({ repaymentMethod })}
         />
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-neutral-400">
           該筆每月應還：
           <span
             data-testid="debt-monthly-payment"
-            className="font-medium text-slate-900"
+            className="font-medium text-slate-900 dark:text-neutral-50"
           >
             {formatCurrency(monthlyPayment)}
           </span>
@@ -271,7 +279,7 @@ function RepaymentMethodToggle({
     <div
       role="group"
       aria-label="攤還方式"
-      className="inline-flex rounded-full border border-slate-200 p-0.5 text-xs"
+      className="inline-flex rounded-full border border-slate-200 dark:border-border p-0.5 text-xs"
     >
       {options.map((option) => (
         <button
@@ -282,8 +290,8 @@ function RepaymentMethodToggle({
           className={cn(
             "rounded-full px-2.5 py-0.5 font-medium transition-colors",
             value === option.value
-              ? "bg-slate-900 text-white"
-              : "text-slate-500 hover:text-slate-700"
+              ? "bg-slate-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
+              : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200"
           )}
         >
           {option.label}

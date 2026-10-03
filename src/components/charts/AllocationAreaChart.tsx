@@ -142,14 +142,14 @@ function AreaChartSvg({ title, points, layers, variant }: AreaChartSvgProps) {
                   y2={toY(tick)}
                   stroke="currentColor"
                   strokeWidth={1}
-                  className="text-slate-100"
+                  className="text-slate-100 dark:text-neutral-800"
                 />
                 <text
                   x={leftInset - 8}
                   y={toY(tick)}
                   dy="0.32em"
                   textAnchor="end"
-                  className="fill-slate-400 text-[9px]"
+                  className="fill-slate-400 dark:fill-neutral-400 text-[9px]"
                 >
                   {tick}%
                 </text>
@@ -203,7 +203,7 @@ function AreaChartSvg({ title, points, layers, variant }: AreaChartSvgProps) {
                 x={x}
                 y={FULLSCREEN_CHART_HEIGHT + 16}
                 textAnchor="middle"
-                className="fill-slate-400 text-[10px]"
+                className="fill-slate-400 dark:fill-neutral-400 text-[10px]"
               >
                 {formatShortDate(points[i].date)}
               </text>
@@ -232,7 +232,7 @@ function AreaChartSvg({ title, points, layers, variant }: AreaChartSvgProps) {
         )}
       </div>
       {!isFullscreen && (
-        <div className="mt-1 flex justify-between text-xs text-slate-400">
+        <div className="mt-1 flex justify-between text-xs text-slate-400 dark:text-neutral-400">
           <span>{points[0].date}</span>
           <span>{points.at(-1)?.date}</span>
         </div>
@@ -252,7 +252,7 @@ function Legend({
   return (
     <div
       data-testid="allocation-legend"
-      className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600"
+      className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-neutral-300"
     >
       {layers.map((layer) => (
         <span key={layer.key} className="flex items-center gap-1.5">
@@ -284,9 +284,9 @@ export function AllocationAreaChart({
   const latest = points.at(-1)!;
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-baseline justify-between">
-        <p className="text-sm text-slate-500">{title}</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-400">{title}</p>
         <ChartExpandButton title={title}>
           <Legend layers={layers} latest={latest} />
           <AreaChartSvg

@@ -55,7 +55,7 @@ export function CopyPromptButton({
           value={mode}
           onChange={(e) => setMode(e.target.value as PromptMode)}
           disabled={disabled}
-          className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm disabled:opacity-50"
+          className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-sm disabled:opacity-50"
         >
           {PROMPT_MODE_OPTIONS.map(([value, label]) => (
             <option key={value} value={value}>
@@ -75,12 +75,14 @@ export function CopyPromptButton({
         </Button>
       </div>
       {disabled ? (
-        <p className="text-xs text-slate-400">先儲存今日資料才能生成提示詞</p>
+        <p className="text-xs text-slate-400 dark:text-neutral-400">
+          先儲存今日資料才能生成提示詞
+        </p>
       ) : (
         copyMessage && (
           <p
             data-testid="copy-prompt-message"
-            className="text-xs text-slate-500"
+            className="text-xs text-slate-500 dark:text-neutral-400"
           >
             {copyMessage}
           </p>

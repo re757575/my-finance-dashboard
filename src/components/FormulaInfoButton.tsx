@@ -40,12 +40,18 @@ export function FormulaInfoButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64" data-testid="formula-info-content">
-        <p className="font-medium text-slate-900">{title}</p>
-        <p className="whitespace-pre-line text-slate-500">{formula}</p>
-        <p className="font-mono text-xs whitespace-pre-line text-slate-700">
+        <p className="font-medium text-slate-900 dark:text-neutral-50">
+          {title}
+        </p>
+        <p className="whitespace-pre-line text-slate-500 dark:text-neutral-400">
+          {formula}
+        </p>
+        <p className="font-mono text-xs whitespace-pre-line text-slate-700 dark:text-neutral-200">
           {substitution}
         </p>
-        {note && <p className="text-xs text-slate-400">{note}</p>}
+        {note && (
+          <p className="text-xs text-slate-400 dark:text-neutral-400">{note}</p>
+        )}
       </PopoverContent>
     </Popover>
   );

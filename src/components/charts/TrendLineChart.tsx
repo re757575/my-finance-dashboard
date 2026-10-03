@@ -179,14 +179,14 @@ function LineChartSvg({
                 y2={tick.y}
                 stroke="currentColor"
                 strokeWidth={1}
-                className="text-slate-100"
+                className="text-slate-100 dark:text-neutral-800"
               />
               <text
                 x={leftInset - 8}
                 y={tick.y}
                 dy="0.32em"
                 textAnchor="end"
-                className="fill-slate-400 text-[9px]"
+                className="fill-slate-400 dark:fill-neutral-400 text-[9px]"
               >
                 {formatValue(tick.value)}
               </text>
@@ -202,13 +202,13 @@ function LineChartSvg({
                 stroke="currentColor"
                 strokeWidth={1.5}
                 strokeDasharray="4 3"
-                className="text-slate-300"
+                className="text-slate-300 dark:text-neutral-600"
               />
               <text
                 x={leftInset}
                 y={targetY - 4}
                 textAnchor="start"
-                className="fill-slate-400 text-[9px]"
+                className="fill-slate-400 dark:fill-neutral-400 text-[9px]"
               >
                 目標 {formatValue(targetValue!)}
               </text>
@@ -250,7 +250,7 @@ function LineChartSvg({
                 x={c.x}
                 y={FULLSCREEN_CHART_HEIGHT + 16}
                 textAnchor="middle"
-                className="fill-slate-400 text-[10px]"
+                className="fill-slate-400 dark:fill-neutral-400 text-[10px]"
               >
                 {formatShortDate(points[i].date)}
               </text>
@@ -284,7 +284,7 @@ function LineChartSvg({
           {showDelta && (
             <DeltaSummary points={points} formatValue={formatValue} />
           )}
-          <div className="mt-1 flex justify-between text-xs text-slate-400">
+          <div className="mt-1 flex justify-between text-xs text-slate-400 dark:text-neutral-400">
             <span>{points[0].date}</span>
             <span>{points.at(-1)?.date}</span>
           </div>
@@ -310,15 +310,15 @@ export function TrendLineChart({
   const last = points.at(-1)!;
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-baseline justify-between">
-        <p className="text-sm text-slate-500">{title}</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-400">{title}</p>
         <div className="flex items-center gap-1">
-          <p className="text-sm font-semibold text-slate-700">
+          <p className="text-sm font-semibold text-slate-700 dark:text-neutral-200">
             {formatValue(last.value)}
           </p>
           <ChartExpandButton title={title}>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-neutral-400">
               最新：{formatValue(last.value)}
             </p>
             {showDelta && (

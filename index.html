@@ -11,6 +11,29 @@
       content="去中心化、無伺服器、高度重視隱私的個人財務健康管理工具，所有資料僅儲存在你的瀏覽器中。"
     />
     <title>個人資產負債儀表板</title>
+    <!--
+      首次繪製前依主題偏好與系統設定加上 dark class，避免載入時閃現錯誤主題（PRD 4.2「深色模式」）。
+      同源內嵌 script，不發出任何網路請求；鍵名與判斷邏輯需與 src/lib/theme.ts 保持一致。
+    -->
+    <script>
+      (function () {
+        try {
+          var preference = null;
+          try {
+            preference = localStorage.getItem("my_finance_dashboard_theme");
+          } catch (e) {
+            // 瀏覽器拒絕存取 LocalStorage 時視為「跟隨系統」
+          }
+          var dark =
+            preference === "dark" ||
+            (preference !== "light" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {
+          // 套用失敗時維持淺色，待 React 載入後由 useTheme 接手
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

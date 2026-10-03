@@ -68,7 +68,7 @@ export function ChartTooltip({
     <div
       ref={ref}
       data-testid="chart-tooltip"
-      className="pointer-events-none absolute z-10 rounded-md bg-slate-800 px-2 py-1 text-xs whitespace-nowrap text-white shadow-lg"
+      className="pointer-events-none absolute z-10 rounded-md bg-slate-800 px-2 py-1 text-xs whitespace-nowrap text-white shadow-lg dark:bg-neutral-800 dark:ring-1 dark:ring-white/15"
       style={{
         left: `${(x / width) * 100}%`,
         top: `${(y / height) * 100}%`,

@@ -20,7 +20,7 @@ export function SnapshotEditBanner({
     <div
       data-testid="snapshot-edit-banner"
       role="status"
-      className="space-y-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800"
+      className="space-y-2 rounded-lg bg-amber-50 dark:bg-amber-950 p-3 text-sm text-amber-800 dark:text-amber-200"
     >
       <p className="font-medium">正在修正 {date} 的快照</p>
       <p className="text-xs">

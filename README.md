@@ -14,6 +14,7 @@
 - **圖表：** `src/components/charts/` 為手刻 SVG（未引入圖表庫），理由見 [docs/TECH_STACK.md](./docs/TECH_STACK.md)。
 - **AI 分析：** `src/lib/promptBuilder.ts` 產生五種模式的分析提示詞，使用者一鍵複製後自行貼到外部 AI 工具，App 本身不對外發送任何請求。
 - **PWA：** 透過 `vite-plugin-pwa` 只快取同源靜態檔案，可安裝到主畫面並離線開啟，不違反零網路請求原則。
+- **深色模式：** 頁首「顯示主題」可選跟隨系統／淺色／深色（`src/lib/theme.ts`、`src/hooks/useTheme.ts`）。偏好存在獨立的 LocalStorage 鍵，不屬於財務資料：不隨備份匯出，清空本地資料也不會清除。
 
 ## 文件
 

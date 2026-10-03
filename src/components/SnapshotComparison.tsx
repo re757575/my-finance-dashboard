@@ -10,7 +10,7 @@ interface SnapshotComparisonProps {
 }
 
 const SELECT_CLASS =
-  "h-9 rounded-md border border-slate-200 bg-white px-2 text-sm";
+  "h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-sm";
 
 function formatPoints(value: number): string {
   return `${value.toFixed(1)} 個百分點`;
@@ -52,20 +52,20 @@ function ComparisonTableRow({
       >
         {row.label}
         {row.base === null && (
-          <span className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700">
+          <span className="ml-2 rounded-full bg-sky-50 dark:bg-sky-950 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300">
             新增
           </span>
         )}
         {row.target === null && (
-          <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+          <span className="ml-2 rounded-full bg-slate-100 dark:bg-muted px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-neutral-300">
             已移除
           </span>
         )}
       </th>
-      <td className="text-xs whitespace-nowrap text-slate-500 sm:px-2 sm:py-1.5 sm:text-right sm:text-sm">
+      <td className="text-xs whitespace-nowrap text-slate-500 dark:text-neutral-400 sm:px-2 sm:py-1.5 sm:text-right sm:text-sm">
         {row.base === null ? "—" : formatValue(row.base)}
       </td>
-      <td className="text-xs whitespace-nowrap text-slate-900 before:mr-1 before:text-slate-400 before:content-['→'] sm:px-2 sm:py-1.5 sm:text-right sm:text-sm sm:before:content-none">
+      <td className="text-xs whitespace-nowrap text-slate-900 dark:text-neutral-50 before:mr-1 before:text-slate-400 dark:before:text-neutral-400 before:content-['→'] sm:px-2 sm:py-1.5 sm:text-right sm:text-sm sm:before:content-none">
         {row.target === null ? "—" : formatValue(row.target)}
       </td>
       <td className="ml-auto text-xs whitespace-nowrap sm:ml-0 sm:py-1.5 sm:pl-2 sm:text-right sm:text-sm">
@@ -90,19 +90,22 @@ function ComparisonGroup({
   children: ReactNode[];
 }) {
   return (
-    <tbody className="block border-t border-slate-100 sm:table-row-group">
+    <tbody className="block border-t border-slate-100 dark:border-border sm:table-row-group">
       <tr className="block sm:table-row">
         <th
           scope="colgroup"
           colSpan={4}
-          className="block pt-3 pb-1 text-left text-xs font-semibold text-slate-500 sm:table-cell"
+          className="block pt-3 pb-1 text-left text-xs font-semibold text-slate-500 dark:text-neutral-400 sm:table-cell"
         >
           {title}
         </th>
       </tr>
       {children.length === 0 && emptyText ? (
         <tr className="block sm:table-row">
-          <td colSpan={4} className="block py-1.5 text-slate-400 sm:table-cell">
+          <td
+            colSpan={4}
+            className="block py-1.5 text-slate-400 dark:text-neutral-400 sm:table-cell"
+          >
             {emptyText}
           </td>
         </tr>
@@ -144,9 +147,11 @@ export function SnapshotComparison({ snapshots }: SnapshotComparisonProps) {
   return (
     <section className="space-y-3" data-testid="snapshot-comparison">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-slate-800">快照比較</h2>
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-neutral-100">
+          快照比較
+        </h2>
         {base && target && (
-          <div className="flex items-center gap-2 text-sm text-slate-600">
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-neutral-300">
             <span>從</span>
             <select
               aria-label="比較基準日"
@@ -180,26 +185,26 @@ export function SnapshotComparison({ snapshots }: SnapshotComparisonProps) {
       {!base || !target ? (
         <p
           data-testid="snapshot-comparison-empty"
-          className="rounded-xl bg-white p-4 text-sm text-slate-400 shadow-sm"
+          className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
         >
           至少需要 2 筆已存檔的快照才能比較
         </p>
       ) : comparison === null ? (
         <p
           data-testid="snapshot-comparison-same-date"
-          className="rounded-xl bg-white p-4 text-sm text-slate-400 shadow-sm"
+          className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
         >
           請選擇兩筆不同的快照
         </p>
       ) : (
-        <div className="rounded-xl bg-white p-4 shadow-sm">
+        <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
           <table
             data-testid="snapshot-comparison-table"
-            className="block w-full text-sm text-slate-700 sm:table"
+            className="block w-full text-sm text-slate-700 dark:text-neutral-200 sm:table"
           >
             {/* 窄螢幕不顯示欄位標題：兩個日期已在上方的下拉選單 */}
             <thead className="hidden sm:table-header-group">
-              <tr className="text-xs text-slate-500">
+              <tr className="text-xs text-slate-500 dark:text-neutral-400">
                 <th scope="col" className="pr-2 pb-1 text-left font-medium">
                   項目
                 </th>

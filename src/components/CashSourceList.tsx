@@ -55,7 +55,7 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-700">
+        <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
           多來源現金清單
         </span>
         <Button type="button" variant="outline" size="sm" onClick={addSource}>
@@ -64,7 +64,9 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
       </div>
 
       {value.length === 0 && (
-        <p className="text-sm text-slate-400">尚未新增現金來源</p>
+        <p className="text-sm text-slate-400 dark:text-neutral-400">
+          尚未新增現金來源
+        </p>
       )}
 
       <div className="space-y-2">
@@ -80,7 +82,7 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
         ))}
       </div>
 
-      <p className="text-right text-sm text-slate-500">
+      <p className="text-right text-sm text-slate-500 dark:text-neutral-400">
         現金合計：{formatCurrency(sumCashSources(value))}
         {restrictedTotal !== 0 && (
           <span data-testid="restricted-cash-total">
@@ -147,10 +149,10 @@ function CashSourceRow({
         aria-label={`標記 ${source.name || "此筆現金來源"} 為不可動用`}
         title="不可動用（如期貨保證金）：仍計入總資產，但不計入緊急預備金與現金比例"
         className={cn(
-          "shrink-0 rounded-md p-1.5 hover:bg-slate-100",
+          "shrink-0 rounded-md p-1.5 hover:bg-slate-100 dark:hover:bg-muted",
           source.restricted
-            ? "bg-amber-50 text-amber-600"
-            : "text-slate-300 hover:text-slate-500"
+            ? "bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400"
+            : "text-slate-300 dark:text-neutral-500 hover:text-slate-500 dark:hover:text-neutral-400"
         )}
       >
         🔒
@@ -159,7 +161,7 @@ function CashSourceRow({
         type="button"
         onClick={onDuplicate}
         aria-label={`複製 ${source.name || "此筆現金來源"}`}
-        className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-muted hover:text-slate-600 dark:hover:text-neutral-300"
       >
         📄
       </button>
@@ -167,7 +169,7 @@ function CashSourceRow({
         type="button"
         onClick={onRemove}
         aria-label={`刪除 ${source.name || "此筆現金來源"}`}
-        className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+        className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-rose-50 dark:hover:bg-rose-950 hover:text-rose-500 dark:hover:text-rose-400"
       >
         🗑️
       </button>

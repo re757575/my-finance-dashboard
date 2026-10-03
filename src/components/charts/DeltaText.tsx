@@ -9,12 +9,18 @@ export function DeltaText({
   formatValue: (value: number) => string;
 }) {
   if (delta === 0) {
-    return <span className="text-slate-400">持平</span>;
+    return <span className="text-slate-400 dark:text-neutral-400">持平</span>;
   }
 
   const isUp = delta > 0;
   return (
-    <span className={isUp ? "text-rose-600" : "text-emerald-600"}>
+    <span
+      className={
+        isUp
+          ? "text-rose-600 dark:text-rose-400"
+          : "text-emerald-600 dark:text-emerald-400"
+      }
+    >
       {isUp ? "▲" : "▼"} {formatValue(Math.abs(delta))}
       {percent !== null &&
         ` (${isUp ? "+" : "-"}${Math.abs(percent).toFixed(1)}%)`}

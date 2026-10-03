@@ -41,7 +41,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 ### 資料流：單一 LocalStorage 快照陣列
 
-所有應用狀態的根源是 `src/hooks/useLocalSnapshots.ts`，`App.tsx` 是唯一消費此 hook 的元件，其餘元件皆為受控的展示元件（透過 props 收發資料，不直接碰觸 storage）。
+所有財務資料狀態的根源是 `src/hooks/useLocalSnapshots.ts`（介面主題另由 `useTheme` 管理，見下方「深色模式」），`App.tsx` 是唯一消費此 hook 的元件，其餘元件皆為受控的展示元件（透過 props 收發資料，不直接碰觸 storage）。
 
 - **Schema**（`src/types/schema.ts`）：`FinanceData = { schemaVersion, snapshots: Snapshot[] }`，每個 `Snapshot` 以 `date`（"YYYY-MM-DD"）為顆粒度，同日覆蓋、跨日新增（見 `upsertSnapshot`）。修改 schema 時務必同步遞增 `CURRENT_SCHEMA_VERSION`（現為 7）並在 `src/lib/storage.ts` 補上 `migrateVxToVy` 遷移函式，同時串進 `migrateFinanceData` 的完整遷移鏈（現有範例：`migrateV1ToV2` ... `migrateV6ToV7`）。
 - **draft vs. 已存檔資料**：`useLocalSnapshots` 內部維護 `draft`（當日編輯中的快照，未存檔前只存在於 React state）與 `financeData`（已持久化到 LocalStorage 的全部快照）。`isDirty` 用兩者的 JSON 字串比較判斷。使用者按下「更新儀表板」才會呼叫 `save()` 真正寫入 `persistFinanceData`；重新整理頁面會遺失未存檔的 draft（這是刻意行為，e2e 有覆蓋此案例）。
@@ -78,12 +78,35 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 `buildFinancePrompt()` 依 `PromptMode`（財務健康檢查／投資方向評估／負債清償策略／定期回顧報告／資產配置再平衡建議共 5 種）組出給外部 AI 使用的 Markdown 文字，由 `CopyPromptButton` 觸發複製到剪貼簿。全程不對外發送任何請求，使用者需自行貼到外部 AI 工具（見 [docs/PRD.md](docs/PRD.md) 4.2 節）。
 
+### 深色模式（`src/lib/theme.ts`、`src/hooks/useTheme.ts`）
+
+主題偏好為「跟隨系統（預設）／淺色／深色」，解析後以 `<html>` 的 `dark` class 套用（`src/index.css` 的 `@custom-variant dark` 與 shadcn 的 `.dark` CSS 變數）。規格見 [docs/PRD.md](docs/PRD.md) 4.2「深色模式」、6.2、7 節。
+
+- **偏好儲存**：獨立的 LocalStorage 鍵 `my_finance_dashboard_theme`（`"system"`／`"light"`／`"dark"`），不屬於快照 schema、不隨備份匯出、匯入還原不影響；**「清空本地資料」也不清除它**（介面偏好不是財務資料），所以 `clearAllData()` 不可改成 `localStorage.clear()`。`loadThemePreference`／`persistThemePreference` 吞掉 LocalStorage 例外，內容不合法視為 `"system"`。
+- **`useTheme`** 與 `useLocalSnapshots` 完全獨立，同樣只由 `App.tsx` 消費，再以 props 傳給頁首的 `ThemeToggle`（原生 `<select aria-label="顯示主題">`）。它監聽 `matchMedia("(prefers-color-scheme: dark)")` 的變化（跟隨系統時即時切換）與 `storage` 事件（其他分頁變更後同步）。
+- **防閃爍**：`index.html` 的 `<head>` 有一段內嵌 script，在首次繪製前依偏好與系統設定加上 `dark` class。它無法 import `theme.ts`，鍵名與判斷邏輯是手動保持一致的——改其中一邊要同步改另一邊（`theme.test.ts` 會實際執行該段 script 比對兩邊結果）。同源靜態內容，不發出任何網路請求。
+- **新增或修改元件時必須同時提供深色樣式**：保留淺色 class、在同一個 class 字串內緊接著補上 `dark:` 變體（淺色外觀不可因此改變）。`src/components/darkModeCoverage.test.ts` 會掃描 `App.tsx` 與業務元件，寫死的淺色 class 若沒有對應的 `dark:` 變體會直接讓測試失敗。對應規則：
+
+  | 用途                         | 淺色                                                                         | 深色                                                                      |
+  | ---------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+  | 頁面背景／卡片               | `bg-[#F9FAFB]`／`bg-white`                                                   | `dark:bg-background`／`dark:bg-card`                                      |
+  | 內襯（空狀態）／軌道、灰徽章 | `bg-slate-50`／`bg-slate-100`                                                | `dark:bg-muted/50`／`dark:bg-muted`                                       |
+  | 邊框、分隔線                 | `border-slate-200`、`border-slate-100`、`divide-slate-100`、`ring-slate-200` | `dark:border-border`、`dark:divide-border`、`dark:ring-border`            |
+  | 原生 `<select>`              | `border-slate-200 bg-white`                                                  | `dark:border-input dark:bg-input/30`                                      |
+  | 文字（由深到淺）             | `text-slate-900`／`800`／`700`／`600`／`500`／`400`                          | `dark:text-neutral-50`／`100`／`200`／`300`／`400`／`400`                 |
+  | 圖表座標文字／格線／參考線   | `fill-slate-400`／`text-slate-100`／`text-slate-300`                         | `dark:fill-neutral-400`／`dark:text-neutral-800`／`dark:text-neutral-600` |
+  | 狀態徽章、提示橫幅           | `bg-{色}-50` ＋ `text-{色}-700`（橫幅 `text-amber-800`）                     | `dark:bg-{色}-950` ＋ `dark:text-{色}-300`（橫幅 `dark:text-amber-200`）  |
+  | 強調文字（負數、增減）       | `text-rose-600`、`text-emerald-600`、`text-amber-600`                        | `dark:text-rose-400`、`dark:text-emerald-400`、`dark:text-amber-400`      |
+  | 選中的分段切換鈕             | `bg-slate-900 text-white`                                                    | `dark:bg-neutral-100 dark:text-neutral-900`                               |
+
+  `{色}` 為 amber／rose／emerald／green／sky。進度條、燈號圓點與圖表數列的填色（`bg-*-500`、`text-*-500`、`fill-*`、資產配置色塊的 `*-600`／`slate-500`）及疊在色塊上的 `text-white` 深淺色共用，不需對應。深色下的文字下限是 `neutral-400`（`neutral-500` 在卡片上對比不足 WCAG AA）。hover 等變體寫成 `dark:hover:…`。
+
 ### 元件分層
 
 - `src/components/*.tsx`：業務元件（輸入表單、看板卡片、趨勢區塊），大多為純展示元件，透過 `onChange`/`value` 與 `App.tsx` 溝通。
 - `src/components/charts/`：手刻 SVG 圖表元件（刻意不引入 Recharts/D3 等圖表庫，見 [docs/TECH_STACK.md](docs/TECH_STACK.md) 第 3 節），`EmptyTrendCard` 處理快照筆數 < 2 時的空狀態。
-- **歷史趨勢圖分組分頁**：`TrendSection` 以 `ui/tabs.tsx` 把八張趨勢圖分成「資產／負債／配置與儲蓄」三個分頁（預設「資產」），一次只渲染選取中分頁的圖表，其餘不在 DOM 中；選取的分頁只存在元件 state，不寫入 LocalStorage（PRD 4.2「趨勢圖分組分頁」）。`ui/tabs.tsx` 是依 shadcn 風格手寫的 Radix Tabs 封裝（非 `shadcn add` 生成），選取狀態以底線＋粗體標示。測試要操作非預設分頁的圖表時必須先切換分頁：e2e 用 `getByRole("tab", { name })` 點擊，Vitest 用 `fireEvent.mouseDown`（Radix 在 mousedown 而非 click 時切換）。
-- `src/components/ui/`：shadcn 生成的基礎元件（Radix 封裝），走 `components.json` 的 `radix-nova` 風格設定，一般不手動修改內部實作，需要客製時優先加 wrapper 而非改動生成檔案。
+- **歷史趨勢圖分組分頁**：`TrendSection` 以 `ui/tabs.tsx` 把八張趨勢圖分成「資產／負債／配置與儲蓄」三個分頁（預設「資產」），一次只渲染選取中分頁的圖表，其餘不在 DOM 中；選取的分頁只存在元件 state，不寫入 LocalStorage（PRD 4.2「趨勢圖分組分頁」）。`ui/tabs.tsx` 是依 shadcn 風格手寫的 Radix Tabs 封裝（非 `shadcn add` 生成），選取狀態以底線＋粗體標示；它用的是寫死的 slate 色階加 `dark:` 變體，且不在 `darkModeCoverage` 的掃描範圍內，調整配色時要自行對照「深色模式」一節的對應表。測試要操作非預設分頁的圖表時必須先切換分頁：e2e 用 `getByRole("tab", { name })` 點擊，Vitest 用 `fireEvent.mouseDown`（Radix 在 mousedown 而非 click 時切換）。
+- `src/components/ui/`：shadcn 生成的基礎元件（Radix 封裝），走 `components.json` 的 `radix-nova` 風格設定，一般不手動修改內部實作，需要客製時優先加 wrapper 而非改動生成檔案。這些元件用語意 token（`bg-popover`、`border-input` 等），本身已支援深色。
 - 路徑別名 `@/*` 對應 `src/*`（`vite.config.ts` 與 `tsconfig` 皆已設定）。
 
 ### 測試

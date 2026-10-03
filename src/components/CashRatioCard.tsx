@@ -18,9 +18,9 @@ export function CashRatioCard({
   const width = Math.min(100, Math.max(0, ratio));
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-center gap-1">
-        <p className="text-sm text-slate-500">現金比例</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-400">現金比例</p>
         <FormulaInfoButton
           title="現金比例"
           formula="現金比例 = 可動用現金 ÷ 金融資產 × 100%"
@@ -30,11 +30,11 @@ export function CashRatioCard({
       </div>
       <p
         data-testid="cash-ratio-value"
-        className="mt-1 text-2xl font-bold text-slate-900"
+        className="mt-1 text-2xl font-bold text-slate-900 dark:text-neutral-50"
       >
         {formatPercent(ratio)}
       </p>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-muted">
         <div
           data-testid="cash-ratio-bar-fill"
           className="h-full rounded-full bg-sky-500 transition-all duration-100"
