@@ -175,6 +175,59 @@ describe("buildFinancePrompt", () => {
     expect(prompt).toContain("| 2026-07-12 |");
     expect(prompt).toContain("$120,000");
   });
+
+  // PRD 5.2b 節、第 9 節 #61i：償債負擔率緊接在本月應還款總額之後
+  describe("償債負擔率", () => {
+    const debts: Snapshot["debts"] = [
+      {
+        id: "d1",
+        name: "信貸",
+        category: "信貸",
+        principal: 144000,
+        annualRate: 0,
+        remainingMonths: 12,
+        repaymentMethod: "amortizing",
+        collateralValue: 0,
+      },
+    ];
+    const build = (draft: Snapshot) =>
+      buildFinancePrompt({
+        currentDate: "2026-07-13",
+        draft,
+        metrics: calculateMetrics(draft),
+        recentSnapshots: [],
+      });
+
+    it("今日財務總覽在本月應還款總額之後列出比率、狀態與分子分母", () => {
+      const lines = build(
+        baseSnapshot({
+          debts,
+          incomeSources: [{ id: "i1", name: "薪資", amount: 30000 }],
+        })
+      ).split("\n");
+
+      const index = lines.indexOf("- 本月應還款總額：$12,000");
+      expect(index).toBeGreaterThan(-1);
+      expect(lines[index + 1]).toBe(
+        "- 償債負擔率：40.0%（負擔偏重；本月應還款總額 $12,000 ÷ 總收入 $30,000）"
+      );
+    });
+
+    it("沒有負債時為 0.0%（無還款負擔）", () => {
+      expect(build(baseSnapshot())).toContain(
+        "- 償債負擔率：0.0%（無還款負擔；本月應還款總額 $0 ÷ 總收入 $0）"
+      );
+    });
+
+    it("總收入為 0 但有應還款時明確說明無法計算，不出現 NaN／Infinity", () => {
+      const prompt = build(baseSnapshot({ debts }));
+
+      expect(prompt).toContain(
+        "- 償債負擔率：無法計算（無收入可負擔；總收入為 0，但本月應還款總額為 $12,000）"
+      );
+      expect(prompt).not.toMatch(/NaN|Infinity/);
+    });
+  });
 });
 
 // PRD 第 9 節 #33、#33a、#33b：投資方向評估模式
@@ -420,6 +473,55 @@ describe("buildDebtPayoffPrompt", () => {
     });
 
     expect(prompt).toContain("（目前無負債，無需清償策略評估）");
+    // 負債清單為空時不輸出本月應還款總額與償債負擔率
+    expect(prompt).not.toContain("償債負擔率");
+  });
+
+  // PRD 5.2b 節、第 9 節 #61i：償債負擔率緊接在本月應還款總額之後
+  describe("償債負擔率", () => {
+    const debts: Snapshot["debts"] = [
+      {
+        id: "d1",
+        name: "信貸",
+        category: "信貸",
+        principal: 144000,
+        annualRate: 0,
+        remainingMonths: 12,
+        repaymentMethod: "amortizing",
+        collateralValue: 0,
+      },
+    ];
+    const build = (draft: Snapshot) =>
+      buildDebtPayoffPrompt({
+        currentDate: "2026-07-13",
+        draft,
+        metrics: calculateMetrics(draft),
+        recentSnapshots: [],
+      });
+
+    it("在本月應還款總額之後列出比率、狀態與分子分母", () => {
+      const lines = build(
+        baseSnapshot({
+          debts,
+          incomeSources: [{ id: "i1", name: "薪資", amount: 25000 }],
+        })
+      ).split("\n");
+
+      const index = lines.indexOf("- 本月應還款總額：$12,000");
+      expect(index).toBeGreaterThan(-1);
+      expect(lines[index + 1]).toBe(
+        "- 償債負擔率：48.0%（負擔過重；本月應還款總額 $12,000 ÷ 總收入 $25,000）"
+      );
+    });
+
+    it("總收入為 0 但有應還款時明確說明無法計算，不出現 NaN／Infinity", () => {
+      const prompt = build(baseSnapshot({ debts }));
+
+      expect(prompt).toContain(
+        "- 償債負擔率：無法計算（無收入可負擔；總收入為 0，但本月應還款總額為 $12,000）"
+      );
+      expect(prompt).not.toMatch(/NaN|Infinity/);
+    });
   });
 });
 

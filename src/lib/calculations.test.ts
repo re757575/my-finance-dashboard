@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   advanceDebtByMonths,
+  calculateDebtServiceRatio,
+  calculateDebtServiceRatioStatus,
   calculateEmergencyFundMonths,
   calculateEmergencyFundStatus,
   calculateFinancialDebtRatio,
@@ -412,6 +414,110 @@ describe("calculateSavingsRate / calculateSavingsRateStatus", () => {
 
   it("總收入為 0 時，儲蓄率為 0", () => {
     expect(calculateSavingsRate(0, 0)).toBe(0);
+  });
+});
+
+// PRD 5.2b 節、第 9 節 #61a–#61g：償債負擔率 = 本月應還款總額 ÷ 總收入 × 100%
+describe("償債負擔率（PRD 5.2b 節）", () => {
+  describe("calculateDebtServiceRatio", () => {
+    it("本月應還款總額 ÷ 總收入 × 100", () => {
+      expect(calculateDebtServiceRatio(12000, 60000)).toBe(20);
+      expect(calculateDebtServiceRatio(25481, 68000)).toBeCloseTo(37.472, 3);
+    });
+
+    it("本月應還款總額為 0 時為 0，不論總收入是否為 0", () => {
+      expect(calculateDebtServiceRatio(0, 60000)).toBe(0);
+      expect(calculateDebtServiceRatio(0, 0)).toBe(0);
+    });
+
+    it("總收入為 0 但有應還款時無法計算，回傳 null 而非 NaN／Infinity", () => {
+      expect(calculateDebtServiceRatio(12000, 0)).toBeNull();
+    });
+
+    it("超過 100% 時如實回傳，不封頂", () => {
+      expect(calculateDebtServiceRatio(12000, 10000)).toBe(120);
+    });
+  });
+
+  describe("calculateDebtServiceRatioStatus", () => {
+    it.each([
+      { ratio: 0, status: "no-payment" },
+      { ratio: 0.01, status: "comfortable" },
+      { ratio: 29.99, status: "comfortable" },
+      { ratio: 30, status: "heavy" },
+      { ratio: 35, status: "heavy" },
+      { ratio: 40, status: "heavy" },
+      { ratio: 40.01, status: "excessive" },
+      { ratio: 120, status: "excessive" },
+      { ratio: null, status: "no-income" },
+    ])("比率 $ratio 的狀態為 $status", ({ ratio, status }) => {
+      expect(calculateDebtServiceRatioStatus(ratio)).toBe(status);
+    });
+  });
+
+  describe("calculateMetrics", () => {
+    // 年利率 0% 的本息平均攤還：月付 = 144,000 ÷ 12 = 12,000
+    const debts = [
+      baseDebt({ principal: 144000, annualRate: 0, remainingMonths: 12 }),
+    ];
+    const income = (amount: number): IncomeSource[] => [
+      { id: "i1", name: "薪資", amount },
+    ];
+
+    it.each([
+      { amount: 60000, ratio: 20, status: "comfortable" },
+      { amount: 40000, ratio: 30, status: "heavy" },
+      { amount: 30000, ratio: 40, status: "heavy" },
+      { amount: 25000, ratio: 48, status: "excessive" },
+      { amount: 10000, ratio: 120, status: "excessive" },
+    ])(
+      "月付 12,000、總收入 $amount → $ratio%（$status）",
+      ({ amount, ratio, status }) => {
+        const metrics = calculateMetrics(
+          baseSnapshotInput({ debts, incomeSources: income(amount) })
+        );
+        expect(metrics.totalMonthlyDebtPayment).toBe(12000);
+        expect(metrics.debtServiceRatio).toBe(ratio);
+        expect(metrics.debtServiceRatioStatus).toBe(status);
+      }
+    );
+
+    it("沒有負債時為 0%、無還款負擔（有無收入皆同）", () => {
+      for (const incomeSources of [income(60000), []]) {
+        const metrics = calculateMetrics(baseSnapshotInput({ incomeSources }));
+        expect(metrics.debtServiceRatio).toBe(0);
+        expect(metrics.debtServiceRatioStatus).toBe("no-payment");
+      }
+    });
+
+    it("已到期（剩餘期數 0）的負債沒有月付金，視為無還款負擔", () => {
+      const metrics = calculateMetrics(
+        baseSnapshotInput({
+          debts: [baseDebt({ principal: 144000, remainingMonths: 0 })],
+          incomeSources: income(60000),
+        })
+      );
+      expect(metrics.debtServiceRatio).toBe(0);
+      expect(metrics.debtServiceRatioStatus).toBe("no-payment");
+    });
+
+    it("總收入為 0 但有應還款時為 null、無收入可負擔", () => {
+      const metrics = calculateMetrics(baseSnapshotInput({ debts }));
+      expect(metrics.totalIncome).toBe(0);
+      expect(metrics.debtServiceRatio).toBeNull();
+      expect(metrics.debtServiceRatioStatus).toBe("no-income");
+    });
+
+    it("收入金額為非數字時視為 0，不產生 NaN", () => {
+      const metrics = calculateMetrics(
+        baseSnapshotInput({
+          debts,
+          incomeSources: income(Number.NaN),
+        })
+      );
+      expect(metrics.debtServiceRatio).toBeNull();
+      expect(metrics.debtServiceRatioStatus).toBe("no-income");
+    });
   });
 });
 

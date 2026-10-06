@@ -4,6 +4,7 @@ import type {
   Debt,
   DebtCategory,
   DebtRatioStatus,
+  DebtServiceRatioStatus,
   EmergencyFundStatus,
   GoalEtaStatus,
   IncomeSource,
@@ -82,6 +83,41 @@ export function calculateMonthlyPayment(debt: Debt): number {
 export function calculateTotalMonthlyDebtPayment(debts: Debt[]): number {
   return debts.reduce((sum, debt) => sum + calculateMonthlyPayment(debt), 0);
 }
+
+/**
+ * 償債負擔率 = 本月應還款總額 ÷ 總收入 × 100%（PRD 5.2b 節）。
+ * 本月應還款總額為 0 時為 0（不論總收入）；總收入 ≤ 0 但有應還款時無法計算，回傳 null，
+ * 避免除以零產生 NaN/Infinity。
+ */
+export function calculateDebtServiceRatio(
+  totalMonthlyDebtPayment: number,
+  totalIncome: number
+): number | null {
+  if (totalMonthlyDebtPayment <= 0) return 0;
+  if (totalIncome <= 0) return null;
+  return (totalMonthlyDebtPayment / totalIncome) * 100;
+}
+
+export function calculateDebtServiceRatioStatus(
+  ratio: number | null
+): DebtServiceRatioStatus {
+  if (ratio === null) return "no-income";
+  if (ratio <= 0) return "no-payment";
+  if (ratio < 30) return "comfortable";
+  if (ratio <= 40) return "heavy";
+  return "excessive";
+}
+
+export const DEBT_SERVICE_RATIO_STATUS_LABEL: Record<
+  DebtServiceRatioStatus,
+  string
+> = {
+  "no-payment": "無還款負擔",
+  comfortable: "負擔輕鬆",
+  heavy: "負擔偏重",
+  excessive: "負擔過重",
+  "no-income": "無收入可負擔",
+};
 
 /**
  * 依經過的月數，將單筆負債的剩餘本金／剩餘期數往前推進，用於「今日草稿自動預填」估算負債的最新狀態
@@ -589,6 +625,11 @@ export function calculateMetrics(
     snapshot.debts
   );
   const totalIncome = sumIncomeSources(snapshot.incomeSources);
+  // 償債負擔率：本月應還款總額佔總收入的比例（PRD 5.2b 節）
+  const debtServiceRatio = calculateDebtServiceRatio(
+    totalMonthlyDebtPayment,
+    totalIncome
+  );
   // 現金流 = 總收入 − 本月支出 − 本月應還款總額（PRD 5.3 節）
   const cashFlow =
     totalIncome -
@@ -635,6 +676,8 @@ export function calculateMetrics(
     usStockRatio,
     totalMonthlyDebtPayment,
     totalIncome,
+    debtServiceRatio,
+    debtServiceRatioStatus: calculateDebtServiceRatioStatus(debtServiceRatio),
     cashFlow,
     emergencyFundMonths,
     emergencyFundStatus: calculateEmergencyFundStatus(emergencyFundMonths),

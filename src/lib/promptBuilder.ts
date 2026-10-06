@@ -2,6 +2,7 @@ import {
   calculateMetrics,
   calculateMonthlyPayment,
   DEBT_RATIO_STATUS_LABEL,
+  DEBT_SERVICE_RATIO_STATUS_LABEL,
   EMERGENCY_FUND_STATUS_LABEL,
   hasSeparateFinancialDebtRatio,
   PLEDGE_MAINTENANCE_STATUS_LABEL,
@@ -60,6 +61,18 @@ function formatFinancialDebtRatioLine(
     return null;
   }
   return `- 金融負債比：${formatPercent(metrics.financialDebtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.financialDebtRatioStatus]}；房貸以外的負債 ${formatCurrency(metrics.financialLiabilities)} ÷ 金融資產 ${formatCurrency(metrics.financialAssets)}，不含不動產與房貸）`;
+}
+
+/**
+ * 償債負擔率的一行摘要（PRD 5.2b 節）。總收入為 0 但有應還款時明確說明無法計算，
+ * 避免 AI 把缺少的比例誤判成沒有還款壓力。
+ */
+function formatDebtServiceRatioLine(metrics: CalculatedMetrics): string {
+  const label = DEBT_SERVICE_RATIO_STATUS_LABEL[metrics.debtServiceRatioStatus];
+  if (metrics.debtServiceRatio === null) {
+    return `- 償債負擔率：無法計算（${label}；總收入為 0，但本月應還款總額為 ${formatCurrency(metrics.totalMonthlyDebtPayment)}）`;
+  }
+  return `- 償債負擔率：${formatPercent(metrics.debtServiceRatio)}（${label}；本月應還款總額 ${formatCurrency(metrics.totalMonthlyDebtPayment)} ÷ 總收入 ${formatCurrency(metrics.totalIncome)}）`;
 }
 
 /**
@@ -139,6 +152,7 @@ export function buildFinancePrompt({
   lines.push(
     `- 本月應還款總額：${formatCurrency(metrics.totalMonthlyDebtPayment)}`
   );
+  lines.push(formatDebtServiceRatioLine(metrics));
   lines.push(`- 本月淨現金流：${formatCurrency(metrics.cashFlow)}`);
   lines.push(
     `- 緊急預備金月數：${formatMonths(metrics.emergencyFundMonths)}（${EMERGENCY_FUND_STATUS_LABEL[metrics.emergencyFundStatus]}）`
@@ -344,6 +358,7 @@ export function buildDebtPayoffPrompt({
     lines.push(
       `- 本月應還款總額：${formatCurrency(metrics.totalMonthlyDebtPayment)}`
     );
+    lines.push(formatDebtServiceRatioLine(metrics));
     const debtPledgeLine = formatPledgeMaintenanceLine(metrics);
     if (debtPledgeLine) lines.push(debtPledgeLine);
   }

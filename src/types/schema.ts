@@ -77,6 +77,13 @@ export type EmergencyFundStatus =
 export type SavingsRateStatus = "negative" | "low" | "healthy" | "high";
 
 /**
+ * 償債負擔率健康度（PRD 5.2b 節）："no-payment" 代表本月沒有應還款（0%）、
+ * "no-income" 代表總收入為 0 但有應還款（無法計算，不屬於百分比分級）。
+ */
+export type DebtServiceRatioStatus =
+  "no-payment" | "comfortable" | "heavy" | "excessive" | "no-income";
+
+/**
  * 目標達成時間預估的狀態（PRD 5.7a 節）："unset" 未設定目標、"achieved" 已達成、
  * "no-data" 沒有可用的歷史快照、"not-growing" 每月增加額 ≤ 0、"too-far" 超過 100 年、"ok" 可估算。
  */
@@ -128,6 +135,9 @@ export interface CalculatedMetrics {
   totalMonthlyDebtPayment: number;
   /** 多筆每月收入加總。 */
   totalIncome: number;
+  /** 償債負擔率 = 本月應還款總額 ÷ 總收入 × 100；總收入為 0 但有應還款時為 null（PRD 5.2b 節）。 */
+  debtServiceRatio: number | null;
+  debtServiceRatioStatus: DebtServiceRatioStatus;
   /** 現金流 = 總收入 − 本月支出 − 本月應還款總額（PRD 5.3 節，不再手動輸入）。 */
   cashFlow: number;
   /** 緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）；分母為 0 時為 null，代表「無需求」（PRD 5.5 節）。 */

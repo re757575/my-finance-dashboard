@@ -9,6 +9,7 @@ import { DataFreshnessNotice } from "@/components/DataFreshnessNotice";
 import { DataManagement } from "@/components/DataManagement";
 import { DebtList } from "@/components/DebtList";
 import { DebtRatioBar } from "@/components/DebtRatioBar";
+import { DebtServiceRatioCard } from "@/components/DebtServiceRatioCard";
 import { EmergencyFundCard } from "@/components/EmergencyFundCard";
 import { ExpenseInput } from "@/components/ExpenseInput";
 import { Footer } from "@/components/Footer";
@@ -265,6 +266,12 @@ function App() {
                 <MonthlyDebtPaymentCard
                   amount={metrics.totalMonthlyDebtPayment}
                   debts={draft.debts}
+                />
+                <DebtServiceRatioCard
+                  ratio={metrics.debtServiceRatio}
+                  status={metrics.debtServiceRatioStatus}
+                  totalMonthlyDebtPayment={metrics.totalMonthlyDebtPayment}
+                  totalIncome={metrics.totalIncome}
                 />
                 <EmergencyFundCard
                   months={metrics.emergencyFundMonths}
