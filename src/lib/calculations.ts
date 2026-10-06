@@ -571,6 +571,108 @@ export function calculateStressScenario(
   };
 }
 
+/** 壓力測試臨界點反推的兩條負債比門檻（%），即第 5.1 節燈號的分界（PRD 5.9a 節）。 */
+export const STRESS_BREAKPOINT_DEBT_RATIOS = { elevated: 40, highRisk: 60 };
+
+export type StressBreakpointKey =
+  | "pledge-margin-call"
+  | "debt-ratio-elevated"
+  | "debt-ratio-high-risk"
+  | "net-worth-zero";
+
+/** reached：現況已達或超過該線；drop：股票再下跌 dropPercent% 會剛好碰到；unreachable：股票跌到 0 也碰不到。 */
+export type StressBreakpointStatus = "reached" | "drop" | "unreachable";
+
+export interface StressBreakpoint {
+  key: StressBreakpointKey;
+  status: StressBreakpointStatus;
+  /** 臨界跌幅（%，0 < dropPercent ≤ 100）；只有 status 為 "drop" 時有值。 */
+  dropPercent: number | null;
+}
+
+const STRESS_BREAKPOINT_STATUS_ORDER: Record<StressBreakpointStatus, number> = {
+  reached: 0,
+  drop: 1,
+  unreachable: 2,
+};
+
+/**
+ * 股票要蒸發掉 buffer 這麼多市值才會碰到某條線：buffer ≤ 0 已觸及；
+ * buffer 超過全部股票市值（或根本沒有股票）就算跌到 0 也碰不到。不會回傳 NaN／Infinity。
+ */
+function solveStressBreakpoint(
+  key: StressBreakpointKey,
+  buffer: number,
+  totalStockValue: number
+): StressBreakpoint {
+  if (buffer <= 0) return { key, status: "reached", dropPercent: null };
+  if (totalStockValue <= 0 || buffer > totalStockValue) {
+    return { key, status: "unreachable", dropPercent: null };
+  }
+  return {
+    key,
+    status: "drop",
+    dropPercent: Math.min((buffer / totalStockValue) * 100, 100),
+  };
+}
+
+/**
+ * 壓力測試臨界點（PRD 5.9a 節）：沿用 calculateStressScenario 的假設，反推「股票再下跌多少 % 會碰到風險線」。
+ * 把回傳的 dropPercent 代回 calculateStressScenario，對應指標會剛好落在該線上。
+ * - 質押追繳線：直接取 pledgeDropToMarginCall（兩者必為同一個數字）；無質押或未填質押股票市值時不列出。
+ * - 負債比 40%／60%：(總資產 − 總負債 ÷ 門檻) ÷ 股票市值；總負債為 0 時不列出。
+ * - 淨資產歸零：淨資產 ÷ 股票市值。
+ * 回傳已排序：已觸及 → 跌幅由小到大 → 不會觸及；不適用的項目不在陣列內。
+ */
+export function calculateStressBreakpoints(
+  snapshot: Parameters<typeof calculateMetrics>[0]
+): StressBreakpoint[] {
+  const metrics = calculateMetrics(snapshot);
+  const { totalAssets, totalLiabilities, totalStockValue } = metrics;
+  const breakpoints: StressBreakpoint[] = [];
+
+  if (
+    metrics.pledgeMaintenanceStatus !== "none" &&
+    metrics.pledgeMaintenanceStatus !== "unset"
+  ) {
+    const drop = metrics.pledgeDropToMarginCall;
+    breakpoints.push(
+      drop !== null && drop > 0
+        ? { key: "pledge-margin-call", status: "drop", dropPercent: drop }
+        : { key: "pledge-margin-call", status: "reached", dropPercent: null }
+    );
+  }
+
+  if (totalLiabilities > 0) {
+    // 負債比 = L ÷ 總資產 = T% ⇔ 總資產 = L × 100 ÷ T；先乘後除，整數金額下邊界值不受浮點誤差影響
+    const { elevated, highRisk } = STRESS_BREAKPOINT_DEBT_RATIOS;
+    breakpoints.push(
+      solveStressBreakpoint(
+        "debt-ratio-elevated",
+        totalAssets - (totalLiabilities * 100) / elevated,
+        totalStockValue
+      ),
+      solveStressBreakpoint(
+        "debt-ratio-high-risk",
+        totalAssets - (totalLiabilities * 100) / highRisk,
+        totalStockValue
+      )
+    );
+  }
+
+  breakpoints.push(
+    solveStressBreakpoint("net-worth-zero", metrics.netWorth, totalStockValue)
+  );
+
+  // Array.prototype.sort 為穩定排序：狀態與跌幅都相同時維持上面的列出順序
+  return breakpoints.sort(
+    (a, b) =>
+      STRESS_BREAKPOINT_STATUS_ORDER[a.status] -
+        STRESS_BREAKPOINT_STATUS_ORDER[b.status] ||
+      (a.dropPercent ?? 0) - (b.dropPercent ?? 0)
+  );
+}
+
 export function calculateMetrics(
   snapshot: Pick<
     Snapshot,

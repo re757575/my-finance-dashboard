@@ -16,6 +16,7 @@ import {
   calculatePledgeMaintenance,
   calculatePledgeMaintenanceStatus,
   calculateSavingsRate,
+  calculateStressBreakpoints,
   calculateStressScenario,
   calculateSavingsRateStatus,
   calculateSuggestedTargetNetWorth,
@@ -23,7 +24,10 @@ import {
   calculateTotalMonthlyPrincipalRepayment,
   GOAL_ETA_MAX_MONTHS,
   hasSeparateFinancialDebtRatio,
+  PLEDGE_MARGIN_CALL_RATIO,
+  STRESS_BREAKPOINT_DEBT_RATIOS,
   STRESS_TEST_DROPS,
+  type StressBreakpointKey,
   sumFinancialDebtPrincipal,
   toSafeNumber,
 } from "@/lib/calculations";
@@ -1098,6 +1102,501 @@ describe("calculateStressScenario", () => {
 
     expect(snapshot.twStockValue).toBe(1000000);
     expect(debts[0].collateralValue).toBe(800000);
+  });
+});
+
+// PRD 5.9a 節、第 9 節 #44h～#44l：壓力測試臨界點（反推）
+describe("calculateStressBreakpoints", () => {
+  type Input = Parameters<typeof calculateMetrics>[0];
+  const cash = (amount: number, restricted = false): CashSource => ({
+    id: `c-${amount}-${restricted}`,
+    name: "現金",
+    amount,
+    restricted,
+  });
+  const pledge = (principal: number, collateralValue: number) =>
+    baseDebt({
+      id: "p",
+      category: "質押",
+      principal,
+      collateralValue,
+      repaymentMethod: "interestOnly",
+    });
+  const mortgage = (principal: number) =>
+    baseDebt({ id: "m", category: "房貸", principal });
+  const find = (snapshot: Input, key: StressBreakpointKey) =>
+    calculateStressBreakpoints(snapshot).find((item) => item.key === key);
+  const keys = (snapshot: Input) =>
+    calculateStressBreakpoints(snapshot).map((item) => item.key);
+
+  // #44：現金 300,000、股票 700,000、房貸 400,000（負債比恰為 40%）
+  const basic = baseSnapshotInput({
+    cashSources: [cash(300000)],
+    twStockValue: 400000,
+    usStockValue: 300000,
+    usStockCurrency: "TWD",
+    debts: [mortgage(400000)],
+  });
+  // #44c：再加上現金，質押本金 500,000、質押股票市值 800,000（維持率 160%）
+  const pledged = baseSnapshotInput({
+    cashSources: [cash(1000000)],
+    twStockValue: 1000000,
+    debts: [pledge(500000, 800000)],
+  });
+
+  it("門檻沿用負債比燈號的 40%／60% 分界", () => {
+    expect(STRESS_BREAKPOINT_DEBT_RATIOS).toEqual({
+      elevated: 40,
+      highRisk: 60,
+    });
+  });
+
+  describe("負債比與淨資產", () => {
+    // #44h
+    it("負債比 60%：(總資產 − 總負債 ÷ 60%) ÷ 股票市值；淨資產歸零：淨資產 ÷ 股票市值", () => {
+      const debt60 = find(basic, "debt-ratio-high-risk");
+      expect(debt60?.status).toBe("drop");
+      expect(debt60?.dropPercent).toBeCloseTo(
+        ((1000000 - 400000 / 0.6) / 700000) * 100,
+        8
+      );
+      expect(debt60?.dropPercent).toBeCloseTo(47.619, 3);
+
+      const netWorth = find(basic, "net-worth-zero");
+      expect(netWorth?.status).toBe("drop");
+      expect(netWorth?.dropPercent).toBeCloseTo((600000 / 700000) * 100, 8);
+    });
+
+    it("負債比 40%：總資產 1,000,000、負債 200,000 → (1,000,000 − 500,000) ÷ 700,000", () => {
+      const snapshot = { ...basic, debts: [mortgage(200000)] };
+      const debt40 = find(snapshot, "debt-ratio-elevated");
+      expect(debt40?.status).toBe("drop");
+      expect(debt40?.dropPercent).toBeCloseTo((500000 / 700000) * 100, 8);
+    });
+
+    it("不可動用現金與不動產都算在不會下跌的資產內", () => {
+      const snapshot = baseSnapshotInput({
+        cashSources: [cash(100000), cash(100000, true)],
+        twStockValue: 800000,
+        realEstateValue: 1000000,
+        debts: [mortgage(1000000)],
+      });
+      // 總資產 2,000,000、負債 1,000,000：40% 線已觸及（現況 50%）
+      expect(find(snapshot, "debt-ratio-elevated")?.status).toBe("reached");
+      // 60% 線：(2,000,000 − 1,666,666.67) ÷ 800,000 = 41.67%
+      expect(find(snapshot, "debt-ratio-high-risk")?.dropPercent).toBeCloseTo(
+        ((2000000 - 1000000 / 0.6) / 800000) * 100,
+        8
+      );
+      // 淨資產 1,000,000 > 股票 800,000：股票歸零仍有 200,000
+      expect(find(snapshot, "net-worth-zero")?.status).toBe("unreachable");
+    });
+
+    it("美股以 USD 計價時，股票市值以換算後的台幣計算", () => {
+      const snapshot = baseSnapshotInput({
+        cashSources: [cash(200000)],
+        twStockValue: 200000,
+        usStockValue: 20000,
+        usStockCurrency: "USD",
+        exchangeRate: 30,
+        debts: [baseDebt({ principal: 400000 })],
+      });
+      // 股票 200,000 + 20,000 × 30 = 800,000；總資產 1,000,000；現況負債比 40%
+      expect(find(snapshot, "debt-ratio-elevated")?.status).toBe("reached");
+      expect(find(snapshot, "debt-ratio-high-risk")?.dropPercent).toBeCloseTo(
+        ((1000000 - 400000 / 0.6) / 800000) * 100,
+        8
+      );
+      expect(find(snapshot, "net-worth-zero")?.dropPercent).toBeCloseTo(75, 8);
+    });
+  });
+
+  describe("已觸及", () => {
+    it("現況負債比恰為 40% 時，40% 線為已觸及，不提供跌幅", () => {
+      expect(calculateMetrics(basic).debtRatio).toBe(40);
+      expect(find(basic, "debt-ratio-elevated")).toEqual({
+        key: "debt-ratio-elevated",
+        status: "reached",
+        dropPercent: null,
+      });
+    });
+
+    it("現況負債比恰為 60% 或以上時，60% 線為已觸及", () => {
+      const at60 = { ...basic, debts: [mortgage(600000)] };
+      expect(calculateMetrics(at60).debtRatio).toBe(60);
+      expect(find(at60, "debt-ratio-high-risk")?.status).toBe("reached");
+
+      const above = { ...basic, debts: [mortgage(900000)] };
+      expect(find(above, "debt-ratio-high-risk")?.status).toBe("reached");
+      // 淨資產還有 100,000，仍可再跌 100,000 ÷ 700,000
+      expect(find(above, "net-worth-zero")?.dropPercent).toBeCloseTo(
+        (100000 / 700000) * 100,
+        8
+      );
+    });
+
+    it("淨資產為 0 或負數時，淨資產歸零為已觸及", () => {
+      const zero = { ...basic, debts: [mortgage(1000000)] };
+      expect(calculateMetrics(zero).netWorth).toBe(0);
+      expect(find(zero, "net-worth-zero")?.status).toBe("reached");
+
+      const negative = { ...basic, debts: [mortgage(1500000)] };
+      expect(find(negative, "net-worth-zero")).toEqual({
+        key: "net-worth-zero",
+        status: "reached",
+        dropPercent: null,
+      });
+    });
+
+    it("質押維持率恰為 130% 或以下時，追繳線為已觸及", () => {
+      const at130 = { ...pledged, debts: [pledge(500000, 650000)] };
+      expect(find(at130, "pledge-margin-call")?.status).toBe("reached");
+
+      const below = { ...pledged, debts: [pledge(500000, 600000)] };
+      expect(find(below, "pledge-margin-call")).toEqual({
+        key: "pledge-margin-call",
+        status: "reached",
+        dropPercent: null,
+      });
+    });
+  });
+
+  describe("不會觸及", () => {
+    // #44j
+    it("現金＋不動產已足以把負債比壓在門檻以下時，股票跌到 0 也碰不到", () => {
+      // 總資產 2,000,000、負債 500,000：60% 線需總資產跌到 833,333，但現金就有 1,000,000
+      expect(find(pledged, "debt-ratio-high-risk")).toEqual({
+        key: "debt-ratio-high-risk",
+        status: "unreachable",
+        dropPercent: null,
+      });
+      expect(find(pledged, "net-worth-zero")?.status).toBe("unreachable");
+      // 40% 線需總資產跌到 1,250,000：(2,000,000 − 1,250,000) ÷ 1,000,000 = 75%
+      expect(find(pledged, "debt-ratio-elevated")?.dropPercent).toBeCloseTo(
+        75,
+        8
+      );
+    });
+
+    it("邊界：股票剛好跌到 0 才碰到（跌幅 100%）仍顯示跌幅，多 1 元現金就不會觸及", () => {
+      const exact = baseSnapshotInput({
+        cashSources: [cash(250000)],
+        twStockValue: 500000,
+        debts: [baseDebt({ principal: 100000 })],
+      });
+      // 40% 線：總資產需跌到 250,000，恰等於現金
+      expect(find(exact, "debt-ratio-elevated")).toEqual({
+        key: "debt-ratio-elevated",
+        status: "drop",
+        dropPercent: 100,
+      });
+
+      const oneMore = { ...exact, cashSources: [cash(250001)] };
+      expect(find(oneMore, "debt-ratio-elevated")?.status).toBe("unreachable");
+    });
+
+    it("完全沒有負債：現金或不動產還在，淨資產不會歸零", () => {
+      const snapshot = baseSnapshotInput({
+        cashSources: [cash(1)],
+        twStockValue: 1000000,
+      });
+      expect(find(snapshot, "net-worth-zero")?.status).toBe("unreachable");
+    });
+
+    it("只有股票、沒有負債：股票跌 100% 淨資產才歸零", () => {
+      const snapshot = baseSnapshotInput({ twStockValue: 1000000 });
+      expect(find(snapshot, "net-worth-zero")).toEqual({
+        key: "net-worth-zero",
+        status: "drop",
+        dropPercent: 100,
+      });
+    });
+  });
+
+  // #44k
+  describe("不適用的項目不列出", () => {
+    it("沒有質押負債時不列出質押追繳線", () => {
+      expect(keys(basic)).not.toContain("pledge-margin-call");
+    });
+
+    it("有質押負債但尚未填寫質押股票市值時不列出質押追繳線，其餘照算", () => {
+      const snapshot = { ...pledged, debts: [pledge(500000, 0)] };
+      expect(keys(snapshot)).not.toContain("pledge-margin-call");
+      expect(find(snapshot, "debt-ratio-elevated")?.dropPercent).toBeCloseTo(
+        75,
+        8
+      );
+    });
+
+    it("非質押類別負債的 collateralValue 不會產生質押追繳線", () => {
+      const snapshot = {
+        ...basic,
+        debts: [baseDebt({ principal: 100000, collateralValue: 999 })],
+      };
+      expect(keys(snapshot)).not.toContain("pledge-margin-call");
+    });
+
+    it("總負債為 0 時不列出兩條負債比線，只剩淨資產歸零", () => {
+      const snapshot = baseSnapshotInput({
+        cashSources: [cash(300000)],
+        twStockValue: 700000,
+      });
+      expect(keys(snapshot)).toEqual(["net-worth-zero"]);
+    });
+  });
+
+  describe("質押追繳線", () => {
+    // #44i
+    it("維持率 160% → 可再下跌 18.75%", () => {
+      expect(find(pledged, "pledge-margin-call")).toEqual({
+        key: "pledge-margin-call",
+        status: "drop",
+        dropPercent: expect.closeTo(18.75, 8),
+      });
+    });
+
+    it.each([
+      { collateral: 800000 },
+      { collateral: 700000 },
+      { collateral: 1234567 },
+      { collateral: 650001 },
+    ])(
+      "跌幅與 pledgeDropToMarginCall 一致（質押股票市值 $collateral）",
+      ({ collateral }) => {
+        const snapshot = { ...pledged, debts: [pledge(500000, collateral)] };
+        const expected = calculateMetrics(snapshot).pledgeDropToMarginCall;
+
+        expect(expected).not.toBeNull();
+        expect(find(snapshot, "pledge-margin-call")?.dropPercent).toBe(
+          expected
+        );
+      }
+    );
+
+    it("多筆質押負債合併成整戶維持率後再反推", () => {
+      const snapshot = {
+        ...pledged,
+        debts: [
+          { ...pledge(300000, 500000), id: "p1" },
+          { ...pledge(200000, 300000), id: "p2" },
+        ],
+      };
+      expect(find(snapshot, "pledge-margin-call")?.dropPercent).toBeCloseTo(
+        18.75,
+        8
+      );
+    });
+  });
+
+  // #44l：一致性——把跌幅代回 calculateStressScenario，對應指標剛好落在門檻上
+  describe("代回 calculateStressScenario 驗證", () => {
+    const debtAndNetWorth: StressBreakpointKey[] = [
+      "debt-ratio-elevated",
+      "debt-ratio-high-risk",
+      "net-worth-zero",
+    ];
+    const scenarios: {
+      name: string;
+      snapshot: Input;
+      /** 預期會算出跌幅（而非已觸及／不會觸及）的臨界點，依跌幅由小到大。 */
+      expected: StressBreakpointKey[];
+    }[] = [
+      {
+        name: "現金＋台股＋信貸",
+        snapshot: baseSnapshotInput({
+          cashSources: [cash(100000)],
+          twStockValue: 900000,
+          debts: [baseDebt({ principal: 250000 })],
+        }),
+        expected: debtAndNetWorth,
+      },
+      {
+        name: "含不動產與房貸",
+        snapshot: baseSnapshotInput({
+          cashSources: [cash(500000), cash(200000, true)],
+          twStockValue: 6000000,
+          realEstateValue: 2000000,
+          debts: [mortgage(3000000)],
+        }),
+        expected: debtAndNetWorth,
+      },
+      {
+        name: "美股 USD 換算",
+        snapshot: baseSnapshotInput({
+          cashSources: [cash(123456)],
+          twStockValue: 345678,
+          usStockValue: 23456,
+          usStockCurrency: "USD",
+          exchangeRate: 31.87,
+          debts: [baseDebt({ principal: 287654 })],
+        }),
+        expected: debtAndNetWorth,
+      },
+      {
+        name: "質押＋房貸＋不動產＋美股 USD",
+        snapshot: baseSnapshotInput({
+          cashSources: [cash(400000), cash(150000, true)],
+          twStockValue: 2500000,
+          usStockValue: 50000,
+          usStockCurrency: "USD",
+          exchangeRate: 32.5,
+          realEstateValue: 1000000,
+          debts: [mortgage(1500000), pledge(700000, 1200000)],
+        }),
+        expected: [
+          "debt-ratio-elevated",
+          "pledge-margin-call",
+          "debt-ratio-high-risk",
+          "net-worth-zero",
+        ],
+      },
+    ];
+
+    it.each(scenarios)(
+      "$name：跌幅代回後指標落在門檻上",
+      ({ snapshot, expected }) => {
+        const breakpoints = calculateStressBreakpoints(snapshot);
+        const drops = breakpoints.filter((item) => item.status === "drop");
+        // 先確認每條線都真的算出跌幅，避免下面的迴圈空轉
+        expect(drops.map((item) => item.key)).toEqual(expected);
+
+        for (const item of drops) {
+          const { after } = calculateStressScenario(
+            snapshot,
+            item.dropPercent as number
+          );
+          if (item.key === "debt-ratio-elevated") {
+            expect(after.debtRatio).toBeCloseTo(40, 8);
+          } else if (item.key === "debt-ratio-high-risk") {
+            expect(after.debtRatio).toBeCloseTo(60, 8);
+          } else if (item.key === "net-worth-zero") {
+            expect(after.netWorth).toBeCloseTo(0, 4);
+          } else {
+            expect(after.pledgeMaintenanceRatio).toBeCloseTo(
+              PLEDGE_MARGIN_CALL_RATIO,
+              8
+            );
+          }
+        }
+      }
+    );
+
+    it("跌幅再多一點就越過門檻：60% 線之後進入「財務高風險」", () => {
+      const snapshot = scenarios[0].snapshot;
+      const drop = find(snapshot, "debt-ratio-high-risk")?.dropPercent ?? 0;
+
+      expect(
+        calculateStressScenario(snapshot, drop - 0.01).after.debtRatioStatus
+      ).toBe("elevated");
+      expect(
+        calculateStressScenario(snapshot, drop + 0.01).after.debtRatioStatus
+      ).toBe("high-risk");
+    });
+  });
+
+  describe("排序", () => {
+    it("已觸及置頂，其後依跌幅由小到大，不會觸及置底", () => {
+      // 總資產 2,000,000（現金 1,000,000）、質押 500,000（維持率 160%）＋信貸 300,000
+      const snapshot = {
+        ...pledged,
+        debts: [pledge(500000, 800000), baseDebt({ principal: 300000 })],
+      };
+      const result = calculateStressBreakpoints(snapshot);
+
+      // 40% 線：恰為 40% 已觸及；追繳線 18.75%；60% 線 (2,000,000 − 1,333,333) ÷ 1,000,000 = 66.7%；淨資產不會歸零
+      expect(result.map((item) => [item.key, item.status])).toEqual([
+        ["debt-ratio-elevated", "reached"],
+        ["pledge-margin-call", "drop"],
+        ["debt-ratio-high-risk", "drop"],
+        ["net-worth-zero", "unreachable"],
+      ]);
+      expect(result[1].dropPercent as number).toBeLessThan(
+        result[2].dropPercent as number
+      );
+    });
+
+    it("狀態相同時維持「質押追繳線 → 負債比 40% → 負債比 60% → 淨資產歸零」的順序", () => {
+      const snapshot = {
+        ...pledged,
+        cashSources: [],
+        debts: [pledge(2000000, 800000)],
+      };
+      const result = calculateStressBreakpoints(snapshot);
+
+      expect(result.every((item) => item.status === "reached")).toBe(true);
+      expect(result.map((item) => item.key)).toEqual([
+        "pledge-margin-call",
+        "debt-ratio-elevated",
+        "debt-ratio-high-risk",
+        "net-worth-zero",
+      ]);
+    });
+  });
+
+  describe("安全性", () => {
+    it.each([
+      { name: "完全空白", snapshot: baseSnapshotInput() },
+      {
+        name: "沒有股票、有現金與負債",
+        snapshot: baseSnapshotInput({
+          cashSources: [cash(1000000)],
+          debts: [baseDebt({ principal: 100000 })],
+        }),
+      },
+      {
+        name: "沒有任何資產、只有負債",
+        snapshot: baseSnapshotInput({
+          debts: [pledge(500000, 800000), mortgage(100000)],
+        }),
+      },
+      {
+        name: "欄位為非數字",
+        snapshot: baseSnapshotInput({
+          twStockValue: Number.NaN,
+          usStockValue: Number.POSITIVE_INFINITY,
+          exchangeRate: Number.NaN,
+          realEstateValue: Number.NaN,
+          debts: [baseDebt({ principal: Number.NaN })],
+        }),
+      },
+    ])("$name：不出現 NaN／Infinity，跌幅只在 0～100 之間", ({ snapshot }) => {
+      for (const item of calculateStressBreakpoints(snapshot)) {
+        if (item.status === "drop") {
+          expect(Number.isFinite(item.dropPercent)).toBe(true);
+          expect(item.dropPercent as number).toBeGreaterThan(0);
+          expect(item.dropPercent as number).toBeLessThanOrEqual(100);
+        } else {
+          expect(item.dropPercent).toBeNull();
+        }
+      }
+    });
+
+    it("沒有股票時不做除法：未達該線即為不會觸及，已達則為已觸及", () => {
+      const safe = baseSnapshotInput({
+        cashSources: [cash(1000000)],
+        debts: [baseDebt({ principal: 100000 })],
+      });
+      expect(
+        calculateStressBreakpoints(safe).map((item) => item.status)
+      ).toEqual(["unreachable", "unreachable", "unreachable"]);
+
+      const insolvent = baseSnapshotInput({
+        debts: [baseDebt({ principal: 100000 })],
+      });
+      expect(
+        calculateStressBreakpoints(insolvent).map((item) => item.status)
+      ).toEqual(["reached", "reached", "reached"]);
+    });
+
+    it("不會修改傳入的快照（純函式）", () => {
+      const debts = [pledge(500000, 800000)];
+      const snapshot = baseSnapshotInput({ twStockValue: 1000000, debts });
+      const copy = JSON.parse(JSON.stringify(snapshot));
+
+      calculateStressBreakpoints(snapshot);
+
+      expect(snapshot).toEqual(copy);
+    });
   });
 });
 
