@@ -13,6 +13,15 @@ vi.mock("@/lib/backup", () => ({
   parseBackupFile: vi.fn(),
 }));
 
+// 預設沿用真正的實作（實際載入 fixtures/finance-data.json），個別案例再覆寫回傳值模擬載入失敗
+vi.mock("@/lib/demoData", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/demoData")>();
+  return {
+    ...actual,
+    loadDemoFinanceData: vi.fn(actual.loadDemoFinanceData),
+  };
+});
+
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
 import {
   downloadBackup,
@@ -20,7 +29,8 @@ import {
   parseBackupFile,
 } from "@/lib/backup";
 import { CryptoUnavailableError } from "@/lib/backupCrypto";
-import { LAST_BACKUP_KEY } from "@/lib/storage";
+import { loadDemoFinanceData } from "@/lib/demoData";
+import { DEMO_MODE_KEY, LAST_BACKUP_KEY } from "@/lib/storage";
 import { createEmptySnapshot, type Debt } from "@/types/schema";
 
 function oneDebt(principal: number): Debt {
@@ -1893,5 +1903,585 @@ describe("useLocalSnapshots：趨勢圖範圍", () => {
     });
     expect(visibleDates(result)).toHaveLength(4);
     expect(result.current.snapshots).toHaveLength(4);
+  });
+});
+
+// PRD 4.2「範例資料」、6.2 節、第 9 節 #63a～#63m
+describe("useLocalSnapshots：範例資料", () => {
+  const TODAY = "2026-10-06";
+  /** fixtures/finance-data.json 的快照筆數。 */
+  const DEMO_COUNT = 60;
+
+  type Hook = { current: ReturnType<typeof useLocalSnapshots> };
+
+  function snap(date: string, amount: number) {
+    return {
+      ...createEmptySnapshot(date),
+      updatedAt: `${date}T00:00:00.000Z`,
+      cashSources: [{ id: "c1", name: "銀行", amount, restricted: false }],
+    };
+  }
+
+  function seed(...snapshots: ReturnType<typeof snap>[]) {
+    persistFinanceData({ schemaVersion: 8, snapshots });
+  }
+
+  function storedDates() {
+    const loaded = loadFinanceData();
+    return loaded.status === "ok"
+      ? loaded.data.snapshots.map((s) => s.date)
+      : [];
+  }
+
+  function demoFlag() {
+    return localStorage.getItem(DEMO_MODE_KEY);
+  }
+
+  async function loadDemo(result: Hook) {
+    let response: { ok: boolean; reason?: string } | undefined;
+    await act(async () => {
+      response = await result.current.loadDemoData();
+    });
+    return response!;
+  }
+
+  /** 模擬另一個分頁寫入 LocalStorage：本分頁只會收到 storage 事件。 */
+  function otherTabWrites(key: string, value: string | null) {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", { key, storageArea: localStorage })
+      );
+    });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(`${TODAY}T10:00:00`));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  describe("是否提供範例資料", () => {
+    // #63a
+    it("全新使用者：提供範例資料，且不是範例模式", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.canLoadDemo).toBe(true);
+      expect(result.current.isDemo).toBe(false);
+    });
+
+    // #63h
+    it("已有快照：不提供", () => {
+      seed(snap("2026-09-01", 1000));
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.canLoadDemo).toBe(false);
+      expect(result.current.isDemo).toBe(false);
+    });
+
+    // #63i
+    it("版本不相容：不提供，避免覆蓋既有資料", () => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ schemaVersion: 999, snapshots: [] })
+      );
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.loadStatus).toBe("version-mismatch");
+      expect(result.current.canLoadDemo).toBe(false);
+    });
+
+    it("資料毀損已重置：提供", () => {
+      localStorage.setItem(STORAGE_KEY, "{bad json");
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.loadStatus).toBe("corrupted");
+      expect(result.current.canLoadDemo).toBe(true);
+    });
+
+    it("存下第一筆快照後不再提供，且不會被當成範例資料", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ twStockValue: 50000 });
+      });
+      act(() => {
+        result.current.save();
+      });
+
+      expect(result.current.canLoadDemo).toBe(false);
+      expect(result.current.isDemo).toBe(false);
+      expect(demoFlag()).toBeNull();
+    });
+
+    it("清空資料後重新提供", () => {
+      seed(snap("2026-09-01", 1000));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.clearAllData();
+      });
+
+      expect(result.current.canLoadDemo).toBe(true);
+    });
+  });
+
+  describe("載入範例資料", () => {
+    // #63b
+    it("成功：寫入全部範例快照與範例模式標記，進入範例模式", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      const response = await loadDemo(result);
+
+      expect(response).toEqual({ ok: true });
+      expect(result.current.isDemo).toBe(true);
+      expect(result.current.canLoadDemo).toBe(false);
+      expect(result.current.loadStatus).toBe("ok");
+      expect(result.current.snapshotCount).toBe(DEMO_COUNT);
+      expect(storedDates()).toHaveLength(DEMO_COUNT);
+      expect(demoFlag()).toBe("1");
+    });
+
+    // #63c
+    it("日期已平移：最新一筆落在今天，前一筆為 2026-09-06", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      await loadDemo(result);
+
+      expect(result.current.latestSnapshotDate).toBe(TODAY);
+      expect(result.current.snapshots.at(-2)?.date).toBe("2026-09-06");
+      expect(storedDates().sort().at(-1)).toBe(TODAY);
+    });
+
+    it("表單帶入今天的範例快照，視為已存檔且沒有未存檔編輯", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      await loadDemo(result);
+
+      expect(result.current.draft.date).toBe(TODAY);
+      expect(result.current.draft.twStockValue).toBeGreaterThan(0);
+      expect(result.current.draft.cashSources.length).toBeGreaterThan(0);
+      expect(result.current.isDirty).toBe(false);
+      expect(result.current.hasUnsavedEdits).toBe(false);
+      expect(result.current.estimatedDebtFields).toEqual({});
+      expect(result.current.metrics.totalAssets).toBeGreaterThan(0);
+    });
+
+    it("會取代表單上尚未存檔的內容", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ twStockValue: 123 });
+      });
+      expect(result.current.hasUnsavedEdits).toBe(true);
+
+      await loadDemo(result);
+
+      expect(result.current.draft.twStockValue).not.toBe(123);
+      expect(result.current.hasUnsavedEdits).toBe(false);
+    });
+
+    it("趨勢圖範圍切換為 1 年，涵蓋最近 12 筆每月快照", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      expect(result.current.trendRange).toBe(90);
+
+      await loadDemo(result);
+
+      expect(result.current.trendRange).toBe(365);
+      expect(result.current.visibleSnapshots).toHaveLength(12);
+      // 全部歷史不受範圍影響
+      expect(result.current.snapshots).toHaveLength(DEMO_COUNT);
+    });
+
+    it("不更新上次備份時間", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      await loadDemo(result);
+
+      expect(result.current.lastBackupAt).toBeNull();
+      expect(localStorage.getItem(LAST_BACKUP_KEY)).toBeNull();
+    });
+
+    it("資料毀損已重置的狀態下可以載入，狀態變為 ok", async () => {
+      localStorage.setItem(STORAGE_KEY, "{bad json");
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      const response = await loadDemo(result);
+
+      expect(response.ok).toBe(true);
+      expect(result.current.loadStatus).toBe("ok");
+      expect(result.current.isDemo).toBe(true);
+    });
+
+    // #63d
+    it("重新整理頁面後仍為範例模式；趨勢圖範圍回到預設 90 天", async () => {
+      const first = renderHook(() => useLocalSnapshots());
+      await loadDemo(first.result);
+      first.unmount();
+
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.isDemo).toBe(true);
+      expect(result.current.canLoadDemo).toBe(false);
+      expect(result.current.snapshotCount).toBe(DEMO_COUNT);
+      expect(result.current.trendRange).toBe(90);
+    });
+
+    it("頁面開著跨日後才載入：以實際當天為準", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      vi.setSystemTime(new Date("2026-10-08T09:00:00"));
+
+      await loadDemo(result);
+
+      expect(result.current.currentDate).toBe("2026-10-08");
+      expect(result.current.latestSnapshotDate).toBe("2026-10-08");
+      expect(result.current.draft.date).toBe("2026-10-08");
+      expect(result.current.isDirty).toBe(false);
+    });
+  });
+
+  describe("絕不覆蓋既有資料", () => {
+    // #63h：本分頁仍顯示邀請卡，但另一分頁已先存檔（尚未收到 storage 事件）
+    it("LocalStorage 已有快照：拒絕載入，既有快照不變", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      seed(snap("2026-09-01", 4321));
+      const before = localStorage.getItem(STORAGE_KEY);
+
+      const response = await loadDemo(result);
+
+      expect(response.ok).toBe(false);
+      expect(response.reason).toContain("已有資料");
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(before);
+      expect(demoFlag()).toBeNull();
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.snapshotCount).toBe(0);
+      expect(result.current.trendRange).toBe(90);
+    });
+
+    // #63i
+    it("LocalStorage 為版本不相容的資料：拒絕載入，原始內容不變", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      const raw = JSON.stringify({ schemaVersion: 999, snapshots: [] });
+      localStorage.setItem(STORAGE_KEY, raw);
+
+      const response = await loadDemo(result);
+
+      expect(response.ok).toBe(false);
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(raw);
+      expect(demoFlag()).toBeNull();
+      expect(result.current.isDemo).toBe(false);
+    });
+
+    it("範例檔載入失敗：回傳原因，不寫入任何資料", async () => {
+      vi.mocked(loadDemoFinanceData).mockResolvedValueOnce(null);
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      const response = await loadDemo(result);
+
+      expect(response.ok).toBe(false);
+      expect(response.reason).toContain("範例資料載入失敗");
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(demoFlag()).toBeNull();
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.canLoadDemo).toBe(true);
+    });
+  });
+
+  // #63k
+  describe("寫入失敗", () => {
+    it("儲存空間無法寫入：回傳原因，仍為無資料狀態，不殘留範例模式標記", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new DOMException("quota exceeded", "QuotaExceededError");
+      });
+
+      const response = await loadDemo(result);
+
+      expect(response.ok).toBe(false);
+      expect(response.reason).toContain("無法寫入瀏覽器儲存空間");
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.canLoadDemo).toBe(true);
+      expect(result.current.snapshotCount).toBe(0);
+      vi.restoreAllMocks();
+      expect(demoFlag()).toBeNull();
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    });
+
+    it("標記寫入成功但快照寫入失敗：收回標記", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      const original = Storage.prototype.setItem;
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+        this: Storage,
+        key: string,
+        value: string
+      ) {
+        if (key === STORAGE_KEY) {
+          throw new DOMException("quota exceeded", "QuotaExceededError");
+        }
+        original.call(this, key, value);
+      });
+
+      const response = await loadDemo(result);
+
+      expect(response.ok).toBe(false);
+      expect(demoFlag()).toBeNull();
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(result.current.isDemo).toBe(false);
+    });
+
+    it("排除問題後可重試成功", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      const spy = vi
+        .spyOn(Storage.prototype, "setItem")
+        .mockImplementation(() => {
+          throw new DOMException("quota exceeded", "QuotaExceededError");
+        });
+      expect((await loadDemo(result)).ok).toBe(false);
+
+      spy.mockRestore();
+      const response = await loadDemo(result);
+
+      expect(response.ok).toBe(true);
+      expect(result.current.isDemo).toBe(true);
+      expect(demoFlag()).toBe("1");
+    });
+  });
+
+  // #63e
+  describe("範例模式下可正常操作", () => {
+    it("修改後存檔：寫入今天，仍為範例模式", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+
+      act(() => {
+        result.current.updateDraft({ twStockValue: 5000000 });
+      });
+      expect(result.current.isDirty).toBe(true);
+      let response: { ok: boolean } | undefined;
+      act(() => {
+        response = result.current.save();
+      });
+
+      expect(response?.ok).toBe(true);
+      expect(result.current.isDirty).toBe(false);
+      expect(result.current.snapshotCount).toBe(DEMO_COUNT);
+      expect(result.current.snapshots.at(-1)?.twStockValue).toBe(5000000);
+      expect(result.current.isDemo).toBe(true);
+      expect(demoFlag()).toBe("1");
+    });
+
+    it("修正與刪除歷史快照照常運作，仍為範例模式", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+
+      act(() => {
+        result.current.startEditing("2026-09-06");
+      });
+      expect(result.current.editingDate).toBe("2026-09-06");
+      act(() => {
+        result.current.updateDraft({ twStockValue: 1 });
+      });
+      act(() => {
+        result.current.save();
+      });
+      expect(result.current.editingDate).toBeNull();
+      expect(
+        result.current.snapshots.find((s) => s.date === "2026-09-06")
+          ?.twStockValue
+      ).toBe(1);
+
+      act(() => {
+        result.current.deleteSnapshot("2026-09-06");
+      });
+
+      expect(result.current.snapshotCount).toBe(DEMO_COUNT - 1);
+      expect(result.current.isDemo).toBe(true);
+      expect(demoFlag()).toBe("1");
+    });
+  });
+
+  describe("結束範例模式", () => {
+    // #63f
+    it("clearAllData：清除全部快照、上次備份時間與範例模式標記，不觸發匯出", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+      act(() => {
+        result.current.exportBackup();
+      });
+      expect(result.current.lastBackupAt).not.toBeNull();
+      vi.mocked(downloadBackup).mockClear();
+
+      act(() => {
+        result.current.clearAllData();
+      });
+
+      expect(downloadBackup).not.toHaveBeenCalled();
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.canLoadDemo).toBe(true);
+      expect(result.current.snapshotCount).toBe(0);
+      expect(result.current.draft).toMatchObject({
+        date: TODAY,
+        cashSources: [],
+        twStockValue: 0,
+      });
+      expect(result.current.lastBackupAt).toBeNull();
+      expect(demoFlag()).toBeNull();
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(localStorage.getItem(LAST_BACKUP_KEY)).toBeNull();
+    });
+
+    it("清除後可再次載入範例資料", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+      act(() => {
+        result.current.clearAllData();
+      });
+
+      const response = await loadDemo(result);
+
+      expect(response.ok).toBe(true);
+      expect(result.current.isDemo).toBe(true);
+      expect(result.current.snapshotCount).toBe(DEMO_COUNT);
+    });
+
+    // #63j
+    it("importBackup 成功：換成匯入的資料，結束範例模式並移除標記", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+      vi.mocked(parseBackupFile).mockResolvedValue({
+        status: "ok",
+        data: { schemaVersion: 8, snapshots: [snap("2026-01-01", 88888)] },
+      });
+
+      await act(async () => {
+        await result.current.importBackup(new File(["x"], "backup.json"));
+      });
+
+      expect(result.current.isDemo).toBe(false);
+      expect(demoFlag()).toBeNull();
+      expect(result.current.snapshotCount).toBe(1);
+      expect(result.current.draft.cashSources[0].amount).toBe(88888);
+    });
+
+    it("importBackup 失敗：仍為範例模式，範例資料不變", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+      vi.mocked(parseBackupFile).mockResolvedValue({ status: "corrupted" });
+
+      await act(async () => {
+        await result.current.importBackup(new File(["x"], "backup.json"));
+      });
+
+      expect(result.current.isDemo).toBe(true);
+      expect(demoFlag()).toBe("1");
+      expect(result.current.snapshotCount).toBe(DEMO_COUNT);
+    });
+
+    // #63m
+    it("範例快照被逐筆刪光：不再是範例模式；之後存檔的資料視為使用者自己的", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+
+      for (const date of result.current.snapshots.map((s) => s.date)) {
+        act(() => {
+          result.current.deleteSnapshot(date);
+        });
+      }
+      expect(result.current.snapshotCount).toBe(0);
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.canLoadDemo).toBe(true);
+
+      act(() => {
+        result.current.updateDraft({ twStockValue: 777 });
+      });
+      act(() => {
+        result.current.save();
+      });
+
+      expect(result.current.snapshotCount).toBe(1);
+      expect(result.current.isDemo).toBe(false);
+      expect(demoFlag()).toBeNull();
+    });
+
+    it("殘留的標記（有標記但沒有快照）不算範例模式，存檔時一併清除", () => {
+      localStorage.setItem(DEMO_MODE_KEY, "1");
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.canLoadDemo).toBe(true);
+
+      act(() => {
+        result.current.updateDraft({ twStockValue: 777 });
+      });
+      act(() => {
+        result.current.save();
+      });
+
+      expect(result.current.isDemo).toBe(false);
+      expect(demoFlag()).toBeNull();
+    });
+  });
+
+  // #63l
+  describe("多分頁", () => {
+    it("另一分頁載入範例資料：本分頁同步快照並進入範例模式", () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+
+      // 與 loadDemoData 的寫入順序相同：先標記、後資料
+      otherTabWrites(DEMO_MODE_KEY, "1");
+      expect(result.current.isDemo).toBe(false);
+      otherTabWrites(
+        STORAGE_KEY,
+        JSON.stringify({
+          schemaVersion: 8,
+          snapshots: [snap("2026-09-06", 100), snap(TODAY, 200)],
+        })
+      );
+
+      expect(result.current.isDemo).toBe(true);
+      expect(result.current.canLoadDemo).toBe(false);
+      expect(result.current.snapshotCount).toBe(2);
+      expect(result.current.draft.cashSources[0].amount).toBe(200);
+    });
+
+    it("另一分頁清除範例資料：本分頁回到無資料狀態並重新提供範例資料", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+
+      otherTabWrites(STORAGE_KEY, null);
+      otherTabWrites(DEMO_MODE_KEY, null);
+
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.canLoadDemo).toBe(true);
+      expect(result.current.snapshotCount).toBe(0);
+      expect(result.current.draft.cashSources).toEqual([]);
+    });
+
+    it("另一分頁匯入自己的備份（只移除標記）：本分頁結束範例模式，資料仍在", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+
+      otherTabWrites(DEMO_MODE_KEY, null);
+
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.snapshotCount).toBe(DEMO_COUNT);
+    });
+
+    it("整個 LocalStorage 被清空（key 為 null）：一併結束範例模式", async () => {
+      const { result } = renderHook(() => useLocalSnapshots());
+      await loadDemo(result);
+
+      localStorage.clear();
+      act(() => {
+        window.dispatchEvent(
+          new StorageEvent("storage", { key: null, storageArea: localStorage })
+        );
+      });
+
+      expect(result.current.isDemo).toBe(false);
+      expect(result.current.canLoadDemo).toBe(true);
+    });
   });
 });

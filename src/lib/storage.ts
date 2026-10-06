@@ -9,6 +9,8 @@ import {
 export const STORAGE_KEY = "my_finance_dashboard_data";
 /** 上次備份時間（ISO 8601），獨立於快照 schema，不隨備份匯出（PRD 6.2 節）。 */
 export const LAST_BACKUP_KEY = "my_finance_dashboard_last_backup";
+/** 範例模式標記：目前的快照是使用者載入的範例資料，獨立於快照 schema，不隨備份匯出（PRD 6.2 節）。 */
+export const DEMO_MODE_KEY = "my_finance_dashboard_demo";
 
 export type LoadResult =
   | { status: "empty" }
@@ -339,6 +341,34 @@ export function recordBackupNow(now: Date = new Date()): string {
 
 export function clearLastBackupAt(): void {
   localStorage.removeItem(LAST_BACKUP_KEY);
+}
+
+/** 是否處於範例模式；鍵不存在、內容不合法或瀏覽器拒絕存取一律視為否（PRD 6.2 節）。 */
+export function loadDemoMode(): boolean {
+  try {
+    return localStorage.getItem(DEMO_MODE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** 寫入範例模式標記；儲存空間已滿或被停用時回傳 false 而不拋出例外。 */
+export function persistDemoMode(): boolean {
+  try {
+    localStorage.setItem(DEMO_MODE_KEY, "1");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** 移除範例模式標記；失敗不拋出例外，避免中斷已完成寫入的匯入／清除流程。 */
+export function clearDemoMode(): void {
+  try {
+    localStorage.removeItem(DEMO_MODE_KEY);
+  } catch {
+    // 標記殘留時，下次從零筆快照存檔會再清一次（見 useLocalSnapshots 的 save）
+  }
 }
 
 export function createEmptyFinanceData(): FinanceData {

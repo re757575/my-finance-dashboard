@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { advanceDebtsByMonths, calculateMetrics } from "@/lib/calculations";
 import {
+  DEMO_MODE_KEY,
   LAST_BACKUP_KEY,
   STORAGE_KEY,
+  clearDemoMode,
   clearFinanceData,
   clearLastBackupAt,
   createEmptyFinanceData,
@@ -11,9 +13,11 @@ import {
   getSnapshotForDate,
   getSnapshotsInRange,
   getSnapshotsYearToDate,
+  loadDemoMode,
   loadFinanceData,
   loadLastBackupAt,
   monthsBetweenDates,
+  persistDemoMode,
   persistFinanceData,
   recordBackupNow,
   upsertSnapshot,
@@ -25,6 +29,7 @@ import {
   parseBackupFile,
 } from "@/lib/backup";
 import { CryptoUnavailableError } from "@/lib/backupCrypto";
+import { loadDemoFinanceData } from "@/lib/demoData";
 import {
   createEmptySnapshot,
   type CalculatedMetrics,
@@ -40,6 +45,8 @@ import {
 export type TrendRange = 7 | 30 | 90 | 365 | "ytd" | "all";
 
 const DEFAULT_TREND_RANGE: TrendRange = 90;
+/** 載入範例資料後切換到的趨勢圖範圍，讓趨勢圖一開始就有足夠的節點（PRD 4.2「範例資料」）。 */
+const DEMO_TREND_RANGE: TrendRange = 365;
 
 /** 寫入 LocalStorage 失敗時顯示的訊息（PRD 4.2「寫入失敗防護」）。 */
 const STORAGE_WRITE_FAILED =
@@ -139,6 +146,10 @@ export function useLocalSnapshots() {
   const stashedDraftRef = useRef<StashedDraft | null>(null);
   /** 暫存中的今日草稿是否有未存檔編輯；ref 不會觸發重新渲染，故另以 state 記錄。 */
   const [stashHasEdits, setStashHasEdits] = useState(false);
+  /** 範例模式標記（PRD 6.2 節）；是否真的顯示為範例模式另須有快照，見下方 isDemo。 */
+  const [demoMode, setDemoMode] = useState(false);
+  /** 初次讀取 LocalStorage 是否已完成；完成前不提供範例資料，避免已有資料的使用者看到邀請卡閃現。 */
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   /** 由程式載入草稿，並重設未存檔編輯的比較基準。 */
   const loadDraft = useCallback((snapshot: Snapshot) => {
@@ -157,6 +168,8 @@ export function useLocalSnapshots() {
     loadDraft(snapshot);
     setEstimatedDebtFields(estimatedFields);
     setLastBackupAt(loadLastBackupAt());
+    setDemoMode(loadDemoMode());
+    setHasLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -342,6 +355,11 @@ export function useLocalSnapshots() {
     }
     setFinanceData(next);
     setLoadStatus("ok");
+    // 從零筆開始存的一定是使用者自己的資料：清掉殘留的範例模式標記（例如範例快照被逐筆刪光）
+    if (demoMode && financeData.snapshots.length === 0) {
+      clearDemoMode();
+      setDemoMode(false);
+    }
     if (editingDate) {
       leaveEditing();
     } else {
@@ -354,6 +372,7 @@ export function useLocalSnapshots() {
     financeData,
     loadStatus,
     editingDate,
+    demoMode,
     leaveEditing,
     syncCurrentDate,
     loadDraft,
@@ -385,6 +404,21 @@ export function useLocalSnapshots() {
     [financeData]
   );
 
+  /** 已存檔資料被整批取代（匯入還原、載入範例資料）後，重置修正模式並依最新快照重新帶入今日草稿。 */
+  const applyReplacedData = useCallback(
+    (data: FinanceData, today: string) => {
+      setFinanceData(data);
+      const { snapshot, estimatedFields } = buildInitialDraft(data, today);
+      stashedDraftRef.current = null;
+      setEditingDate(null);
+      setStashHasEdits(false);
+      loadDraft(snapshot);
+      setEstimatedDebtFields(estimatedFields);
+      setLoadStatus("ok");
+    },
+    [loadDraft]
+  );
+
   /** 匯入前的二次確認由呼叫端（UI Dialog）負責，這裡只處理實際覆蓋動作。 */
   const importBackup = useCallback(
     async (
@@ -414,27 +448,60 @@ export function useLocalSnapshots() {
       if (!persistFinanceData(result.data)) {
         return { ok: false, reason: STORAGE_WRITE_FAILED };
       }
-      setFinanceData(result.data);
-      const { snapshot, estimatedFields } = buildInitialDraft(
-        result.data,
-        currentDate
-      );
-      stashedDraftRef.current = null;
-      setEditingDate(null);
-      setStashHasEdits(false);
-      loadDraft(snapshot);
-      setEstimatedDebtFields(estimatedFields);
-      setLoadStatus("ok");
+      applyReplacedData(result.data, currentDate);
+      // 匯入的是使用者自己的資料，結束範例模式（PRD 4.2「範例資料」）
+      clearDemoMode();
+      setDemoMode(false);
       return { ok: true };
     },
-    [currentDate, loadDraft]
+    [currentDate, applyReplacedData]
   );
 
-  /** 清空前必須先由 UI 呼叫 exportBackup() 強制備份，才能呼叫本函式（PRD 4.2 節）。 */
+  /**
+   * 載入範例資料（PRD 4.2「範例資料」）：日期已平移到最新一筆落在今天，寫入方式比照匯入還原，
+   * 並寫入範例模式標記。範例資料絕不覆蓋既有快照——寫入前重新讀取 LocalStorage
+   * （其他分頁可能剛存檔），已有快照或版本不相容一律拒絕。失敗時不改變任何狀態。
+   */
+  const loadDemoData = useCallback(async (): Promise<{
+    ok: boolean;
+    reason?: string;
+  }> => {
+    const today = syncCurrentDate();
+    const data = await loadDemoFinanceData(today);
+    if (!data) {
+      return { ok: false, reason: "範例資料載入失敗，請重新整理頁面後再試。" };
+    }
+    const existing = loadFinanceData();
+    if (
+      existing.status === "version-mismatch" ||
+      (existing.status === "ok" && existing.data.snapshots.length > 0)
+    ) {
+      return {
+        ok: false,
+        reason: "瀏覽器中已有資料，為避免覆蓋，已取消載入範例資料。",
+      };
+    }
+    // 先寫標記再寫資料：資料寫入失敗時收回標記，不留下「有標記卻沒有範例資料」的狀態
+    if (!persistDemoMode() || !persistFinanceData(data)) {
+      clearDemoMode();
+      return { ok: false, reason: STORAGE_WRITE_FAILED };
+    }
+    applyReplacedData(data, today);
+    setDemoMode(true);
+    setTrendRange(DEMO_TREND_RANGE);
+    return { ok: true };
+  }, [syncCurrentDate, applyReplacedData]);
+
+  /**
+   * 清空前必須先由 UI 呼叫 exportBackup() 強制備份，才能呼叫本函式（PRD 4.2 節）。
+   * 唯一的例外是清除範例資料：虛構資料可隨時重新載入，不強制備份（PRD 4.2「範例資料」）。
+   */
   const clearAllData = useCallback(() => {
     clearFinanceData();
     clearLastBackupAt();
+    clearDemoMode();
     setLastBackupAt(null);
+    setDemoMode(false);
     const empty = createEmptyFinanceData();
     setFinanceData(empty);
     stashedDraftRef.current = null;
@@ -485,6 +552,9 @@ export function useLocalSnapshots() {
       // key 為 null 代表整個 LocalStorage 被清空
       if (event.key === null || event.key === LAST_BACKUP_KEY) {
         setLastBackupAt(loadLastBackupAt());
+      }
+      if (event.key === null || event.key === DEMO_MODE_KEY) {
+        setDemoMode(loadDemoMode());
       }
       if (event.key === null || event.key === STORAGE_KEY) syncFromStorage();
     };
@@ -551,6 +621,14 @@ export function useLocalSnapshots() {
     exportEncryptedBackup,
     importBackup,
     clearAllData,
+    /** 目前顯示的是使用者載入的範例資料（PRD 4.2「範例資料」）。 */
+    isDemo: demoMode && financeData.snapshots.length > 0,
+    /** 是否提供「載入範例資料」：沒有任何已存檔快照，且不是版本不相容（不可覆蓋既有資料）。 */
+    canLoadDemo:
+      hasLoaded &&
+      financeData.snapshots.length === 0 &&
+      loadStatus !== "version-mismatch",
+    loadDemoData,
     lastBackupAt,
     /** 已存檔快照中最早／最近一筆的日期，供備份提醒與資料新鮮度使用（PRD 4.2）。 */
     earliestSnapshotDate: allSnapshots[0]?.date,

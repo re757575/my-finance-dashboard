@@ -6,12 +6,16 @@ import {
   getSnapshotForDate,
   getSnapshotsInRange,
   getSnapshotsYearToDate,
+  clearDemoMode,
   clearLastBackupAt,
+  DEMO_MODE_KEY,
   LAST_BACKUP_KEY,
+  loadDemoMode,
   loadFinanceData,
   loadLastBackupAt,
   monthsBetweenDates,
   parseFinanceData,
+  persistDemoMode,
   persistFinanceData,
   recordBackupNow,
   STORAGE_KEY,
@@ -635,6 +639,56 @@ describe("上次備份時間", () => {
   });
 });
 
+// PRD 6.2 節：範例模式標記存在獨立的 LocalStorage 鍵，不屬於快照 schema
+describe("範例模式標記", () => {
+  it("使用獨立的鍵 my_finance_dashboard_demo，不同於快照資料與上次備份時間的鍵", () => {
+    expect(DEMO_MODE_KEY).toBe("my_finance_dashboard_demo");
+    expect(DEMO_MODE_KEY).not.toBe(STORAGE_KEY);
+    expect(DEMO_MODE_KEY).not.toBe(LAST_BACKUP_KEY);
+  });
+
+  it("從未寫入時不是範例模式", () => {
+    expect(loadDemoMode()).toBe(false);
+  });
+
+  it('persistDemoMode 寫入 "1" 並回傳 true，loadDemoMode 可讀回', () => {
+    expect(persistDemoMode()).toBe(true);
+
+    expect(localStorage.getItem(DEMO_MODE_KEY)).toBe("1");
+    expect(loadDemoMode()).toBe(true);
+  });
+
+  it('內容不是 "1" 時一律視為不是範例模式，不拋錯', () => {
+    for (const value of ["", "0", "true", "yes", "{}"]) {
+      localStorage.setItem(DEMO_MODE_KEY, value);
+      expect(loadDemoMode(), value).toBe(false);
+    }
+  });
+
+  it("clearDemoMode 移除標記", () => {
+    persistDemoMode();
+    clearDemoMode();
+
+    expect(localStorage.getItem(DEMO_MODE_KEY)).toBeNull();
+    expect(loadDemoMode()).toBe(false);
+  });
+
+  it("沒有標記時呼叫 clearDemoMode 不拋錯", () => {
+    expect(() => clearDemoMode()).not.toThrow();
+  });
+
+  it("不影響快照資料與上次備份時間所在的鍵", () => {
+    localStorage.setItem(STORAGE_KEY, "{}");
+    recordBackupNow(new Date("2026-09-30T08:30:00.000Z"));
+
+    persistDemoMode();
+    clearDemoMode();
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBe("{}");
+    expect(loadLastBackupAt()).toBe("2026-09-30T08:30:00.000Z");
+  });
+});
+
 // PRD 4.2「寫入失敗防護」、6.1 節「讀寫失敗」、第 9 節 #51a～#51d
 describe("LocalStorage 讀寫失敗", () => {
   afterEach(() => {
@@ -703,6 +757,32 @@ describe("LocalStorage 讀寫失敗", () => {
     expect(recordBackupNow(new Date("2026-10-02T08:30:00.000Z"))).toBe(
       "2026-10-02T08:30:00.000Z"
     );
+  });
+
+  it("loadDemoMode 在瀏覽器拒絕存取時視為不是範例模式", () => {
+    persistDemoMode();
+    failReads();
+
+    expect(loadDemoMode()).toBe(false);
+  });
+
+  // 第 9 節 #63k
+  it("persistDemoMode 寫入失敗回傳 false，不拋出例外，也不留下標記", () => {
+    failWrites();
+
+    expect(persistDemoMode()).toBe(false);
+
+    vi.restoreAllMocks();
+    expect(loadDemoMode()).toBe(false);
+  });
+
+  it("clearDemoMode 移除失敗不拋出例外", () => {
+    persistDemoMode();
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw new DOMException("access denied", "SecurityError");
+    });
+
+    expect(() => clearDemoMode()).not.toThrow();
   });
 });
 

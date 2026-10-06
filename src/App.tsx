@@ -10,6 +10,8 @@ import { DataManagement } from "@/components/DataManagement";
 import { DebtList } from "@/components/DebtList";
 import { DebtRatioBar } from "@/components/DebtRatioBar";
 import { DebtServiceRatioCard } from "@/components/DebtServiceRatioCard";
+import { DemoDataBanner } from "@/components/DemoDataBanner";
+import { DemoDataOffer } from "@/components/DemoDataOffer";
 import { EmergencyFundCard } from "@/components/EmergencyFundCard";
 import { ExpenseInput } from "@/components/ExpenseInput";
 import { Footer } from "@/components/Footer";
@@ -58,6 +60,9 @@ function App() {
     exportEncryptedBackup,
     importBackup,
     clearAllData,
+    isDemo,
+    canLoadDemo,
+    loadDemoData,
     lastBackupAt,
     earliestSnapshotDate,
     latestSnapshotDate,
@@ -143,7 +148,8 @@ function App() {
           <DataFreshnessNotice freshness={freshness} />
         </header>
 
-        <BackupReminderBanner reminder={backupReminder} />
+        {/* 範例模式下不提醒備份：虛構資料不需要備份（PRD 4.2「範例資料」） */}
+        {!isDemo && <BackupReminderBanner reminder={backupReminder} />}
 
         {loadStatus === "corrupted" && (
           <div className="mb-4 rounded-lg bg-amber-50 dark:bg-amber-950 p-3 text-sm text-amber-800 dark:text-amber-200">
@@ -155,6 +161,8 @@ function App() {
             偵測到本地資料版本不相容，為避免覆蓋既有資料，暫停顯示與存檔功能。
           </div>
         )}
+        {canLoadDemo && <DemoDataOffer onLoad={loadDemoData} />}
+        {isDemo && <DemoDataBanner onExit={clearAllData} />}
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* 左欄：輸入區 */}
