@@ -572,6 +572,124 @@ describe("buildPeriodicReviewPrompt", () => {
     expect(prompt).toContain("| 2026-06-01 |");
     expect(prompt).toContain("| 2026-07-01 |");
   });
+
+  // PRD 5.11 節：成長率與最大回撤（與趨勢圖區的摘要卡同一套公式）
+  describe("淨資產成長率與最大回撤", () => {
+    const cashSnapshot = (date: string, amount: number) =>
+      baseSnapshot({
+        date,
+        cashSources: [{ id: "1", name: "現金", amount, restricted: false }],
+      });
+
+    function reviewPrompt(history: Snapshot[]) {
+      const draft = baseSnapshot();
+      return buildPeriodicReviewPrompt({
+        currentDate: "2026-07-13",
+        draft,
+        metrics: calculateMetrics(draft),
+        recentSnapshots: history,
+      });
+    }
+
+    // 2020-01-01 → 2024-01-01 = 1461 天（365.25 × 4）；1,000,000 → 1,464,100（1.1^4）→ 年化 10%
+    // 中途 1,200,000 → 900,000：回撤 25%，期末已高於 1,200,000 → 已回復
+    it("期間滿 1 年：列出年化成長率與最大回撤（高低點日期、是否已回復）", () => {
+      const prompt = reviewPrompt([
+        cashSnapshot("2020-01-01", 1_000_000),
+        cashSnapshot("2021-01-01", 1_200_000),
+        cashSnapshot("2022-01-01", 900_000),
+        cashSnapshot("2024-01-01", 1_464_100),
+      ]);
+
+      expect(prompt).toContain(
+        "- 淨資產年化成長率（CAGR）：+10.0%（期間 1461 天；淨資產變化含儲蓄投入與負債償還，不等於投資報酬率）"
+      );
+      expect(prompt).toContain(
+        "- 最大回撤：-25.0%（2021-01-01 高點 $1,200,000 → 2022-01-01 低點 $900,000，已回復）"
+      );
+      expect(prompt).not.toContain("期間成長率");
+    });
+
+    // 2026-06-01 → 2026-07-01 = 30 天；500,000 → 600,000 = +20%
+    it("期間未滿 1 年：改列期間成長率並註明不年化；沒有下跌時註明沒有回撤", () => {
+      const prompt = reviewPrompt([
+        cashSnapshot("2026-06-01", 500_000),
+        cashSnapshot("2026-07-01", 600_000),
+      ]);
+
+      expect(prompt).toContain(
+        "- 淨資產期間成長率：+20.0%（期間 30 天，未滿 1 年不年化；淨資產變化含儲蓄投入與負債償還，不等於投資報酬率）"
+      );
+      expect(prompt).toContain("- 最大回撤：期間內沒有回撤");
+      expect(prompt).not.toContain("年化成長率");
+    });
+
+    it("回撤後未回到高點時標示尚未回復，成長率為負時帶負號", () => {
+      // 2026-01-01 → 2026-03-02 = 60 天；1,000,000 → 800,000 = −20%
+      const prompt = reviewPrompt([
+        cashSnapshot("2026-01-01", 1_000_000),
+        cashSnapshot("2026-03-02", 800_000),
+      ]);
+
+      expect(prompt).toContain("- 淨資產期間成長率：-20.0%（期間 60 天");
+      expect(prompt).toContain(
+        "- 最大回撤：-20.0%（2026-01-01 高點 $1,000,000 → 2026-03-02 低點 $800,000，尚未回復）"
+      );
+    });
+
+    it("期初淨資產為 0 時說明無法計算成長率，不出現 NaN／Infinity", () => {
+      const prompt = reviewPrompt([
+        cashSnapshot("2020-01-01", 0),
+        cashSnapshot("2024-01-01", 500_000),
+      ]);
+
+      expect(prompt).toContain("- 淨資產成長率：期初淨資產不為正，無法計算");
+      expect(prompt).toContain("- 最大回撤：期間內沒有回撤");
+      expect(prompt).not.toMatch(/NaN|Infinity/);
+    });
+
+    it("兩行接在「期間最高／最低淨資產」之後、「負債比」之前", () => {
+      const prompt = reviewPrompt([
+        cashSnapshot("2020-01-01", 1_000_000),
+        cashSnapshot("2024-01-01", 1_464_100),
+      ]);
+      const lines = prompt.split("\n");
+      const highLow = lines.findIndex((l) =>
+        l.startsWith("- 期間最高／最低淨資產")
+      );
+
+      expect(lines[highLow + 1]).toMatch(/^- 淨資產年化成長率/);
+      expect(lines[highLow + 2]).toMatch(/^- 最大回撤/);
+      expect(lines[highLow + 3]).toMatch(/^- 負債比/);
+    });
+
+    it("只有定期回顧報告加入這兩行，其他模式不受影響", () => {
+      const history = [
+        cashSnapshot("2020-01-01", 1_000_000),
+        cashSnapshot("2021-01-01", 1_200_000),
+        cashSnapshot("2022-01-01", 900_000),
+        cashSnapshot("2024-01-01", 1_464_100),
+      ];
+      const draft = baseSnapshot();
+      const params = {
+        currentDate: "2026-07-13",
+        draft,
+        metrics: calculateMetrics(draft),
+        recentSnapshots: history,
+      };
+
+      for (const build of [
+        buildFinancePrompt,
+        buildInvestmentDirectionPrompt,
+        buildDebtPayoffPrompt,
+        buildAssetRebalancingPrompt,
+      ]) {
+        const prompt = build(params);
+        expect(prompt).not.toContain("最大回撤");
+        expect(prompt).not.toContain("成長率");
+      }
+    });
+  });
 });
 
 describe("buildAssetRebalancingPrompt", () => {

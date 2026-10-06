@@ -672,4 +672,115 @@ describe("TrendSection", () => {
       expect(within(dialog).queryByText(/^目標/)).not.toBeInTheDocument();
     });
   });
+
+  // PRD 4.2「淨資產成長率與最大回撤」、第 9 節 #14k～#14n
+  describe("淨資產成長率與最大回撤摘要", () => {
+    const cashSnapshot = (date: string, amount: number) =>
+      baseSnapshot({
+        date,
+        cashSources: [{ id: "c1", name: "現金", amount, restricted: false }],
+      });
+
+    // 2020-01-01 → 2024-01-01 = 1461 天；1,000,000 → 1,464,100（1.1^4）→ 年化 10%
+    const fourYears = [
+      cashSnapshot("2020-01-01", 1_000_000),
+      cashSnapshot("2021-01-01", 1_200_000),
+      cashSnapshot("2022-01-01", 900_000),
+      cashSnapshot("2024-01-01", 1_464_100),
+    ];
+
+    function renderSection(visibleSnapshots: Snapshot[], snapshotCount = 4) {
+      return render(
+        <TrendSection
+          visibleSnapshots={visibleSnapshots}
+          snapshotCount={snapshotCount}
+          trendRange="all"
+          onRangeChange={vi.fn()}
+          targetNetWorth={0}
+        />
+      );
+    }
+
+    it("以範圍內的快照計算，顯示在範圍下拉選單之後、分頁列之前", () => {
+      renderSection(fourYears);
+
+      const summary = screen.getByTestId("net-worth-performance");
+      expect(summary).toHaveTextContent("2020-01-01 ～ 2024-01-01");
+      expect(screen.getByTestId("net-worth-growth-value")).toHaveTextContent(
+        "▲ 10.0%"
+      );
+      expect(screen.getByTestId("net-worth-drawdown-value")).toHaveTextContent(
+        "▼ 25.0%"
+      );
+
+      const following = Node.DOCUMENT_POSITION_FOLLOWING;
+      expect(
+        screen.getByLabelText("趨勢圖範圍").compareDocumentPosition(summary) &
+          following
+      ).toBeTruthy();
+      expect(
+        summary.compareDocumentPosition(screen.getByRole("tablist")) & following
+      ).toBeTruthy();
+    });
+
+    it("範圍改變（傳入的快照不同）時跟著重算", () => {
+      const { rerender } = renderSection(fourYears);
+      expect(screen.getByTestId("net-worth-growth-label")).toHaveTextContent(
+        "年化成長率"
+      );
+
+      // 範圍縮小到只剩 2020～2021：366 天，1,000,000 → 1,200,000，沒有回撤
+      rerender(
+        <TrendSection
+          visibleSnapshots={fourYears.slice(0, 2)}
+          snapshotCount={4}
+          trendRange={365}
+          onRangeChange={vi.fn()}
+          targetNetWorth={0}
+        />
+      );
+
+      expect(screen.getByTestId("net-worth-performance")).toHaveTextContent(
+        "2020-01-01 ～ 2021-01-01（366 天）"
+      );
+      expect(screen.getByTestId("net-worth-change-value")).toHaveTextContent(
+        "▲ $200,000"
+      );
+      expect(screen.getByTestId("net-worth-drawdown-value")).toHaveTextContent(
+        "期間內沒有回撤"
+      );
+    });
+
+    it("範圍內少於 2 筆時不顯示摘要，趨勢圖維持原本的空狀態", () => {
+      renderSection([fourYears[3]]);
+
+      expect(
+        screen.queryByTestId("net-worth-performance")
+      ).not.toBeInTheDocument();
+      expect(screen.getByLabelText("趨勢圖範圍")).toBeInTheDocument();
+      expect(screen.getAllByText("持續使用滿 2 天即可查看趨勢")).toHaveLength(
+        3
+      );
+    });
+
+    it("尚無任何快照時不顯示摘要", () => {
+      renderSection([], 0);
+
+      expect(
+        screen.queryByTestId("net-worth-performance")
+      ).not.toBeInTheDocument();
+    });
+
+    it("切換分頁後摘要仍在（不屬於任何一個分頁）", () => {
+      renderSection(fourYears);
+
+      selectTab("負債");
+      expect(screen.getByTestId("net-worth-performance")).toBeInTheDocument();
+      expect(visibleChartTitles()).toEqual(LIABILITY_CHARTS);
+
+      selectTab("配置與儲蓄");
+      expect(screen.getByTestId("net-worth-performance")).toBeInTheDocument();
+      expect(visibleChartTitles()).toEqual(ALLOCATION_CHARTS);
+    });
+  });
 });

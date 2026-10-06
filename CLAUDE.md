@@ -51,7 +51,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
   - **跨日換日**：`currentDate` 是 state 不是常數，`syncCurrentDate` 在 `visibilitychange`／`focus` 與每次 `save()` 時重新判斷今天；存檔日期一律取當下的今天。
   - **修正／刪除歷史快照**：一般狀態下表單永遠是今天；要修正過去某天，須由「歷史快照」清單進入**修正模式**（`startEditing(date)`）——此時 `draft` 載入該日快照（`editingDate` 不為 null、`draft.date` 為被修正的日期），今日草稿暫存在 hook 內的 `stashedDraftRef`（只存記憶體），`save()` 只覆蓋該日並自動 `leaveEditing()` 還原今日草稿；`isDirty` 因此是拿 `draft.date` 去比對已存檔快照，不可寫死 `currentDate`。`deleteSnapshot(date)` 只移除該日、不更新上次備份時間；兩者在 `version-mismatch` 下都會拒絕。`importBackup`／`clearAllData` 會一併重置修正模式。
 - **當日表單自動帶入最近一筆資料**：`buildInitialDraft` 在當天尚無快照時，複製最近一筆快照的數值作為初始 draft（日期/時間戳改為今天）。負債清單會額外呼叫 `advanceDebtsByMonths` 依曆月差自動攤還本息、遞減剩餘期數（本息平均攤還會重算剩餘本金，只計息只減期數），並回傳 `estimatedFields` 標記哪些欄位是系統估算；使用者手動修改該筆負債的本金或期數後，`updateDebts` 會清除該筆的估算標記。
-- **趨勢圖範圍**：`TrendRange = 7 | 30 | 90 | 365 | "ytd" | "all"`（選單依序為 7 天／30 天／90 天／1 年／今年以來／全部，預設 90，只存在 React state）。數字走 `getSnapshotsInRange`（最近 N 天含今天）、`"ytd"` 走 `getSnapshotsYearToDate`（今天所屬年份的 1 月 1 日起），兩者的「今天」都傳入 hook 的 `currentDate`，跨日／跨年換日後範圍跟著移動。篩選結果 `visibleSnapshots` 由趨勢圖與「複製 AI 分析提示詞」共用；歷史快照清單、快照比較、目標達成時間預估用的是全部快照（`snapshots`），不受範圍影響。新增選項時要同步改 `TrendSection.tsx` 的 `RANGE_OPTIONS`。
+- **趨勢圖範圍**：`TrendRange = 7 | 30 | 90 | 365 | "ytd" | "all"`（選單依序為 7 天／30 天／90 天／1 年／今年以來／全部，預設 90，只存在 React state）。數字走 `getSnapshotsInRange`（最近 N 天含今天）、`"ytd"` 走 `getSnapshotsYearToDate`（今天所屬年份的 1 月 1 日起），兩者的「今天」都傳入 hook 的 `currentDate`，跨日／跨年換日後範圍跟著移動。篩選結果 `visibleSnapshots` 由趨勢圖與「複製 AI 分析提示詞」共用；歷史快照清單、快照比較、目標達成時間預估用的是全部快照（`snapshots`），不受範圍影響。趨勢圖區分頁上方的「淨資產成長率與最大回撤」摘要同樣以 `visibleSnapshots` 計算，跟著範圍連動（見下方同名小節）。新增選項時要同步改 `TrendSection.tsx` 的 `RANGE_OPTIONS`。
 - **讀取狀態機**：`parseFinanceData`（`src/lib/storage.ts`）回傳 `LoadResult`（`empty` / `ok` / `corrupted` / `version-mismatch`），從不拋出例外（瀏覽器拒絕存取 LocalStorage 時 `loadFinanceData` 回 `empty`）。`version-mismatch` 時 UI 會暫停顯示與存檔功能，避免覆蓋使用者既有但版本不相容的資料——修改此邏輯要格外小心，因為它是防止資料遺失的最後防線。
 - **備份／還原**（`src/lib/backup.ts`）：匯出用 Blob + `<a download>` 純前端觸發下載；匯入透過 `parseBackupFile` 走與 LocalStorage 讀取相同的 `parseFinanceData` 驗證規則。清空全部資料前，UI 層必須強制先呼叫 `exportBackup()`，`clearAllData()` 本身不做備份。
   - **加密匯出**（`src/lib/backupCrypto.ts`）：WebCrypto PBKDF2-SHA256（600,000 次）＋AES-GCM，輸出 JSON 信封（`.enc.json`，格式見 PRD 6.2 節）；`parseBackupFile(file, password?)` 偵測到信封時，未給密碼回 `encrypted`、密碼錯誤或被竄改回 `wrong-password`，解密後仍走同一個 `parseFinanceData`。密碼只經參數傳遞，絕不寫入任何儲存位置；清空前的強制備份維持明文匯出。
@@ -79,6 +79,17 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 ### 快照比較（`src/lib/snapshotComparison.ts`）
 
 `compareSnapshots(base, target)` 是純函式：兩筆快照各自經 `calculateMetrics()` 後逐項相減（對象日 − 基準日），現金來源與負債以項目 `id` 對應（缺少的一方為 `null`、以 0 計算增減）；基準值 ≤ 0 時 `percent` 為 `null`，負債比的增減是百分點。`SnapshotComparison` 元件只比較已存檔快照（不含今日草稿），預設比較最新兩筆，不寫入任何資料。增減的呈現沿用趨勢圖共用的 `charts/DeltaText`（增加 ▲ rose、減少 ▼ emerald、相同顯示「持平」），且以畫面顯示的四捨五入後數值相減，確保表格內數字自己對得起來（PRD 4.2「快照比較」、5.10 節）。
+
+### 淨資產成長率與最大回撤（`src/lib/netWorthPerformance.ts`）
+
+`calculateNetWorthPerformance(snapshots)` 是獨立的純函式（比照 `snapshotComparison.ts`；不屬於 `CalculatedMetrics`、不改 schema、不寫入任何資料）：函式內自行依日期排序，每筆快照的淨資產各自經 `calculateMetrics()` 計算，少於 2 筆回傳 `null`。規格見 [docs/PRD.md](docs/PRD.md) 4.2「淨資產成長率與最大回撤」、5.11 節。
+
+- **期間成長率** `periodReturn`＝（期末 − 期初）÷ 期初；期初 ≤ 0 為 `null`。
+- **年化成長率** `annualizedReturn`＝（期末 ÷ 期初）^(`DAYS_PER_YEAR` 365.25 ÷ 天數) − 1。**首末相隔未滿 `ANNUALIZE_MIN_DAYS`（365）天不年化**（為 `null`，畫面改顯示期間成長率並註明「未滿 1 年不年化」——短期間年化會嚴重誇大）；期初 ≤ 0 或期末 < 0 也為 `null`。
+- **最大回撤** `maxDrawdown`：依時間順序從「至今最高點」（須 > 0）到其後最低點的最大跌幅，回傳跌幅 %、金額、高低點日期與 `recovered`（低點之後是否有任一筆 ≥ 該高點）；從未自正的高點下跌時為 `null`。`hasUnmeasurableDecline` 標記「曾下跌但高點 ≤ 0、跌幅無從計算」，此時畫面不可寫成「沒有回撤」。
+- 所有結果都經 `Number.isFinite` 把關，無法計算一律回 `null`，不會出現 `NaN`／`Infinity`。
+- **資料來源是 `visibleSnapshots`**（跟著趨勢圖範圍下拉選單連動，不含今日草稿）：`NetWorthPerformance` 元件由 `TrendSection` 渲染在範圍選單之下、分頁之上，少於 2 筆時不渲染；「定期回顧報告」提示詞（`buildPeriodicReviewPrompt`）以同一個函式列出成長率與最大回撤兩行，其他提示詞模式不含。
+- 增減沿用 `charts/DeltaText`（回撤以負的增減呈現為 ▼）。畫面必須保留「淨資產變化包含儲蓄投入與負債償還，不等於投資報酬率」這行說明——這不是投資績效，也沒有做現金流調整。
 
 ### AI 分析提示詞（`src/lib/promptBuilder.ts`）
 

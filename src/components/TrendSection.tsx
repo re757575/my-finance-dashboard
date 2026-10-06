@@ -1,6 +1,7 @@
 import { AllocationAreaChart } from "@/components/charts/AllocationAreaChart";
 import { AssetsLiabilitiesBarChart } from "@/components/charts/AssetsLiabilitiesBarChart";
 import { TrendLineChart } from "@/components/charts/TrendLineChart";
+import { NetWorthPerformance } from "@/components/NetWorthPerformance";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateMetrics } from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
@@ -99,6 +100,9 @@ export function TrendSection({
           </select>
         )}
       </div>
+      {/* 成長率與最大回撤跟著範圍下拉選單連動，與圖表共用同一組已存檔快照；少於 2 筆時不渲染
+          （PRD 4.2「淨資產成長率與最大回撤」） */}
+      <NetWorthPerformance snapshots={visibleSnapshots} />
       {/* 選取的分頁只存在元件 state（不寫入 LocalStorage），重新整理後回到「資產」；
           未選取分頁的內容不會被渲染，圖表不在 DOM 中（PRD 4.2「趨勢圖分組分頁」） */}
       <Tabs defaultValue={TREND_TABS[0].value} className="space-y-3">

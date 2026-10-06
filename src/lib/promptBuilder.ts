@@ -10,6 +10,10 @@ import {
   SAVINGS_RATE_STATUS_LABEL,
 } from "@/lib/calculations";
 import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
+import {
+  ANNUALIZE_MIN_DAYS,
+  calculateNetWorthPerformance,
+} from "@/lib/netWorthPerformance";
 import type { CalculatedMetrics, Debt, Snapshot } from "@/types/schema";
 
 interface BuildFinancePromptParams {
@@ -445,6 +449,39 @@ export function buildPeriodicReviewPrompt({
   lines.push(
     `- 期間最高／最低淨資產：${formatCurrency(maxNetWorth)} ／ ${formatCurrency(minNetWorth)}`
   );
+  // 成長率與最大回撤（PRD 5.11 節）：與趨勢圖區的摘要卡同一組快照、同一套公式
+  const performance = calculateNetWorthPerformance(sorted);
+  if (performance !== null) {
+    const formatSigned = (value: number) =>
+      `${value > 0 ? "+" : ""}${formatPercent(value)}`;
+    const notReturnNote = "淨資產變化含儲蓄投入與負債償還，不等於投資報酬率";
+    if (performance.annualizedReturn !== null) {
+      lines.push(
+        `- 淨資產年化成長率（CAGR）：${formatSigned(performance.annualizedReturn)}（期間 ${performance.days} 天；${notReturnNote}）`
+      );
+    } else if (performance.periodReturn !== null) {
+      const reason =
+        performance.days < ANNUALIZE_MIN_DAYS
+          ? `期間 ${performance.days} 天，未滿 1 年不年化`
+          : `期間 ${performance.days} 天，期末淨資產為負無法年化`;
+      lines.push(
+        `- 淨資產期間成長率：${formatSigned(performance.periodReturn)}（${reason}；${notReturnNote}）`
+      );
+    } else {
+      lines.push("- 淨資產成長率：期初淨資產不為正，無法計算");
+    }
+
+    const drawdown = performance.maxDrawdown;
+    if (drawdown !== null) {
+      lines.push(
+        `- 最大回撤：-${formatPercent(drawdown.percent)}（${drawdown.peakDate} 高點 ${formatCurrency(drawdown.peakNetWorth)} → ${drawdown.troughDate} 低點 ${formatCurrency(drawdown.troughNetWorth)}，${drawdown.recovered ? "已回復" : "尚未回復"}）`
+      );
+    } else if (performance.hasUnmeasurableDecline) {
+      lines.push("- 最大回撤：高點不為正，無法計算跌幅");
+    } else {
+      lines.push("- 最大回撤：期間內沒有回撤");
+    }
+  }
   lines.push(
     `- 負債比：${formatPercent(firstMetrics.debtRatio)} → ${formatPercent(lastMetrics.debtRatio)}`
   );
