@@ -2,6 +2,17 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.12](https://github.com/re757575/my-finance-dashboard/compare/v0.3.11...v0.3.12) (2026-10-06)
+
+### Features
+
+- **儀表板:** 並列金融負債比、含還本儲蓄率與可投資淨資產進度 ([527afaa](https://github.com/re757575/my-finance-dashboard/commit/527afaae44c960f54f1d23bc3463b719fad13d43))
+- **儀表板:** 壓力測試新增反推臨界點 ([8994564](https://github.com/re757575/my-finance-dashboard/commit/899456436d174af70e8d83add8a600e347eecd9e))
+- **儀表板:** 新增償債負擔率卡 ([69bcd9c](https://github.com/re757575/my-finance-dashboard/commit/69bcd9cf5fdb1c64b5950ff02042e1d52ec07eb8))
+- **儀表板:** 新增每月定期定額清單並納入快照比較 ([e95a972](https://github.com/re757575/my-finance-dashboard/commit/e95a972c1a0b57b54a4328fff35cd601522fe592))
+- **儀表板:** 新增淨資產成長率與最大回撤 ([6c38f25](https://github.com/re757575/my-finance-dashboard/commit/6c38f25524c04ccf0afcde8fced1cdba071ebf62)), references [#14o](https://github.com/re757575/my-finance-dashboard/issues/14o)
+- **儀表板:** 新增首次使用的範例資料 ([321eea6](https://github.com/re757575/my-finance-dashboard/commit/321eea62ec4e44575fc7bf617015c4b5d0be0046))
+
 ## [0.3.11](https://github.com/re757575/my-finance-dashboard/compare/v0.3.10...v0.3.11) (2026-10-03)
 
 ### Features
