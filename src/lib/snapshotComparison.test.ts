@@ -433,3 +433,136 @@ describe("compareSnapshots", () => {
     });
   });
 });
+
+// PRD 5.10 節「每月定期定額」、第 9 節 #62j～#62l
+describe("compareSnapshots：每月定期定額", () => {
+  const base = snap("2026-08-31", {
+    recurringInvestments: [
+      { id: "r1", name: "0050", amount: 10000 },
+      { id: "r2", name: "VT", amount: 5000 },
+    ],
+  });
+  const target = snap("2026-09-30", {
+    recurringInvestments: [
+      { id: "r1", name: "0050", amount: 15000 },
+      { id: "r3", name: "QQQ", amount: 3000 },
+    ],
+  });
+
+  it("合計列比較兩筆快照的定期定額合計", () => {
+    const { recurringInvestmentTotal } = compareSnapshots(base, target);
+
+    expect(recurringInvestmentTotal).toMatchObject({
+      key: "recurring-investment-total",
+      label: "定期定額合計",
+      base: 15000,
+      target: 18000,
+      delta: 3000,
+    });
+    expect(recurringInvestmentTotal.percent).toBeCloseTo(20);
+  });
+
+  it("逐筆以 id 對應：先列對象日的項目，再補上已移除的項目", () => {
+    const { recurringInvestments } = compareSnapshots(base, target);
+
+    expect(recurringInvestments.map((row) => row.key)).toEqual([
+      "recurring-investment-r1",
+      "recurring-investment-r3",
+      "recurring-investment-r2",
+    ]);
+    expect(rowByKey(recurringInvestments, "recurring-investment-r1")).toEqual({
+      key: "recurring-investment-r1",
+      label: "0050",
+      base: 10000,
+      target: 15000,
+      delta: 5000,
+      percent: 50,
+    });
+    // 新增：基準日沒有這筆，不顯示百分比
+    expect(
+      rowByKey(recurringInvestments, "recurring-investment-r3")
+    ).toMatchObject({ base: null, target: 3000, delta: 3000, percent: null });
+    // 已移除：對象日沒有這筆，以 0 計算增減
+    expect(
+      rowByKey(recurringInvestments, "recurring-investment-r2")
+    ).toMatchObject({ label: "VT", base: 5000, target: null, delta: -5000 });
+  });
+
+  it("逐筆增減的合計等於定期定額合計的增減", () => {
+    const result = compareSnapshots(base, target);
+
+    expect(
+      result.recurringInvestments.reduce((total, row) => total + row.delta, 0)
+    ).toBe(result.recurringInvestmentTotal.delta);
+  });
+
+  it("名稱為空時顯示「未命名」，名稱以對象日為準", () => {
+    const { recurringInvestments } = compareSnapshots(
+      snap("2026-08-31", {
+        recurringInvestments: [{ id: "r1", name: "舊名稱", amount: 1000 }],
+      }),
+      snap("2026-09-30", {
+        recurringInvestments: [
+          { id: "r1", name: "新名稱", amount: 1000 },
+          { id: "r2", name: "", amount: 2000 },
+        ],
+      })
+    );
+
+    expect(recurringInvestments.map((row) => row.label)).toEqual([
+      "新名稱",
+      "未命名",
+    ]);
+  });
+
+  it("只有對象日有定期定額時，合計的基準值為 0、不算百分比", () => {
+    const { recurringInvestmentTotal, recurringInvestments } = compareSnapshots(
+      snap("2026-08-31"),
+      snap("2026-09-30", {
+        recurringInvestments: [{ id: "r1", name: "0050", amount: 10000 }],
+      })
+    );
+
+    expect(recurringInvestmentTotal).toMatchObject({
+      base: 0,
+      target: 10000,
+      delta: 10000,
+      percent: null,
+    });
+    expect(recurringInvestments).toHaveLength(1);
+  });
+
+  it("兩筆快照皆無定期定額時逐筆清單為空，合計為 0", () => {
+    const result = compareSnapshots(snap("2026-08-31"), snap("2026-09-30"));
+
+    expect(result.recurringInvestments).toEqual([]);
+    expect(result.recurringInvestmentTotal).toMatchObject({
+      base: 0,
+      target: 0,
+      delta: 0,
+    });
+  });
+
+  it("定期定額不影響其他組的比較結果", () => {
+    const plainBase = snap("2026-08-31", {
+      cashSources: [cash("c1", "銀行", 100000)],
+      debts: [debt("d1", "信貸", 50000)],
+    });
+    const plainTarget = snap("2026-09-30", {
+      cashSources: [cash("c1", "銀行", 150000)],
+      debts: [debt("d1", "信貸", 40000)],
+    });
+
+    const without = compareSnapshots(plainBase, plainTarget);
+    const withInvestments = compareSnapshots(
+      { ...plainBase, recurringInvestments: base.recurringInvestments },
+      { ...plainTarget, recurringInvestments: target.recurringInvestments }
+    );
+
+    expect(withInvestments.summary).toEqual(without.summary);
+    expect(withInvestments.debtRatio).toEqual(without.debtRatio);
+    expect(withInvestments.assets).toEqual(without.assets);
+    expect(withInvestments.cashSources).toEqual(without.cashSources);
+    expect(withInvestments.debts).toEqual(without.debts);
+  });
+});

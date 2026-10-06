@@ -31,6 +31,7 @@ function baseSnapshotInput(
     debts: [] as Debt[],
     incomeSources: [],
     monthlyExpense: 0,
+    recurringInvestments: [],
     targetNetWorth: 0,
     ...overrides,
   } satisfies Parameters<typeof calculateMetrics>[0];

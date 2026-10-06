@@ -43,7 +43,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 所有財務資料狀態的根源是 `src/hooks/useLocalSnapshots.ts`（介面主題另由 `useTheme` 管理，見下方「深色模式」），`App.tsx` 是唯一消費此 hook 的元件，其餘元件皆為受控的展示元件（透過 props 收發資料，不直接碰觸 storage）。
 
-- **Schema**（`src/types/schema.ts`）：`FinanceData = { schemaVersion, snapshots: Snapshot[] }`，每個 `Snapshot` 以 `date`（"YYYY-MM-DD"）為顆粒度，同日覆蓋、跨日新增（見 `upsertSnapshot`）。修改 schema 時務必同步遞增 `CURRENT_SCHEMA_VERSION`（現為 7）並在 `src/lib/storage.ts` 補上 `migrateVxToVy` 遷移函式，同時串進 `migrateFinanceData` 的完整遷移鏈（現有範例：`migrateV1ToV2` ... `migrateV6ToV7`）。
+- **Schema**（`src/types/schema.ts`）：`FinanceData = { schemaVersion, snapshots: Snapshot[] }`，每個 `Snapshot` 以 `date`（"YYYY-MM-DD"）為顆粒度，同日覆蓋、跨日新增（見 `upsertSnapshot`）。修改 schema 時務必同步遞增 `CURRENT_SCHEMA_VERSION`（現為 8）並在 `src/lib/storage.ts` 補上 `migrateVxToVy` 遷移函式，同時串進 `migrateFinanceData` 的完整遷移鏈（現有範例：`migrateV1ToV2` ... `migrateV7ToV8`）。
 - **draft vs. 已存檔資料**：`useLocalSnapshots` 內部維護 `draft`（當日編輯中的快照，未存檔前只存在於 React state）與 `financeData`（已持久化到 LocalStorage 的全部快照）。`isDirty` 用兩者的 JSON 字串比較判斷。使用者按下「更新儀表板」才會呼叫 `save()` 真正寫入 `persistFinanceData`；重新整理頁面會遺失未存檔的 draft（這是刻意行為，e2e 有覆蓋此案例）。
   - **未存檔離開提醒**：`hasUnsavedEdits` 與 `isDirty` 不同——它拿 `draft` 去比對 `baseline`（草稿最近一次由程式載入時的內容），所以「系統帶入、使用者沒動過」的今日草稿雖然 `isDirty`，卻不算未存檔編輯。只有 `hasUnsavedEdits` 為 true 時才註冊 `beforeunload`。凡是以程式取代草稿的地方都要走 `loadDraft()`（同時重設 `baseline`），不可直接 `setDraft`。
   - **寫入失敗**：`persistFinanceData` 回傳 `boolean`、不拋例外；`save`／`deleteSnapshot`／`importBackup` 寫入失敗時回 `{ ok: false, reason }` 且不更新任何 state（草稿維持未存檔，可重試）。`loadFinanceData`／`loadLastBackupAt`／`recordBackupNow` 同樣吞掉 LocalStorage 例外。
@@ -66,6 +66,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 - `toSafeNumber()`：非數字或空值一律視為 0（PRD 4.2 輸入防呆規則），所有金額欄位計算前都先經過它。
 - 美股市值有 `usStockCurrency: "USD" | "TWD"` 計價幣別切換：USD 時乘上 `exchangeRate` 換算成台幣，TWD 時視為使用者已填入台幣等值金額，不重複換算（`calculateTotalStockValue`）。
 - 總資產 = 金融資產（現金 + 股票市值合計）+ 不動產市值（`realEstateValue`）；**金融資產**是現金比例與資產配置比例的分母（不含不動產）。現金來源可標記 `restricted`（不可動用，如期貨保證金）：仍計入總資產，但緊急預備金月數與現金比例只計 `liquidCash`（可動用現金）。
+- **每月定期定額**（PRD 4.2、5.3a 節）：`recurringInvestments`（`id`／`name`／`amount`，新台幣）是把現金換成股票、**不算支出**——現金流、儲蓄率、緊急預備金月數、FIRE 建議值與達成時間預估一律不扣除它，不可把它併進 `monthlyExpense` 的計算。只多算 `totalRecurringInvestment`（`sumRecurringInvestments`）與 `cashFlowAfterInvestment`＝現金流 − 定期定額合計，合計 > 0 時由 `CashFlowIndicator` 在燈號下方並列「定期定額後剩餘」（負數加註「不足以支應」），並寫入「財務健康檢查」「投資方向評估」「負債清償策略」三種提示詞；快照比較有「每月定期定額」一組（見下方「快照比較」），沒有趨勢圖，也不納入壓力測試。輸入元件為 `RecurringInvestmentList`（比照 `IncomeSourceList`）。
 - 負債比 = 總負債 / 總資產 × 100，總資產為 0 時強制為 0（避免除以零），並以 `calculateDebtRatioStatus` 分四級（`debt-free` / `healthy` / `elevated` / `high-risk`，門檻與文案見該檔）。
 - **並列的三項對照指標**（PRD 5.1a、5.6、5.7 節）：都以「金融負債」＝類別不是「房貸」的負債本金合計（`sumFinancialDebtPrincipal`）為基礎，只在與原數字有差異時顯示，**原本的主數字、燈號、趨勢圖與達成時間預估一律不變**。
   - `financialDebtRatio`＝金融負債 ÷ 金融資產（金融資產 ≤ 0 為 `null`），沿用負債比四級門檻；是否顯示由 `hasSeparateFinancialDebtRatio` 判斷（有不動產或房貸），`DebtRatioBar` 與提示詞共用。
@@ -78,7 +79,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 ### 快照比較（`src/lib/snapshotComparison.ts`）
 
-`compareSnapshots(base, target)` 是純函式：兩筆快照各自經 `calculateMetrics()` 後逐項相減（對象日 − 基準日），現金來源與負債以項目 `id` 對應（缺少的一方為 `null`、以 0 計算增減）；基準值 ≤ 0 時 `percent` 為 `null`，負債比的增減是百分點。`SnapshotComparison` 元件只比較已存檔快照（不含今日草稿），預設比較最新兩筆，不寫入任何資料。增減的呈現沿用趨勢圖共用的 `charts/DeltaText`（增加 ▲ rose、減少 ▼ emerald、相同顯示「持平」），且以畫面顯示的四捨五入後數值相減，確保表格內數字自己對得起來（PRD 4.2「快照比較」、5.10 節）。
+`compareSnapshots(base, target)` 是純函式：兩筆快照各自經 `calculateMetrics()` 後逐項相減（對象日 − 基準日），現金來源、負債與定期定額以項目 `id` 對應（缺少的一方為 `null`、以 0 計算增減；定期定額比較的是每月投入金額，另有 `recurringInvestmentTotal` 合計列，兩筆清單皆為空時 `SnapshotComparison` 不渲染該組）；基準值 ≤ 0 時 `percent` 為 `null`，負債比的增減是百分點。`SnapshotComparison` 元件只比較已存檔快照（不含今日草稿），預設比較最新兩筆，不寫入任何資料。增減的呈現沿用趨勢圖共用的 `charts/DeltaText`（增加 ▲ rose、減少 ▼ emerald、相同顯示「持平」），且以畫面顯示的四捨五入後數值相減，確保表格內數字自己對得起來（PRD 4.2「快照比較」、5.10 節）。
 
 ### 淨資產成長率與最大回撤（`src/lib/netWorthPerformance.ts`）
 
@@ -130,7 +131,7 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
 - 單元/元件測試（Vitest + Testing Library + jsdom）與被測檔案同目錄、`*.test.ts(x)` 命名，測試環境設定在 `src/test/setup.ts`。
 - e2e（Playwright，`e2e/*.spec.ts`）以 `data-testid`（如 `total-assets`、`save-button`）與 `getByRole`/`getByLabel` 定位；每個測試在 `beforeEach` 用 `page.evaluate(() => localStorage.clear())` 重置狀態（注意：故意不用 `addInitScript`，否則測試中的 `page.reload()` 也會被清空）。新增有財務語意的行為時，優先在 `calculations.test.ts` 或對應 hook 測試中覆蓋，UI 互動流程用 e2e 驗證。
-- **測試資料 fixture**：[fixtures/finance-data.json](fixtures/finance-data.json) 是全部虛構（不含任何真實帳戶名稱或金額）、填滿所有功能欄位的 `FinanceData`（現為 schema v7，60 筆月底快照，含不可動用現金、美股 USD 換算、不動產、四種負債類別含質押、收入來源、月支出與目標），不是使用者備份檔，供 Vitest 與 Playwright 共用。**新增／調整功能或 schema 欄位時，必須同步更新此 JSON**（schema 升版時一併遞增 `schemaVersion`，確保 `parseFinanceData` 仍回傳 `ok`）。`e2e/fixtures/` 內的 `sample-backup.json`（舊版 v1 遷移）與 `corrupted-backup.json`（損毀）是個別情境的 e2e 專用檔，與此檔分開。
+- **測試資料 fixture**：[fixtures/finance-data.json](fixtures/finance-data.json) 是全部虛構（不含任何真實帳戶名稱或金額）、填滿所有功能欄位的 `FinanceData`（現為 schema v8，60 筆月底快照，含不可動用現金、美股 USD 換算、不動產、四種負債類別含質押、收入來源、月支出、每月定期定額與目標），不是使用者備份檔，供 Vitest 與 Playwright 共用。**新增／調整功能或 schema 欄位時，必須同步更新此 JSON**（schema 升版時一併遞增 `schemaVersion`，確保 `parseFinanceData` 仍回傳 `ok`）。`e2e/fixtures/` 內的 `sample-backup.json`（舊版 v1 遷移）與 `corrupted-backup.json`（損毀）是個別情境的 e2e 專用檔，與此檔分開。
 - **每次新增／修改功能後**，檢查單元/元件測試（`*.test.ts(x)`）與 `e2e/*.spec.ts` 是否需要跟著新增或調整測試案例（新元件、新看板卡片、新輸入欄位、新計算邏輯等，即使部分已有其他層級測試覆蓋，仍缺乏對應案例時要一併補上），避免功能與測試覆蓋範圍脫節。發現需要異動單元測試或 e2e 測試時，先向使用者說明本次功能異動內容並詢問是否確認無誤，待使用者確認後才動手修改測試。
 
 ## Release

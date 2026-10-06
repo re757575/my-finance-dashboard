@@ -122,12 +122,13 @@ async function seedSnapshotDates(
         debts: [],
         incomeSources: [],
         monthlyExpense: 0,
+        recurringInvestments: [],
         targetNetWorth: 0,
         targetCashRatio: 0,
       });
       localStorage.setItem(
         "my_finance_dashboard_data",
-        JSON.stringify({ schemaVersion: 7, snapshots: dates.map(snapshot) })
+        JSON.stringify({ schemaVersion: 8, snapshots: dates.map(snapshot) })
       );
       if (backupIso) {
         localStorage.setItem("my_finance_dashboard_last_backup", backupIso);

@@ -50,13 +50,14 @@ async function seedHistory(page: Page, daysAgo: number[]) {
         ],
         incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
         monthlyExpense: 40000,
+        recurringInvestments: [],
         targetNetWorth: 0,
         targetCashRatio: 0,
       });
       localStorage.setItem(
         key,
         JSON.stringify({
-          schemaVersion: 7,
+          schemaVersion: 8,
           snapshots: dates.map((d, i) => snapshot(d, i)),
         })
       );

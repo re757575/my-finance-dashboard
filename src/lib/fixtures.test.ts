@@ -60,6 +60,10 @@ describe("fixtures/finance-data.json", () => {
     ).toBe(true);
     expect(latest.incomeSources.length).toBeGreaterThan(0);
     expect(latest.monthlyExpense).toBeGreaterThan(0);
+    expect(latest.recurringInvestments.length).toBeGreaterThan(0);
+    expect(
+      latest.recurringInvestments.every((investment) => investment.amount > 0)
+    ).toBe(true);
     expect(latest.targetNetWorth).toBeGreaterThan(0);
     expect(latest.targetCashRatio).toBeGreaterThan(0);
   });

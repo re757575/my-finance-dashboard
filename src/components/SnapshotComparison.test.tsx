@@ -377,3 +377,113 @@ describe("SnapshotComparison", () => {
     expect(compareSnapshots).toHaveBeenCalledTimes(1);
   });
 });
+
+// PRD 4.2「快照比較」、5.10 節「每月定期定額」、第 9 節 #62j～#62l
+describe("SnapshotComparison：每月定期定額", () => {
+  const AUGUST_WITH_INVESTMENTS = {
+    ...AUGUST,
+    recurringInvestments: [
+      { id: "r1", name: "0050", amount: 10000 },
+      { id: "r2", name: "VT", amount: 5000 },
+    ],
+  };
+  const SEPTEMBER_WITH_INVESTMENTS = {
+    ...SEPTEMBER,
+    recurringInvestments: [
+      { id: "r1", name: "0050", amount: 15000 },
+      { id: "r3", name: "QQQ", amount: 3000 },
+    ],
+  };
+
+  it("兩筆快照皆無定期定額時不顯示該組", () => {
+    render(<SnapshotComparison snapshots={[AUGUST, SEPTEMBER]} />);
+
+    expect(screen.queryByText("每月定期定額")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("comparison-row-recurring-investment-total")
+    ).not.toBeInTheDocument();
+  });
+
+  it("依序列出合計、對象日的項目與已移除的項目", () => {
+    render(
+      <SnapshotComparison
+        snapshots={[AUGUST_WITH_INVESTMENTS, SEPTEMBER_WITH_INVESTMENTS]}
+      />
+    );
+
+    const group = screen.getByText("每月定期定額").closest("tbody")!;
+    expect(
+      within(group)
+        .getAllByTestId(/^comparison-row-/)
+        .map((element) => element.getAttribute("data-testid"))
+    ).toEqual([
+      "comparison-row-recurring-investment-total",
+      "comparison-row-recurring-investment-r1",
+      "comparison-row-recurring-investment-r3",
+      "comparison-row-recurring-investment-r2",
+    ]);
+  });
+
+  it("合計與既有項目顯示兩日金額與增減百分比", () => {
+    render(
+      <SnapshotComparison
+        snapshots={[AUGUST_WITH_INVESTMENTS, SEPTEMBER_WITH_INVESTMENTS]}
+      />
+    );
+
+    const total = row("recurring-investment-total");
+    expect(total).toHaveTextContent("定期定額合計");
+    expect(total).toHaveTextContent("$15,000");
+    expect(total).toHaveTextContent("$18,000");
+    expect(total).toHaveTextContent("▲ $3,000 (+20.0%)");
+    expect(row("recurring-investment-r1")).toHaveTextContent(
+      "▲ $5,000 (+50.0%)"
+    );
+  });
+
+  it("新增的項目標示「新增」且不顯示百分比，消失的項目標示「已移除」", () => {
+    render(
+      <SnapshotComparison
+        snapshots={[AUGUST_WITH_INVESTMENTS, SEPTEMBER_WITH_INVESTMENTS]}
+      />
+    );
+
+    const added = row("recurring-investment-r3");
+    expect(within(added).getByText("新增")).toBeInTheDocument();
+    expect(added).toHaveTextContent("—");
+    expect(added).toHaveTextContent("▲ $3,000");
+    expect(added).not.toHaveTextContent("%");
+
+    const removed = row("recurring-investment-r2");
+    expect(within(removed).getByText("已移除")).toBeInTheDocument();
+    expect(removed).toHaveTextContent("▼ $5,000");
+  });
+
+  it("只有對象日有定期定額時仍顯示該組，合計不顯示百分比", () => {
+    render(
+      <SnapshotComparison snapshots={[AUGUST, SEPTEMBER_WITH_INVESTMENTS]} />
+    );
+
+    const total = row("recurring-investment-total");
+    expect(total).toHaveTextContent("$0");
+    expect(total).toHaveTextContent("▲ $18,000");
+    expect(total).not.toHaveTextContent("%");
+  });
+
+  it("金額沒變的項目顯示「持平」", () => {
+    render(
+      <SnapshotComparison
+        snapshots={[
+          AUGUST_WITH_INVESTMENTS,
+          {
+            ...SEPTEMBER,
+            recurringInvestments: AUGUST_WITH_INVESTMENTS.recurringInvestments,
+          },
+        ]}
+      />
+    );
+
+    expect(row("recurring-investment-total")).toHaveTextContent("持平");
+    expect(row("recurring-investment-r1")).toHaveTextContent("持平");
+  });
+});

@@ -27,6 +27,10 @@ export interface SnapshotComparisonResult {
   cashSources: ComparisonRow[];
   /** 逐筆負債剩餘本金，以 id 對應。 */
   debts: ComparisonRow[];
+  /** 每月定期定額合計（PRD 5.3a 節）。 */
+  recurringInvestmentTotal: ComparisonRow;
+  /** 逐筆定期定額的每月投入金額，以 id 對應；兩筆快照的清單皆為空時為空陣列。 */
+  recurringInvestments: ComparisonRow[];
 }
 
 function buildRow(
@@ -134,6 +138,19 @@ export function compareSnapshots(
       target.debts,
       (debt) => toSafeNumber(debt.principal),
       (debt) => `${debt.name || "未命名"}（${debt.category}）`
+    ),
+    recurringInvestmentTotal: buildRow(
+      "recurring-investment-total",
+      "定期定額合計",
+      b.totalRecurringInvestment,
+      t.totalRecurringInvestment
+    ),
+    recurringInvestments: compareItems(
+      "recurring-investment",
+      base.recurringInvestments,
+      target.recurringInvestments,
+      (investment) => toSafeNumber(investment.amount),
+      (investment) => investment.name || "未命名"
     ),
   };
 }

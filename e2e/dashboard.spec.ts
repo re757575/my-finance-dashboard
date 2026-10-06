@@ -584,13 +584,14 @@ async function seedHistory(page: Page, daysAgo: number[]) {
       debts: [],
       incomeSources: [],
       monthlyExpense: 0,
+      recurringInvestments: [],
       targetNetWorth: 0,
       targetCashRatio: 0,
     });
     localStorage.setItem(
       "my_finance_dashboard_data",
       JSON.stringify({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: dates.map((d, i) => snapshot(d, (i + 1) * 100000)),
       })
     );
@@ -896,13 +897,14 @@ async function seedRichHistory(page: Page, daysAgo: number[]) {
       ],
       incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
       monthlyExpense: 40000 - i * 10000,
+      recurringInvestments: [],
       targetNetWorth: 0,
       targetCashRatio: 0,
     });
     localStorage.setItem(
       "my_finance_dashboard_data",
       JSON.stringify({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: dates.map((d, i) => snapshot(d, i)),
       })
     );

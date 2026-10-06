@@ -9,6 +9,7 @@ import type {
   GoalEtaStatus,
   IncomeSource,
   PledgeMaintenanceStatus,
+  RecurringInvestment,
   RepaymentMethod,
   SavingsRateStatus,
   Snapshot,
@@ -41,6 +42,16 @@ export function sumRestrictedCashSources(cashSources: CashSource[]): number {
 export function sumIncomeSources(incomeSources: IncomeSource[]): number {
   return incomeSources.reduce(
     (sum, source) => sum + toSafeNumber(source.amount),
+    0
+  );
+}
+
+/** 每月定期定額合計（PRD 5.3a 節）：把現金換成股票、不算支出，不計入現金流與儲蓄率。 */
+export function sumRecurringInvestments(
+  recurringInvestments: RecurringInvestment[]
+): number {
+  return recurringInvestments.reduce(
+    (sum, investment) => sum + toSafeNumber(investment.amount),
     0
   );
 }
@@ -685,6 +696,7 @@ export function calculateMetrics(
     | "debts"
     | "incomeSources"
     | "monthlyExpense"
+    | "recurringInvestments"
     | "targetNetWorth"
   >
 ): CalculatedMetrics {
@@ -737,6 +749,10 @@ export function calculateMetrics(
     totalIncome -
     toSafeNumber(snapshot.monthlyExpense) -
     totalMonthlyDebtPayment;
+  // 定期定額只是把現金換成股票，不算支出；另算扣掉它之後手邊剩多少現金（PRD 5.3a 節）
+  const totalRecurringInvestment = sumRecurringInvestments(
+    snapshot.recurringInvestments
+  );
   const emergencyFundMonths = calculateEmergencyFundMonths(
     liquidCash,
     snapshot.monthlyExpense,
@@ -781,6 +797,8 @@ export function calculateMetrics(
     debtServiceRatio,
     debtServiceRatioStatus: calculateDebtServiceRatioStatus(debtServiceRatio),
     cashFlow,
+    totalRecurringInvestment,
+    cashFlowAfterInvestment: cashFlow - totalRecurringInvestment,
     emergencyFundMonths,
     emergencyFundStatus: calculateEmergencyFundStatus(emergencyFundMonths),
     savingsRate,

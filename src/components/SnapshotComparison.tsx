@@ -246,6 +246,20 @@ export function SnapshotComparison({ snapshots }: SnapshotComparisonProps) {
                 <ComparisonTableRow key={row.key} row={row} />
               ))}
             </ComparisonGroup>
+            {/* 比較的是每月投入金額的調整，不是期間累計投入；兩筆皆無定期定額時整組不顯示 */}
+            {comparison.recurringInvestments.length > 0 && (
+              <ComparisonGroup title="每月定期定額">
+                {[
+                  <ComparisonTableRow
+                    key={comparison.recurringInvestmentTotal.key}
+                    row={comparison.recurringInvestmentTotal}
+                  />,
+                  ...comparison.recurringInvestments.map((row) => (
+                    <ComparisonTableRow key={row.key} row={row} />
+                  )),
+                ]}
+              </ComparisonGroup>
+            )}
           </table>
         </div>
       )}

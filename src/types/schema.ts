@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 export interface CashSource {
   id: string;
@@ -41,6 +41,13 @@ export interface IncomeSource {
   amount: number;
 }
 
+/** 每月定期定額買股票的一筆標的；amount 為每月投入金額（新台幣）（PRD 4.2、5.3a 節）。 */
+export interface RecurringInvestment {
+  id: string;
+  name: string;
+  amount: number;
+}
+
 export interface Snapshot {
   date: string; // "YYYY-MM-DD"
   updatedAt: string; // ISO 8601
@@ -53,8 +60,10 @@ export interface Snapshot {
   realEstateValue: number;
   debts: Debt[];
   incomeSources: IncomeSource[];
-  /** 本月支出，不含負債清單的每月應還款金額（PRD 5.3 節現金流公式）。 */
+  /** 本月支出，不含負債清單的每月應還款金額，也不含定期定額（PRD 5.3 節現金流公式）。 */
   monthlyExpense: number;
+  /** 每月定期定額清單：把現金換成股票、不算支出，不計入現金流與儲蓄率（PRD 5.3a 節）。 */
+  recurringInvestments: RecurringInvestment[];
   /** 目標淨資產，選填，0 代表尚未設定（PRD 4.2、5.7 節 FIRE／淨資產目標進度）。 */
   targetNetWorth: number;
   /** 目標現金比例（0-100），選填，0 代表尚未設定；股票目標比例＝100 減此值（PRD 4.2 節「AI 分析提示詞多模式」資產配置再平衡建議）。 */
@@ -140,6 +149,10 @@ export interface CalculatedMetrics {
   debtServiceRatioStatus: DebtServiceRatioStatus;
   /** 現金流 = 總收入 − 本月支出 − 本月應還款總額（PRD 5.3 節，不再手動輸入）。 */
   cashFlow: number;
+  /** 每月定期定額清單金額加總（PRD 5.3a 節）。 */
+  totalRecurringInvestment: number;
+  /** 定期定額後剩餘 = 現金流 − 定期定額合計，只作對照、不分級（PRD 5.3a 節）。 */
+  cashFlowAfterInvestment: number;
   /** 緊急預備金月數 = 總流動現金 ÷（本月支出 + 本月應還款總額）；分母為 0 時為 null，代表「無需求」（PRD 5.5 節）。 */
   emergencyFundMonths: number | null;
   emergencyFundStatus: EmergencyFundStatus;
@@ -180,6 +193,7 @@ export function createEmptySnapshot(date: string): Snapshot {
     debts: [],
     incomeSources: [],
     monthlyExpense: 0,
+    recurringInvestments: [],
     targetNetWorth: 0,
     targetCashRatio: 0,
   };

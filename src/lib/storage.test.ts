@@ -462,7 +462,66 @@ describe("parseFinanceData", () => {
     }
   });
 
-  it("V1 一路遷移到目前版本時，也會補上 V7 的新欄位", () => {
+  // PRD 第 9 節 #62h：V7（無每月定期定額清單）遷移為 V8，補上空清單，不臆測回填
+  it("V7 舊格式資料會自動遷移為目前版本，補上空的 recurringInvestments", () => {
+    const v7Raw = JSON.stringify({
+      schemaVersion: 7,
+      snapshots: [
+        {
+          date: "2026-09-30",
+          updatedAt: "2026-09-30T09:12:00Z",
+          cashSources: [
+            { id: "x", name: "現金", amount: 1000, restricted: false },
+          ],
+          twStockValue: 0,
+          usStockValue: 0,
+          usStockCurrency: "USD",
+          exchangeRate: 0,
+          realEstateValue: 5000000,
+          debts: [],
+          incomeSources: [{ id: "i", name: "薪資", amount: 60000 }],
+          monthlyExpense: 30000,
+          targetNetWorth: 5000000,
+          targetCashRatio: 30,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v7Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      const snapshot = result.data.snapshots[0];
+      expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+      expect(snapshot.recurringInvestments).toEqual([]);
+      // 既有欄位不受影響
+      expect(snapshot.monthlyExpense).toBe(30000);
+      expect(snapshot.incomeSources).toEqual([
+        { id: "i", name: "薪資", amount: 60000 },
+      ]);
+      expect(snapshot.realEstateValue).toBe(5000000);
+    }
+  });
+
+  it("目前版本的資料原樣保留定期定額清單，不經過遷移", () => {
+    const snapshot = {
+      ...createEmptySnapshot("2026-10-06"),
+      recurringInvestments: [{ id: "r1", name: "0050", amount: 10000 }],
+    };
+    const raw = JSON.stringify({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      snapshots: [snapshot],
+    });
+
+    const result = parseFinanceData(raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.data.snapshots[0].recurringInvestments).toEqual([
+        { id: "r1", name: "0050", amount: 10000 },
+      ]);
+    }
+  });
+
+  it("V1 一路遷移到目前版本時，也會補上 V7、V8 的新欄位", () => {
     const v1Raw = JSON.stringify({
       schemaVersion: 1,
       snapshots: [
@@ -487,6 +546,7 @@ describe("parseFinanceData", () => {
       expect(snapshot.realEstateValue).toBe(0);
       expect(snapshot.cashSources[0].restricted).toBe(false);
       expect(snapshot.debts.every((d) => d.collateralValue === 0)).toBe(true);
+      expect(snapshot.recurringInvestments).toEqual([]);
     }
   });
 });

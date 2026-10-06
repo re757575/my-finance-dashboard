@@ -29,6 +29,7 @@ import {
   STRESS_TEST_DROPS,
   type StressBreakpointKey,
   sumFinancialDebtPrincipal,
+  sumRecurringInvestments,
   toSafeNumber,
 } from "@/lib/calculations";
 import {
@@ -66,6 +67,7 @@ function baseSnapshotInput(
     debts: [] as Debt[],
     incomeSources: [] as IncomeSource[],
     monthlyExpense: 0,
+    recurringInvestments: [],
     targetNetWorth: 0,
     ...overrides,
   };
@@ -1887,6 +1889,7 @@ describe("目標達成時間預估：歷史速度與整合", () => {
         ...snapshotOn("2026-10-03", 4000000),
         incomeSources: [{ id: "i", name: "薪資", amount: 100000 }],
         monthlyExpense: 40000,
+        recurringInvestments: [],
         targetNetWorth: 10000000,
         ...overrides,
       };
@@ -2284,6 +2287,7 @@ describe("含償還本金的儲蓄率（PRD 5.6 節）", () => {
       ...leveragedHomeownerInput({
         incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
         monthlyExpense: 40000,
+        recurringInvestments: [],
         targetNetWorth: 20000000,
       }),
     };
@@ -2373,5 +2377,101 @@ describe("可投資淨資產進度（PRD 5.7 節）", () => {
 
     expect(result.investableNetWorth).toBe(1000000);
     expect(result.investableGoalProgress).toBeCloseTo(10);
+  });
+});
+
+describe("每月定期定額（PRD 5.3a 節）", () => {
+  // 收入 60,000 − 支出 20,000 − 月付 12,000（本金 144,000、0%、12 期）＝ 現金流 28,000
+  const withoutInvestment = baseSnapshotInput({
+    cashSources: [
+      { id: "c1", name: "現金", amount: 300000, restricted: false },
+    ],
+    twStockValue: 500000,
+    debts: [baseDebt({ principal: 144000, remainingMonths: 12 })],
+    incomeSources: [{ id: "i1", name: "薪資", amount: 60000 }],
+    monthlyExpense: 20000,
+    targetNetWorth: 5000000,
+  });
+  const recurringInvestments = [
+    { id: "r1", name: "0050", amount: 10000 },
+    { id: "r2", name: "VT", amount: 5000 },
+  ];
+
+  it("sumRecurringInvestments 加總各筆金額，空清單為 0", () => {
+    expect(sumRecurringInvestments(recurringInvestments)).toBe(15000);
+    expect(sumRecurringInvestments([])).toBe(0);
+  });
+
+  it("金額為非數字時視為 0，不產生 NaN", () => {
+    expect(
+      sumRecurringInvestments([
+        { id: "r1", name: "0050", amount: 10000 },
+        { id: "r2", name: "壞資料", amount: Number.NaN },
+        { id: "r3", name: "空值", amount: "" as unknown as number },
+      ])
+    ).toBe(10000);
+  });
+
+  // PRD 第 9 節 #62c：定期定額後剩餘 = 現金流 − 定期定額合計
+  it("定期定額後剩餘＝現金流 − 定期定額合計", () => {
+    const result = calculateMetrics({
+      ...withoutInvestment,
+      recurringInvestments,
+    });
+
+    expect(result.cashFlow).toBe(28000);
+    expect(result.totalRecurringInvestment).toBe(15000);
+    expect(result.cashFlowAfterInvestment).toBe(13000);
+  });
+
+  // PRD 第 9 節 #62b：定期定額是把現金換成股票，不算支出
+  it("不算支出：現金流、儲蓄率、緊急預備金、目標進度與淨資產都不受影響", () => {
+    const before = calculateMetrics(withoutInvestment);
+    const after = calculateMetrics({
+      ...withoutInvestment,
+      recurringInvestments,
+    });
+
+    expect(after).toEqual({
+      ...before,
+      totalRecurringInvestment: 15000,
+      cashFlowAfterInvestment: before.cashFlow - 15000,
+    });
+    expect(after.savingsRate).toBeCloseTo((28000 / 60000) * 100);
+    expect(after.emergencyFundMonths).toBeCloseTo(300000 / 32000);
+  });
+
+  it("預估達成時間（依目前收支）不扣除定期定額", () => {
+    const draft = {
+      ...createEmptySnapshot("2026-10-06"),
+      ...withoutInvestment,
+    };
+
+    const before = calculateGoalEstimates(draft, []);
+    const after = calculateGoalEstimates(
+      { ...draft, recurringInvestments },
+      []
+    );
+
+    expect(after.budget).toEqual(before.budget);
+  });
+
+  // PRD 第 9 節 #62d：現金流不足以支應定期定額時剩餘為負，現金流本身仍為正
+  it("定期定額大於現金流時剩餘為負，現金流不變", () => {
+    const result = calculateMetrics({
+      ...withoutInvestment,
+      recurringInvestments: [{ id: "r1", name: "0050", amount: 30000 }],
+    });
+
+    expect(result.cashFlow).toBe(28000);
+    expect(result.cashFlowAfterInvestment).toBe(-2000);
+  });
+
+  // PRD 第 9 節 #62e：沒有定期定額時合計為 0，剩餘等於現金流
+  it("沒有定期定額時合計為 0，剩餘等於現金流", () => {
+    const result = calculateMetrics(withoutInvestment);
+
+    expect(result.totalRecurringInvestment).toBe(0);
+    expect(result.cashFlowAfterInvestment).toBe(result.cashFlow);
   });
 });

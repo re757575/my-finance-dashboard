@@ -23,6 +23,7 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     debts: [],
     incomeSources: [],
     monthlyExpense: 0,
+    recurringInvestments: [],
     targetNetWorth: 0,
     targetCashRatio: 0,
     ...overrides,
@@ -963,6 +964,7 @@ describe("提示詞：金融負債比／含償還本金的儲蓄率／可投資�
     ],
     incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
     monthlyExpense: 40000,
+    recurringInvestments: [],
     targetNetWorth: 20000000,
   });
   const params = {
@@ -1018,6 +1020,7 @@ describe("提示詞：金融負債比／含償還本金的儲蓄率／可投資�
       ],
       incomeSources: [{ id: "i1", name: "薪資", amount: 60000 }],
       monthlyExpense: 30000,
+      recurringInvestments: [],
       targetNetWorth: 2000000,
     });
     const plainParams = {
@@ -1050,5 +1053,109 @@ describe("提示詞：金融負債比／含償還本金的儲蓄率／可投資�
     expect(prompt).not.toContain("可投資淨資產目標進度");
     // 金融負債比與目標無關，照常輸出
     expect(prompt).toContain("- 金融負債比：40.0%");
+  });
+});
+
+describe("提示詞：每月定期定額（PRD 4.2、5.3a 節）", () => {
+  // 收入 60,000 − 支出 20,000 − 月付 12,000 ＝ 現金流 28,000；定期定額 15,000 → 剩餘 13,000
+  const draft = baseSnapshot({
+    cashSources: [
+      { id: "c1", name: "現金", amount: 300000, restricted: false },
+    ],
+    twStockValue: 500000,
+    debts: [
+      {
+        id: "d1",
+        name: "信貸",
+        category: "信貸",
+        principal: 144000,
+        annualRate: 0,
+        remainingMonths: 12,
+        repaymentMethod: "amortizing",
+        collateralValue: 0,
+      },
+    ],
+    incomeSources: [{ id: "i1", name: "薪資", amount: 60000 }],
+    monthlyExpense: 20000,
+    recurringInvestments: [
+      { id: "r1", name: "0050", amount: 10000 },
+      { id: "r2", name: "", amount: 5000 },
+    ],
+  });
+  const params = {
+    currentDate: "2026-10-06",
+    draft,
+    metrics: calculateMetrics(draft),
+    recentSnapshots: [],
+  };
+
+  // PRD 第 9 節 #62i
+  it("財務健康檢查：現金流之後列出定期定額後剩餘，並附定期定額明細", () => {
+    const lines = buildFinancePrompt(params).split("\n");
+
+    const cashFlowIndex = lines.indexOf("- 本月淨現金流：$28,000");
+    expect(cashFlowIndex).toBeGreaterThan(-1);
+    expect(lines[cashFlowIndex + 1]).toBe(
+      "- 定期定額後剩餘現金：$13,000（每月定期定額投入 $15,000，屬於把現金換成股票，不算支出、未從現金流與儲蓄率扣除）"
+    );
+    const detailIndex = lines.indexOf("### 定期定額明細");
+    expect(detailIndex).toBeGreaterThan(lines.indexOf("- 本月支出：$20,000"));
+    expect(lines.slice(detailIndex + 2, detailIndex + 4)).toEqual([
+      "- 0050：每月 $10,000",
+      "- 未命名：每月 $5,000",
+    ]);
+  });
+
+  it("投資方向評估：列出每月定期定額投入與各筆明細", () => {
+    expect(buildInvestmentDirectionPrompt(params)).toContain(
+      "- 每月定期定額投入：$15,000（0050 $10,000、未命名 $5,000）"
+    );
+  });
+
+  it("負債清償策略：現金狀況列出定期定額與扣除後剩餘", () => {
+    const lines = buildDebtPayoffPrompt(params).split("\n");
+
+    const cashFlowIndex = lines.indexOf(
+      "- 本月淨現金流（可運用資金）：$28,000"
+    );
+    expect(cashFlowIndex).toBeGreaterThan(-1);
+    expect(lines[cashFlowIndex + 1]).toBe(
+      "- 其中每月定期定額投入：$15,000（扣除後剩餘 $13,000）"
+    );
+  });
+
+  // PRD 第 9 節 #62e：沒有定期定額（清單為空或金額皆為 0）時不輸出任何相關文字
+  it.each([
+    ["清單為空", []],
+    ["金額皆為 0", [{ id: "r1", name: "0050", amount: 0 }]],
+  ])("%s 時三種提示詞都不輸出定期定額", (_label, recurringInvestments) => {
+    const none = { ...draft, recurringInvestments };
+    const noneParams = {
+      ...params,
+      draft: none,
+      metrics: calculateMetrics(none),
+    };
+
+    const health = buildFinancePrompt(noneParams);
+    expect(health).toContain("- 本月淨現金流：$28,000");
+    expect(health).not.toContain("定期定額");
+    // 「投資方向評估」的立場選項本來就有「維持現狀／定期定額」字樣，只檢查不輸出投入金額那一行
+    expect(buildInvestmentDirectionPrompt(noneParams)).not.toContain(
+      "每月定期定額投入"
+    );
+    expect(buildDebtPayoffPrompt(noneParams)).not.toContain("定期定額");
+  });
+
+  it("定期回顧報告與資產配置再平衡建議不含定期定額", () => {
+    const earlier = { ...draft, date: "2026-09-06" };
+    const later = { ...draft, date: "2026-10-06" };
+
+    expect(
+      buildPeriodicReviewPrompt({
+        ...params,
+        recentSnapshots: [earlier, later],
+      })
+    ).not.toContain("定期定額");
+    expect(buildAssetRebalancingPrompt(params)).not.toContain("定期定額");
   });
 });

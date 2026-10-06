@@ -19,6 +19,7 @@ import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
 import { PledgeMaintenanceCard } from "@/components/PledgeMaintenanceCard";
 import { PwaUpdatePrompt } from "@/components/PwaUpdatePrompt";
 import { RealEstateInput } from "@/components/RealEstateInput";
+import { RecurringInvestmentList } from "@/components/RecurringInvestmentList";
 import { SavingsRateCard } from "@/components/SavingsRateCard";
 import { SnapshotComparison } from "@/components/SnapshotComparison";
 import { SnapshotEditBanner } from "@/components/SnapshotEditBanner";
@@ -187,6 +188,12 @@ function App() {
               value={draft.monthlyExpense}
               onChange={(monthlyExpense) => updateDraft({ monthlyExpense })}
             />
+            <RecurringInvestmentList
+              value={draft.recurringInvestments}
+              onChange={(recurringInvestments) =>
+                updateDraft({ recurringInvestments })
+              }
+            />
             <TargetNetWorthInput
               value={draft.targetNetWorth}
               monthlyExpense={draft.monthlyExpense}
@@ -262,6 +269,8 @@ function App() {
                   totalIncome={metrics.totalIncome}
                   monthlyExpense={draft.monthlyExpense}
                   totalMonthlyDebtPayment={metrics.totalMonthlyDebtPayment}
+                  recurringInvestment={metrics.totalRecurringInvestment}
+                  cashFlowAfterInvestment={metrics.cashFlowAfterInvestment}
                 />
                 <MonthlyDebtPaymentCard
                   amount={metrics.totalMonthlyDebtPayment}

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "snapshots": [
     {
       "date": "2021-10-31",
@@ -96,6 +96,13 @@
         }
       ],
       "monthlyExpense": 38928,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -194,6 +201,13 @@
         }
       ],
       "monthlyExpense": 36312,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -292,6 +306,13 @@
         }
       ],
       "monthlyExpense": 38202,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -390,6 +411,13 @@
         }
       ],
       "monthlyExpense": 36648,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -488,6 +516,13 @@
         }
       ],
       "monthlyExpense": 37026,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -586,6 +621,13 @@
         }
       ],
       "monthlyExpense": 37260,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -684,6 +726,13 @@
         }
       ],
       "monthlyExpense": 38474,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -782,6 +831,13 @@
         }
       ],
       "monthlyExpense": 38294,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -880,6 +936,13 @@
         }
       ],
       "monthlyExpense": 38595,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -978,6 +1041,13 @@
         }
       ],
       "monthlyExpense": 37689,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -1076,6 +1146,13 @@
         }
       ],
       "monthlyExpense": 37665,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -1174,6 +1251,13 @@
         }
       ],
       "monthlyExpense": 36519,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 0
     },
@@ -1272,6 +1356,13 @@
         }
       ],
       "monthlyExpense": 39339,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -1370,6 +1461,13 @@
         }
       ],
       "monthlyExpense": 37573,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -1468,6 +1566,13 @@
         }
       ],
       "monthlyExpense": 37547,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -1566,6 +1671,18 @@
         }
       ],
       "monthlyExpense": 37526,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -1664,6 +1781,18 @@
         }
       ],
       "monthlyExpense": 38747,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -1762,6 +1891,18 @@
         }
       ],
       "monthlyExpense": 38273,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -1860,6 +2001,18 @@
         }
       ],
       "monthlyExpense": 40153,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -1958,6 +2111,18 @@
         }
       ],
       "monthlyExpense": 38138,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2056,6 +2221,18 @@
         }
       ],
       "monthlyExpense": 38422,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2154,6 +2331,18 @@
         }
       ],
       "monthlyExpense": 39941,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2252,6 +2441,18 @@
         }
       ],
       "monthlyExpense": 37871,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2350,6 +2551,18 @@
         }
       ],
       "monthlyExpense": 38019,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2448,6 +2661,18 @@
         }
       ],
       "monthlyExpense": 41572,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2546,6 +2771,18 @@
         }
       ],
       "monthlyExpense": 40015,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2644,6 +2881,18 @@
         }
       ],
       "monthlyExpense": 40467,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2742,6 +2991,18 @@
         }
       ],
       "monthlyExpense": 41588,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2840,6 +3101,18 @@
         }
       ],
       "monthlyExpense": 40523,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -2938,6 +3211,18 @@
         }
       ],
       "monthlyExpense": 39424,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3036,6 +3321,18 @@
         }
       ],
       "monthlyExpense": 41481,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3134,6 +3431,18 @@
         }
       ],
       "monthlyExpense": 39601,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3232,6 +3541,18 @@
         }
       ],
       "monthlyExpense": 41250,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3330,6 +3651,18 @@
         }
       ],
       "monthlyExpense": 39471,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3428,6 +3761,18 @@
         }
       ],
       "monthlyExpense": 39960,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3526,6 +3871,18 @@
         }
       ],
       "monthlyExpense": 41514,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3624,6 +3981,18 @@
         }
       ],
       "monthlyExpense": 42810,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3722,6 +4091,18 @@
         }
       ],
       "monthlyExpense": 41438,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3820,6 +4201,18 @@
         }
       ],
       "monthlyExpense": 42884,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 3000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 2000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -3918,6 +4311,18 @@
         }
       ],
       "monthlyExpense": 43031,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4016,6 +4421,18 @@
         }
       ],
       "monthlyExpense": 40824,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4114,6 +4531,18 @@
         }
       ],
       "monthlyExpense": 41462,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4212,6 +4641,18 @@
         }
       ],
       "monthlyExpense": 40850,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4310,6 +4751,18 @@
         }
       ],
       "monthlyExpense": 40792,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4408,6 +4861,18 @@
         }
       ],
       "monthlyExpense": 41663,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4506,6 +4971,18 @@
         }
       ],
       "monthlyExpense": 43182,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4604,6 +5081,18 @@
         }
       ],
       "monthlyExpense": 41185,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4702,6 +5191,18 @@
         }
       ],
       "monthlyExpense": 42048,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4800,6 +5301,18 @@
         }
       ],
       "monthlyExpense": 43294,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4898,6 +5411,18 @@
         }
       ],
       "monthlyExpense": 44300,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -4996,6 +5521,18 @@
         }
       ],
       "monthlyExpense": 42726,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5094,6 +5631,18 @@
         }
       ],
       "monthlyExpense": 44553,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5192,6 +5741,18 @@
         }
       ],
       "monthlyExpense": 44075,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5290,6 +5851,18 @@
         }
       ],
       "monthlyExpense": 43446,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5388,6 +5961,18 @@
         }
       ],
       "monthlyExpense": 42405,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5486,6 +6071,18 @@
         }
       ],
       "monthlyExpense": 43641,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5584,6 +6181,18 @@
         }
       ],
       "monthlyExpense": 43006,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5682,6 +6291,18 @@
         }
       ],
       "monthlyExpense": 43880,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5780,6 +6401,18 @@
         }
       ],
       "monthlyExpense": 44307,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     },
@@ -5878,6 +6511,18 @@
         }
       ],
       "monthlyExpense": 44489,
+      "recurringInvestments": [
+        {
+          "id": "recurring-1",
+          "name": "範例台股 ETF",
+          "amount": 10000
+        },
+        {
+          "id": "recurring-2",
+          "name": "範例美股 ETF（台幣等值）",
+          "amount": 5000
+        }
+      ],
       "targetNetWorth": 30000000,
       "targetCashRatio": 25
     }

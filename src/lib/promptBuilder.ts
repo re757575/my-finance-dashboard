@@ -14,7 +14,12 @@ import {
   ANNUALIZE_MIN_DAYS,
   calculateNetWorthPerformance,
 } from "@/lib/netWorthPerformance";
-import type { CalculatedMetrics, Debt, Snapshot } from "@/types/schema";
+import type {
+  CalculatedMetrics,
+  Debt,
+  RecurringInvestment,
+  Snapshot,
+} from "@/types/schema";
 
 interface BuildFinancePromptParams {
   currentDate: string;
@@ -98,6 +103,19 @@ function formatPledgeMaintenanceLine(
   return `- 質押整戶維持率：${formatPercent(metrics.pledgeMaintenanceRatio)}（${PLEDGE_MAINTENANCE_STATUS_LABEL[status]}，${drop}）`;
 }
 
+/** 定期定額各筆明細（「名稱 金額」以頓號分隔），供單行摘要附註使用；金額為 0 的項目不列。 */
+function formatRecurringInvestmentItems(
+  recurringInvestments: RecurringInvestment[]
+): string {
+  return recurringInvestments
+    .filter((investment) => investment.amount > 0)
+    .map(
+      (investment) =>
+        `${investment.name || "未命名"} ${formatCurrency(investment.amount)}`
+    )
+    .join("、");
+}
+
 /** 資產配置一行摘要：可動用現金／（不可動用現金）／台股／美股，皆為占金融資產（現金＋股票）的比例。 */
 function formatAllocation(metrics: CalculatedMetrics): string {
   const restricted =
@@ -158,6 +176,11 @@ export function buildFinancePrompt({
   );
   lines.push(formatDebtServiceRatioLine(metrics));
   lines.push(`- 本月淨現金流：${formatCurrency(metrics.cashFlow)}`);
+  if (metrics.totalRecurringInvestment > 0) {
+    lines.push(
+      `- 定期定額後剩餘現金：${formatCurrency(metrics.cashFlowAfterInvestment)}（每月定期定額投入 ${formatCurrency(metrics.totalRecurringInvestment)}，屬於把現金換成股票，不算支出、未從現金流與儲蓄率扣除）`
+    );
+  }
   lines.push(
     `- 緊急預備金月數：${formatMonths(metrics.emergencyFundMonths)}（${EMERGENCY_FUND_STATUS_LABEL[metrics.emergencyFundStatus]}）`
   );
@@ -229,6 +252,16 @@ export function buildFinancePrompt({
   }
   lines.push(`- 本月支出：${formatCurrency(draft.monthlyExpense)}`, "");
 
+  if (metrics.totalRecurringInvestment > 0) {
+    lines.push("### 定期定額明細", "");
+    for (const investment of draft.recurringInvestments) {
+      lines.push(
+        `- ${investment.name || "未命名"}：每月 ${formatCurrency(investment.amount)}`
+      );
+    }
+    lines.push("");
+  }
+
   if (recentSnapshots.length > 0) {
     lines.push(`## 近 ${recentSnapshots.length} 筆歷史趨勢（已儲存資料）`, "");
     lines.push("| 日期 | 總資產 | 總負債 | 淨資產 | 負債比 | 現金比例 |");
@@ -295,6 +328,11 @@ export function buildInvestmentDirectionPrompt({
   }
   const investmentPledgeLine = formatPledgeMaintenanceLine(metrics);
   if (investmentPledgeLine) lines.push(investmentPledgeLine);
+  if (metrics.totalRecurringInvestment > 0) {
+    lines.push(
+      `- 每月定期定額投入：${formatCurrency(metrics.totalRecurringInvestment)}（${formatRecurringInvestmentItems(draft.recurringInvestments)}）`
+    );
+  }
   lines.push("");
 
   if (recentSnapshots.length > 0) {
@@ -372,6 +410,11 @@ export function buildDebtPayoffPrompt({
   lines.push(
     `- 本月淨現金流（可運用資金）：${formatCurrency(metrics.cashFlow)}`
   );
+  if (metrics.totalRecurringInvestment > 0) {
+    lines.push(
+      `- 其中每月定期定額投入：${formatCurrency(metrics.totalRecurringInvestment)}（扣除後剩餘 ${formatCurrency(metrics.cashFlowAfterInvestment)}）`
+    );
+  }
   lines.push(
     `- 緊急預備金月數：${formatMonths(metrics.emergencyFundMonths)}（${EMERGENCY_FUND_STATUS_LABEL[metrics.emergencyFundStatus]}）`,
     ""

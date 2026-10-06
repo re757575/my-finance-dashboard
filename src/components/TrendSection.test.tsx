@@ -22,6 +22,7 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     debts: [],
     incomeSources: [],
     monthlyExpense: 0,
+    recurringInvestments: [],
     targetNetWorth: 0,
     targetCashRatio: 0,
     ...overrides,

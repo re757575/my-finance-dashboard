@@ -131,7 +131,7 @@ describe("useLocalSnapshots", () => {
   // PRD 第 4.2 節：今日無快照時，自動帶入最近一筆快照的資料
   it("importBackup 成功時覆蓋資料，並依最新快照預帶今日表單", async () => {
     const importedData = {
-      schemaVersion: 7 as const,
+      schemaVersion: 8 as const,
       snapshots: [
         {
           date: "2026-01-01",
@@ -147,6 +147,7 @@ describe("useLocalSnapshots", () => {
           debts: [],
           incomeSources: [],
           monthlyExpense: 0,
+          recurringInvestments: [],
           targetNetWorth: 0,
           targetCashRatio: 0,
         },
@@ -227,7 +228,7 @@ describe("useLocalSnapshots", () => {
     it("今日草稿依經過的月數自動遞減本息平均攤還負債的剩餘本金／期數，並標示為系統估算", () => {
       const pastDate = dateMonthsAgo(3);
       persistFinanceData({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: [
           {
             ...createEmptySnapshot(pastDate),
@@ -261,7 +262,7 @@ describe("useLocalSnapshots", () => {
     it("只計息負債只遞減剩餘期數，本金維持不變且不標示為估算", () => {
       const pastDate = dateMonthsAgo(2);
       persistFinanceData({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: [
           {
             ...createEmptySnapshot(pastDate),
@@ -294,7 +295,7 @@ describe("useLocalSnapshots", () => {
     it("使用者手動修改被估算的欄位後，該欄位的估算標示會消失", () => {
       const pastDate = dateMonthsAgo(3);
       persistFinanceData({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: [
           {
             ...createEmptySnapshot(pastDate),
@@ -333,7 +334,7 @@ describe("useLocalSnapshots", () => {
     it("save() 之後清除所有估算標示（使用者已確認當下數值）", () => {
       const pastDate = dateMonthsAgo(3);
       persistFinanceData({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: [
           {
             ...createEmptySnapshot(pastDate),
@@ -363,7 +364,7 @@ describe("useLocalSnapshots", () => {
 
     it("同一曆月內建立草稿（沒有經過任何一期）時，不做遞減也不標示估算", () => {
       persistFinanceData({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: [
           {
             ...createEmptySnapshot(dateMonthsAgo(0)),
@@ -384,7 +385,7 @@ describe("useLocalSnapshots", () => {
 describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
   function saveSnapshotOn(date: string) {
     persistFinanceData({
-      schemaVersion: 7,
+      schemaVersion: 8,
       snapshots: [createEmptySnapshot(date)],
     });
   }
@@ -484,7 +485,7 @@ describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
     vi.mocked(parseBackupFile).mockResolvedValue({
       status: "ok",
       data: {
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: [createEmptySnapshot("2026-01-01")],
       },
     });
@@ -534,7 +535,7 @@ describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
         data: {
-          schemaVersion: 7,
+          schemaVersion: 8,
           snapshots: [createEmptySnapshot("2026-01-01")],
         },
       });
@@ -601,7 +602,7 @@ describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
 
     it("依日期排序取最早與最近，與寫入順序無關", () => {
       persistFinanceData({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: [
           createEmptySnapshot("2026-03-01"),
           createEmptySnapshot("2026-01-15"),
@@ -645,7 +646,7 @@ describe("useLocalSnapshots：修正與刪除歷史快照", () => {
   }
 
   function seed(...snapshots: ReturnType<typeof snap>[]) {
-    persistFinanceData({ schemaVersion: 7, snapshots });
+    persistFinanceData({ schemaVersion: 8, snapshots });
   }
 
   function storedSnapshots() {
@@ -1113,7 +1114,7 @@ describe("useLocalSnapshots：修正與刪除歷史快照", () => {
       seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
-        data: { schemaVersion: 7, snapshots: [snap("2026-05-05", 55555)] },
+        data: { schemaVersion: 8, snapshots: [snap("2026-05-05", 55555)] },
       });
       const { result } = renderHook(() => useLocalSnapshots());
       act(() => {
@@ -1179,7 +1180,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
   }
 
   function seed(...snapshots: ReturnType<typeof snap>[]) {
-    persistFinanceData({ schemaVersion: 7, snapshots });
+    persistFinanceData({ schemaVersion: 8, snapshots });
   }
 
   function storedDates() {
@@ -1273,7 +1274,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
       seed(snap("2026-01-10", 100000));
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
-        data: { schemaVersion: 7, snapshots: [snap("2026-05-05", 55555)] },
+        data: { schemaVersion: 8, snapshots: [snap("2026-05-05", 55555)] },
       });
       const { result } = renderHook(() => useLocalSnapshots());
       failWrites();
@@ -1419,7 +1420,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
     it("匯入還原與清空資料後不再提醒", async () => {
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
-        data: { schemaVersion: 7, snapshots: [snap("2026-05-05", 55555)] },
+        data: { schemaVersion: 8, snapshots: [snap("2026-05-05", 55555)] },
       });
       const { result } = renderHook(() => useLocalSnapshots());
       act(() => {
@@ -1458,7 +1459,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
     function otherTabSaves(...snapshots: ReturnType<typeof snap>[]) {
       otherTabWrites(
         STORAGE_KEY,
-        JSON.stringify({ schemaVersion: 7, snapshots })
+        JSON.stringify({ schemaVersion: 8, snapshots })
       );
     }
 
@@ -1639,7 +1640,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
     it("回到前景時換日：沒有未存檔編輯就重新帶入最近一筆，跨月時負債自動估算", () => {
       setToday("2026-09-30");
       persistFinanceData({
-        schemaVersion: 7,
+        schemaVersion: 8,
         snapshots: [
           {
             ...createEmptySnapshot("2026-09-15"),
@@ -1779,7 +1780,7 @@ describe("useLocalSnapshots：趨勢圖範圍", () => {
   }
 
   function seed(...snapshots: ReturnType<typeof snap>[]) {
-    persistFinanceData({ schemaVersion: 7, snapshots });
+    persistFinanceData({ schemaVersion: 8, snapshots });
   }
 
   function setToday(date: string) {
