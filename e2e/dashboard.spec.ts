@@ -334,6 +334,96 @@ test("填入不動產市值後，總資產與淨資產增加，負債比下降�
   ).toContainText("不動產 $10,000,000");
 });
 
+// PRD 第 9 節 #60a～#60j：有不動產與房貸時並列的三項對照指標
+test("有不動產與房貸時，另列金融負債比、含償還本金的儲蓄率與可投資淨資產進度", async ({
+  page,
+}) => {
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByLabel("金額").fill("1000000");
+  await page.locator('label:has-text("台股市值") input').fill("3000000");
+  await page.getByText("+ 新增負債").click();
+  await page.getByLabel("剩餘本金").fill("400000");
+  await page.getByText("+ 新增收入").click();
+  await page.getByLabel("收入金額").fill("100000");
+  await page.locator('label:has-text("本月支出") input').fill("40000");
+  await page.getByRole("textbox", { name: "目標淨資產" }).fill("20000000");
+
+  // 沒有不動產也沒有房貸、沒有攤還中的負債：三項對照指標都與原數字相同，不重複顯示
+  await expect(page.getByTestId("debt-ratio-value")).toHaveText("10.0%");
+  await expect(page.getByTestId("goal-progress-value")).toHaveText("18.0%");
+  await expect(page.getByTestId("savings-rate-value")).toHaveText("60.0%");
+  await expect(page.getByTestId("financial-debt-ratio")).toHaveCount(0);
+  await expect(page.getByTestId("savings-rate-with-principal")).toHaveCount(0);
+  await expect(page.getByTestId("goal-progress-investable")).toHaveCount(0);
+
+  // 填入不動產：負債比被稀釋到 2.5%，金融負債比仍是 400,000 ÷ 4,000,000
+  await page.getByLabel(/不動產市值/).fill("12000000");
+  await expect(page.getByTestId("debt-ratio-value")).toHaveText("2.5%");
+  await expect(page.getByTestId("financial-debt-ratio-value")).toHaveText(
+    "10.0%"
+  );
+  await expect(page.getByTestId("financial-debt-ratio-status")).toHaveText(
+    "財務健康（安全範圍）"
+  );
+
+  // 新增房貸 6,000,000（年利率 2.4%、240 期本息平均攤還）
+  await page.getByText("+ 新增負債").click();
+  await page.getByLabel("負債類別").nth(1).selectOption("房貸");
+  await page.getByLabel("剩餘本金").nth(1).fill("6000000");
+  await page.getByLabel("年利率").nth(1).fill("2.4");
+  await page.getByLabel("剩餘還款期數").nth(1).fill("240");
+
+  // 負債比 = 6,400,000 ÷ 16,000,000；金融負債比不含房貸，維持 10.0%
+  await expect(page.getByTestId("debt-ratio-value")).toHaveText("40.0%");
+  await expect(page.getByTestId("debt-ratio-status")).toHaveText(
+    "負債偏高（需注意調控）"
+  );
+  await expect(page.getByTestId("financial-debt-ratio-value")).toHaveText(
+    "10.0%"
+  );
+  await expect(page.getByTestId("financial-debt-ratio-status")).toHaveText(
+    "財務健康（安全範圍）"
+  );
+
+  // 儲蓄率：月付 ≈ 31,503（利息 12,000＋本金 ≈ 19,503），主數字與燈號仍為現金基礎
+  await expect(page.getByTestId("savings-rate-value")).toHaveText("28.5%");
+  await expect(page.getByTestId("savings-rate-status")).toHaveText("高儲蓄率");
+  await expect(page.getByTestId("savings-rate-with-principal")).toHaveText(
+    "含償還本金 48.0%（本月還本 $19,503）"
+  );
+
+  // 目標進度：淨資產 9,600,000 ÷ 20,000,000；可投資淨資產 = 4,000,000 − 400,000
+  await expect(page.getByTestId("goal-progress-value")).toHaveText("48.0%");
+  await expect(page.getByTestId("goal-progress-investable-value")).toHaveText(
+    "18.0%"
+  );
+  await expect(page.getByTestId("goal-progress-investable")).toContainText(
+    "可投資淨資產 $3,600,000 ／ 目標 $20,000,000"
+  );
+  // 預估達成時間仍以淨資產計算，照常顯示
+  await expect(page.getByTestId("goal-eta-budget")).toBeVisible();
+
+  // 公式說明同時列出兩個負債比的代入數值
+  await page.getByLabel("負債比計算公式說明").click();
+  await expect(page.getByTestId("formula-info-content")).toContainText(
+    "$400,000 ÷ $4,000,000 × 100% = 10.0%"
+  );
+  await page.keyboard.press("Escape");
+
+  // 皆為即時計算、不新增欄位：存檔並重新整理後結果相同
+  await page.getByTestId("save-button").click();
+  await page.reload();
+  await expect(page.getByTestId("financial-debt-ratio-value")).toHaveText(
+    "10.0%"
+  );
+  await expect(page.getByTestId("savings-rate-with-principal")).toContainText(
+    "含償還本金 48.0%"
+  );
+  await expect(page.getByTestId("goal-progress-investable-value")).toHaveText(
+    "18.0%"
+  );
+});
+
 // PRD 第 9 節 #42／#42c／#42d／#42e：質押整戶維持率
 test("質押負債填入質押股票市值後，顯示整戶維持率與距追繳線的下跌空間", async ({
   page,

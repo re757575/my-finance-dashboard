@@ -3,6 +3,7 @@ import {
   calculateMonthlyPayment,
   DEBT_RATIO_STATUS_LABEL,
   EMERGENCY_FUND_STATUS_LABEL,
+  hasSeparateFinancialDebtRatio,
   PLEDGE_MAINTENANCE_STATUS_LABEL,
   PLEDGE_MARGIN_CALL_RATIO,
   SAVINGS_RATE_STATUS_LABEL,
@@ -42,6 +43,23 @@ function formatGoalProgressLine(
   if (metrics.goalProgress === null) return "尚未設定目標淨資產";
   const achievedNote = metrics.goalProgress >= 100 ? "，已達成目標" : "";
   return `${formatPercent(metrics.goalProgress)}（目標 ${formatCurrency(targetNetWorth)}）${achievedNote}`;
+}
+
+/**
+ * 金融負債比的一行摘要（PRD 5.1a 節）；沒有不動產與房貸（與負債比相同）或金融資產 ≤ 0 時回傳 null，
+ * 呼叫端不輸出該行。讓 AI 看到被不動產市值稀釋掉的投資槓桿。
+ */
+function formatFinancialDebtRatioLine(
+  metrics: CalculatedMetrics
+): string | null {
+  if (
+    !hasSeparateFinancialDebtRatio(metrics) ||
+    metrics.financialDebtRatio === null ||
+    metrics.financialDebtRatioStatus === null
+  ) {
+    return null;
+  }
+  return `- 金融負債比：${formatPercent(metrics.financialDebtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.financialDebtRatioStatus]}；房貸以外的負債 ${formatCurrency(metrics.financialLiabilities)} ÷ 金融資產 ${formatCurrency(metrics.financialAssets)}，不含不動產與房貸）`;
 }
 
 /**
@@ -108,6 +126,8 @@ export function buildFinancePrompt({
   lines.push(
     `- 負債比：${formatPercent(metrics.debtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.debtRatioStatus]}）`
   );
+  const financialDebtRatioLine = formatFinancialDebtRatioLine(metrics);
+  if (financialDebtRatioLine) lines.push(financialDebtRatioLine);
   lines.push(`- 現金比例：${formatPercent(metrics.cashRatio)}（可動用現金）`);
   if (metrics.restrictedCash !== 0) {
     lines.push(
@@ -126,10 +146,23 @@ export function buildFinancePrompt({
   lines.push(
     `- 儲蓄率：${formatPercent(metrics.savingsRate)}（${SAVINGS_RATE_STATUS_LABEL[metrics.savingsRateStatus]}）`
   );
+  if (metrics.monthlyPrincipalRepayment > 0) {
+    lines.push(
+      `- 含償還本金的儲蓄率：${formatPercent(metrics.savingsRateWithPrincipal)}（本月償還負債本金 ${formatCurrency(metrics.monthlyPrincipalRepayment)}，還本金不減少淨資產）`
+    );
+  }
   lines.push(
-    `- FIRE／淨資產目標進度：${formatGoalProgressLine(metrics, draft.targetNetWorth)}`,
-    ""
+    `- FIRE／淨資產目標進度：${formatGoalProgressLine(metrics, draft.targetNetWorth)}`
   );
+  if (
+    metrics.investableGoalProgress !== null &&
+    metrics.investableNetWorth !== metrics.netWorth
+  ) {
+    lines.push(
+      `- 可投資淨資產目標進度：${formatPercent(metrics.investableGoalProgress)}（可投資淨資產 ${formatCurrency(metrics.investableNetWorth)}＝金融資產 − 房貸以外的負債，不含不動產與房貸）`
+    );
+  }
+  lines.push("");
 
   lines.push(`- 資產配置：${formatAllocation(metrics)}`, "");
 
@@ -237,6 +270,11 @@ export function buildInvestmentDirectionPrompt({
   lines.push(
     `- 負債比：${formatPercent(metrics.debtRatio)}（${DEBT_RATIO_STATUS_LABEL[metrics.debtRatioStatus]}，財務槓桿狀況）`
   );
+  const investmentFinancialDebtRatioLine =
+    formatFinancialDebtRatioLine(metrics);
+  if (investmentFinancialDebtRatioLine) {
+    lines.push(investmentFinancialDebtRatioLine);
+  }
   const investmentPledgeLine = formatPledgeMaintenanceLine(metrics);
   if (investmentPledgeLine) lines.push(investmentPledgeLine);
   lines.push("");

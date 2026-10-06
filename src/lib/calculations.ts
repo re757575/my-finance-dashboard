@@ -158,6 +158,44 @@ export const DEBT_RATIO_STATUS_LABEL: Record<DebtRatioStatus, string> = {
   "high-risk": "財務高風險（請儘速理債）",
 };
 
+/** 金融負債：類別不是「房貸」的負債剩餘本金合計；房貸視為與不動產成對，不計入（PRD 5.1a 節）。 */
+export function sumFinancialDebtPrincipal(debts: Debt[]): number {
+  return sumDebtPrincipal(debts.filter((debt) => debt.category !== "房貸"));
+}
+
+/**
+ * 金融負債比 = 金融負債 ÷ 金融資產 × 100%（PRD 5.1a 節），用來看出被不動產市值稀釋掉的投資槓桿。
+ * 金融資產 ≤ 0 時無法比較，回傳 null。
+ */
+export function calculateFinancialDebtRatio(
+  financialLiabilities: number,
+  financialAssets: number
+): number | null {
+  if (financialAssets <= 0) return null;
+  return (financialLiabilities / financialAssets) * 100;
+}
+
+/**
+ * 金融負債比與負債比的計算基礎是否不同（有不動產市值或房貸）。
+ * 相同時兩者數值一致，畫面與提示詞都不重複顯示金融負債比（PRD 4.2、5.1a 節）。
+ */
+export function hasSeparateFinancialDebtRatio(
+  metrics: Pick<
+    CalculatedMetrics,
+    | "totalAssets"
+    | "financialAssets"
+    | "totalLiabilities"
+    | "financialLiabilities"
+    | "financialDebtRatio"
+  >
+): boolean {
+  return (
+    metrics.financialDebtRatio !== null &&
+    (metrics.totalAssets !== metrics.financialAssets ||
+      metrics.totalLiabilities !== metrics.financialLiabilities)
+  );
+}
+
 /**
  * 緊急預備金月數 = 可動用現金 ÷（本月支出 + 本月應還款總額）（PRD 5.5 節）。
  * 分子僅計入可動用現金（不含標記為「不可動用」的來源，如期貨保證金），也不含股票市值
@@ -348,10 +386,11 @@ export function calculateGoalEstimates(
   draft: Snapshot,
   savedSnapshots: Snapshot[]
 ): GoalEstimates {
-  const { netWorth, cashFlow } = calculateMetrics(draft);
-  const principalRepayment = calculateTotalMonthlyPrincipalRepayment(
-    draft.debts
-  );
+  const {
+    netWorth,
+    cashFlow,
+    monthlyPrincipalRepayment: principalRepayment,
+  } = calculateMetrics(draft);
   const history = calculateHistoricalMonthlyPace(savedSnapshots);
 
   return {
@@ -530,6 +569,12 @@ export function calculateMetrics(
   // 總資產為 0 時負債比預設為 0%，避免除以零（PRD 第 5 節）
   const debtRatio =
     totalAssets === 0 ? 0 : (totalLiabilities / totalAssets) * 100;
+  // 金融負債比：不含不動產與房貸，避免不動產市值稀釋後看不出投資槓桿（PRD 5.1a 節）
+  const financialLiabilities = sumFinancialDebtPrincipal(snapshot.debts);
+  const financialDebtRatio = calculateFinancialDebtRatio(
+    financialLiabilities,
+    financialAssets
+  );
   // 現金比例與資產配置比例以金融資產為分母；金融資產為 0 時同樣預設為 0%，避免除以零
   const ratioOfFinancialAssets = (amount: number) =>
     financialAssets === 0 ? 0 : (amount / financialAssets) * 100;
@@ -555,7 +600,13 @@ export function calculateMetrics(
     totalMonthlyDebtPayment
   );
   const savingsRate = calculateSavingsRate(cashFlow, totalIncome);
+  // 還本金只是把現金換成負債減少，淨資產不變，因此另算一個把它加回的儲蓄率（PRD 5.6 節）
+  const monthlyPrincipalRepayment = calculateTotalMonthlyPrincipalRepayment(
+    snapshot.debts
+  );
   const goalProgress = calculateGoalProgress(netWorth, snapshot.targetNetWorth);
+  // 4% 提領法則的本金必須可提領，自住不動產不算，因此另算不含不動產與房貸的進度（PRD 5.7 節）
+  const investableNetWorth = financialAssets - financialLiabilities;
   const pledge = calculatePledgeMaintenance(snapshot.debts);
 
   return {
@@ -566,6 +617,12 @@ export function calculateMetrics(
     netWorth,
     debtRatio,
     debtRatioStatus: calculateDebtRatioStatus(debtRatio),
+    financialLiabilities,
+    financialDebtRatio,
+    financialDebtRatioStatus:
+      financialDebtRatio === null
+        ? null
+        : calculateDebtRatioStatus(financialDebtRatio),
     cashRatio,
     liquidCash,
     restrictedCash,
@@ -583,7 +640,17 @@ export function calculateMetrics(
     emergencyFundStatus: calculateEmergencyFundStatus(emergencyFundMonths),
     savingsRate,
     savingsRateStatus: calculateSavingsRateStatus(savingsRate),
+    monthlyPrincipalRepayment,
+    savingsRateWithPrincipal: calculateSavingsRate(
+      cashFlow + monthlyPrincipalRepayment,
+      totalIncome
+    ),
     goalProgress,
+    investableNetWorth,
+    investableGoalProgress: calculateGoalProgress(
+      investableNetWorth,
+      snapshot.targetNetWorth
+    ),
     pledgePrincipal: pledge.principal,
     pledgeCollateralValue: pledge.collateralValue,
     pledgeMaintenanceRatio: pledge.ratio,

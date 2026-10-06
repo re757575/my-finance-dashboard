@@ -31,6 +31,8 @@ describe("GoalProgressSection", () => {
         targetNetWorth={0}
         monthlyExpense={30000}
         progress={null}
+        investableNetWorth={350000}
+        investableProgress={null}
         onSetTarget={onSetTarget}
       />
     );
@@ -52,6 +54,8 @@ describe("GoalProgressSection", () => {
         targetNetWorth={10000000}
         monthlyExpense={30000}
         progress={35}
+        investableNetWorth={3500000}
+        investableProgress={35}
         onSetTarget={vi.fn()}
       />
     );
@@ -75,6 +79,8 @@ describe("GoalProgressSection", () => {
         targetNetWorth={10000000}
         monthlyExpense={30000}
         progress={142}
+        investableNetWorth={14200000}
+        investableProgress={142}
         onSetTarget={vi.fn()}
       />
     );
@@ -96,6 +102,8 @@ describe("GoalProgressSection", () => {
         targetNetWorth={10000000}
         monthlyExpense={30000}
         progress={-5}
+        investableNetWorth={-500000}
+        investableProgress={-5}
         onSetTarget={vi.fn()}
       />
     );
@@ -114,6 +122,8 @@ describe("GoalProgressSection", () => {
           targetNetWorth={10000000}
           monthlyExpense={40000}
           progress={40}
+          investableNetWorth={4000000}
+          investableProgress={40}
           estimates={ESTIMATES}
           onSetTarget={vi.fn()}
         />
@@ -134,6 +144,8 @@ describe("GoalProgressSection", () => {
           targetNetWorth={10000000}
           monthlyExpense={40000}
           progress={40}
+          investableNetWorth={4000000}
+          investableProgress={40}
           onSetTarget={vi.fn()}
         />
       );
@@ -149,6 +161,8 @@ describe("GoalProgressSection", () => {
           targetNetWorth={0}
           monthlyExpense={40000}
           progress={null}
+          investableNetWorth={4000000}
+          investableProgress={null}
           estimates={{
             ...ESTIMATES,
             budget: { ...ESTIMATES.budget, status: "unset", months: null },
@@ -170,6 +184,8 @@ describe("GoalProgressSection", () => {
           targetNetWorth={10000000}
           monthlyExpense={40000}
           progress={120}
+          investableNetWorth={12000000}
+          investableProgress={120}
           estimates={{
             ...ESTIMATES,
             budget: { ...ESTIMATES.budget, status: "achieved", months: null },
@@ -181,6 +197,120 @@ describe("GoalProgressSection", () => {
 
       expect(screen.getByTestId("goal-progress-achieved")).toBeInTheDocument();
       expect(screen.queryByTestId("goal-eta")).not.toBeInTheDocument();
+    });
+  });
+
+  // PRD 5.7 節、第 9 節 #60g–#60i：可投資淨資產進度
+  describe("可投資淨資產進度", () => {
+    it("有不動產與房貸時另列進度與金額，主進度與進度條仍以淨資產為準", () => {
+      render(
+        <GoalProgressSection
+          netWorth={8400000}
+          targetNetWorth={20000000}
+          monthlyExpense={40000}
+          progress={42}
+          investableNetWorth={2400000}
+          investableProgress={12}
+          estimates={ESTIMATES}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("goal-progress-value")).toHaveTextContent(
+        "42.0%"
+      );
+      expect(screen.getByTestId("goal-progress-bar-fill")).toHaveStyle({
+        width: "42%",
+      });
+      expect(
+        screen.getByTestId("goal-progress-investable-value")
+      ).toHaveTextContent("12.0%");
+      expect(screen.getByTestId("goal-progress-investable")).toHaveTextContent(
+        "可投資淨資產 $2,400,000 ／ 目標 $20,000,000"
+      );
+      // 預估達成時間照常顯示
+      expect(screen.getByTestId("goal-eta")).toBeInTheDocument();
+    });
+
+    it("可投資淨資產為負數時如實顯示負的百分比", () => {
+      render(
+        <GoalProgressSection
+          netWorth={5000000}
+          targetNetWorth={10000000}
+          monthlyExpense={40000}
+          progress={50}
+          investableNetWorth={-500000}
+          investableProgress={-5}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      expect(
+        screen.getByTestId("goal-progress-investable-value")
+      ).toHaveTextContent("-5.0%");
+    });
+
+    it("可投資淨資產與淨資產相同（沒有不動產與房貸）時不重複顯示", () => {
+      render(
+        <GoalProgressSection
+          netWorth={700000}
+          targetNetWorth={2000000}
+          monthlyExpense={30000}
+          progress={35}
+          investableNetWorth={700000}
+          investableProgress={35}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      expect(
+        screen.queryByTestId("goal-progress-investable")
+      ).not.toBeInTheDocument();
+    });
+
+    it("尚未設定目標時只顯示引導文字，不顯示可投資淨資產進度", () => {
+      render(
+        <GoalProgressSection
+          netWorth={8400000}
+          targetNetWorth={0}
+          monthlyExpense={40000}
+          progress={null}
+          investableNetWorth={2400000}
+          investableProgress={null}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId("goal-progress-empty")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("goal-progress-investable")
+      ).not.toBeInTheDocument();
+    });
+
+    it("顯示可投資淨資產進度時，公式說明同時列出兩者的代入數值", () => {
+      render(
+        <GoalProgressSection
+          netWorth={8400000}
+          targetNetWorth={20000000}
+          monthlyExpense={40000}
+          progress={42}
+          investableNetWorth={2400000}
+          investableProgress={12}
+          onSetTarget={vi.fn()}
+        />
+      );
+
+      fireEvent.click(
+        screen.getByLabelText("FIRE／淨資產目標進度計算公式說明")
+      );
+
+      const content = screen.getByTestId("formula-info-content");
+      expect(content).toHaveTextContent(
+        "$8,400,000 ÷ $20,000,000 × 100% = 42.0%"
+      );
+      expect(content).toHaveTextContent(
+        "$2,400,000 ÷ $20,000,000 × 100% = 12.0%"
+      );
     });
   });
 });

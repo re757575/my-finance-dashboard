@@ -3,6 +3,7 @@ import {
   advanceDebtByMonths,
   calculateEmergencyFundMonths,
   calculateEmergencyFundStatus,
+  calculateFinancialDebtRatio,
   calculateGoalEstimates,
   calculateGoalEta,
   calculateGoalProgress,
@@ -19,7 +20,9 @@ import {
   calculateTotalMonthlyDebtPayment,
   calculateTotalMonthlyPrincipalRepayment,
   GOAL_ETA_MAX_MONTHS,
+  hasSeparateFinancialDebtRatio,
   STRESS_TEST_DROPS,
+  sumFinancialDebtPrincipal,
   toSafeNumber,
 } from "@/lib/calculations";
 import {
@@ -1432,5 +1435,338 @@ describe("目標達成時間預估：歷史速度與整合", () => {
 
       expect(result.baseDate).toBe("2026-01-15");
     });
+  });
+});
+
+// PRD 第 9 節 #60a 的資料：現金 100 萬＋台股 300 萬＋不動產 1,200 萬；房貸 600 萬＋信貸 40 萬＋質押 120 萬
+function leveragedHomeownerInput(
+  overrides: Partial<Parameters<typeof calculateMetrics>[0]> = {}
+) {
+  return baseSnapshotInput({
+    cashSources: [
+      { id: "1", name: "現金", amount: 1000000, restricted: false },
+    ],
+    twStockValue: 3000000,
+    realEstateValue: 12000000,
+    debts: [
+      baseDebt({
+        id: "mortgage",
+        category: "房貸",
+        principal: 6000000,
+        annualRate: 2.4,
+        remainingMonths: 240,
+      }),
+      baseDebt({ id: "credit", category: "信貸", principal: 400000 }),
+      baseDebt({
+        id: "pledge",
+        category: "質押",
+        principal: 1200000,
+        repaymentMethod: "interestOnly",
+      }),
+    ],
+    ...overrides,
+  });
+}
+
+describe("金融負債比（PRD 5.1a 節）", () => {
+  it("sumFinancialDebtPrincipal 只加總房貸以外的負債（信貸、質押、其他）", () => {
+    expect(
+      sumFinancialDebtPrincipal([
+        baseDebt({ category: "房貸", principal: 6000000 }),
+        baseDebt({ category: "信貸", principal: 400000 }),
+        baseDebt({ category: "質押", principal: 1200000 }),
+        baseDebt({ category: "其他", principal: 50000 }),
+      ])
+    ).toBe(1650000);
+    expect(sumFinancialDebtPrincipal([])).toBe(0);
+  });
+
+  it("calculateFinancialDebtRatio：金融資產 ≤ 0 時回傳 null，不出現 NaN 或 Infinity", () => {
+    expect(calculateFinancialDebtRatio(1600000, 4000000)).toBeCloseTo(40);
+    expect(calculateFinancialDebtRatio(0, 4000000)).toBe(0);
+    expect(calculateFinancialDebtRatio(100000, 0)).toBeNull();
+    expect(calculateFinancialDebtRatio(0, 0)).toBeNull();
+    expect(calculateFinancialDebtRatio(100000, -50000)).toBeNull();
+  });
+
+  // PRD 第 9 節 #60a
+  it("有不動產與房貸時，金融負債比不含兩者，負債比維持原算法", () => {
+    const result = calculateMetrics(leveragedHomeownerInput());
+
+    expect(result.debtRatio).toBeCloseTo(47.5);
+    expect(result.debtRatioStatus).toBe("elevated");
+    expect(result.financialLiabilities).toBe(1600000);
+    expect(result.financialDebtRatio).toBeCloseTo(40);
+    expect(result.financialDebtRatioStatus).toBe("elevated");
+    expect(hasSeparateFinancialDebtRatio(result)).toBe(true);
+  });
+
+  it("不動產稀釋下負債比健康，金融負債比仍可判為高風險", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 500000, restricted: false },
+        ],
+        twStockValue: 2500000,
+        realEstateValue: 17000000,
+        debts: [
+          baseDebt({ id: "m", category: "房貸", principal: 5000000 }),
+          baseDebt({ id: "p", category: "質押", principal: 2000000 }),
+        ],
+      })
+    );
+
+    expect(result.debtRatio).toBeCloseTo(35);
+    expect(result.debtRatioStatus).toBe("healthy");
+    expect(result.financialDebtRatio).toBeCloseTo(66.67, 1);
+    expect(result.financialDebtRatioStatus).toBe("high-risk");
+  });
+
+  // PRD 第 9 節 #60b
+  it("沒有不動產也沒有房貸時，與負債比相同且不需另外顯示", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 1000000, restricted: false },
+        ],
+        debts: [baseDebt({ category: "信貸", principal: 300000 })],
+      })
+    );
+
+    expect(result.financialDebtRatio).toBe(result.debtRatio);
+    expect(result.financialDebtRatioStatus).toBe(result.debtRatioStatus);
+    expect(hasSeparateFinancialDebtRatio(result)).toBe(false);
+  });
+
+  // PRD 第 9 節 #60c
+  it("金融資產為 0 時金融負債比為 null，不需另外顯示，負債比照常計算", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        realEstateValue: 10000000,
+        debts: [
+          baseDebt({ id: "m", category: "房貸", principal: 5000000 }),
+          baseDebt({ id: "c", category: "信貸", principal: 100000 }),
+        ],
+      })
+    );
+
+    expect(result.financialDebtRatio).toBeNull();
+    expect(result.financialDebtRatioStatus).toBeNull();
+    expect(hasSeparateFinancialDebtRatio(result)).toBe(false);
+    expect(result.debtRatio).toBeCloseTo(51);
+  });
+
+  // PRD 第 9 節 #60d
+  it("只有房貸時，金融負債比為 0%（完美無債），負債比不變", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 1000000, restricted: false },
+        ],
+        realEstateValue: 10000000,
+        debts: [baseDebt({ category: "房貸", principal: 6000000 })],
+      })
+    );
+
+    expect(result.financialDebtRatio).toBe(0);
+    expect(result.financialDebtRatioStatus).toBe("debt-free");
+    expect(result.debtRatio).toBeCloseTo(54.545, 2);
+    expect(hasSeparateFinancialDebtRatio(result)).toBe(true);
+  });
+
+  it("有房貸但未填不動產市值時，仍視為計算基礎不同", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 1000000, restricted: false },
+        ],
+        debts: [baseDebt({ category: "房貸", principal: 600000 })],
+      })
+    );
+
+    expect(result.debtRatio).toBeCloseTo(60);
+    expect(result.financialDebtRatio).toBe(0);
+    expect(hasSeparateFinancialDebtRatio(result)).toBe(true);
+  });
+
+  it("壓力測試情境下，金融負債比隨股票下跌上升", () => {
+    const { before, after } = calculateStressScenario(
+      leveragedHomeownerInput(),
+      30
+    );
+
+    expect(before.financialDebtRatio).toBeCloseTo(40);
+    // 金融資產 100 萬＋300 萬 × 0.7 = 310 萬
+    expect(after.financialDebtRatio).toBeCloseTo((1600000 / 3100000) * 100);
+  });
+});
+
+describe("含償還本金的儲蓄率（PRD 5.6 節）", () => {
+  // PRD 第 9 節 #60e
+  it("把本月償還的本金加回分子，現金基礎的儲蓄率與燈號不變", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        debts: [
+          baseDebt({
+            category: "房貸",
+            principal: 6000000,
+            annualRate: 2.4,
+            remainingMonths: 240,
+          }),
+        ],
+        incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
+        monthlyExpense: 40000,
+      })
+    );
+
+    // 月付 ≈ 31,503、當月利息 12,000 → 償還本金 ≈ 19,503
+    expect(result.totalMonthlyDebtPayment).toBeCloseTo(31502.6, 0);
+    expect(result.monthlyPrincipalRepayment).toBeCloseTo(19502.6, 0);
+    expect(result.savingsRate).toBeCloseTo(28.5, 1);
+    expect(result.savingsRateStatus).toBe("high");
+    // 收入 − 支出 − 利息 = 100,000 − 40,000 − 12,000 = 48,000
+    expect(result.savingsRateWithPrincipal).toBeCloseTo(48);
+  });
+
+  // PRD 第 9 節 #60f
+  it("沒有負債或只有只計息負債時，本月償還本金為 0，兩個儲蓄率相同", () => {
+    const noDebt = calculateMetrics(
+      baseSnapshotInput({
+        incomeSources: [{ id: "i1", name: "薪資", amount: 60000 }],
+        monthlyExpense: 42000,
+      })
+    );
+    expect(noDebt.monthlyPrincipalRepayment).toBe(0);
+    expect(noDebt.savingsRateWithPrincipal).toBe(noDebt.savingsRate);
+
+    const interestOnly = calculateMetrics(
+      baseSnapshotInput({
+        debts: [
+          baseDebt({
+            category: "質押",
+            principal: 1200000,
+            annualRate: 2.4,
+            remainingMonths: 12,
+            repaymentMethod: "interestOnly",
+          }),
+        ],
+        incomeSources: [{ id: "i1", name: "薪資", amount: 60000 }],
+        monthlyExpense: 42000,
+      })
+    );
+    expect(interestOnly.monthlyPrincipalRepayment).toBe(0);
+    expect(interestOnly.savingsRateWithPrincipal).toBe(
+      interestOnly.savingsRate
+    );
+  });
+
+  it("總收入為 0 時強制為 0%，不得除以零", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        debts: [
+          baseDebt({ principal: 120000, annualRate: 0, remainingMonths: 12 }),
+        ],
+      })
+    );
+
+    expect(result.monthlyPrincipalRepayment).toBeCloseTo(10000);
+    expect(result.savingsRateWithPrincipal).toBe(0);
+  });
+
+  it("與目標達成時間預估「依目前收支」使用同一個償還本金", () => {
+    const draft: Snapshot = {
+      ...createEmptySnapshot("2026-10-06"),
+      ...leveragedHomeownerInput({
+        incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
+        monthlyExpense: 40000,
+        targetNetWorth: 20000000,
+      }),
+    };
+
+    const metrics = calculateMetrics(draft);
+    const { budget } = calculateGoalEstimates(draft, []);
+
+    expect(budget.principalRepayment).toBe(metrics.monthlyPrincipalRepayment);
+    expect(budget.principalRepayment).toBe(
+      calculateTotalMonthlyPrincipalRepayment(draft.debts)
+    );
+    expect(budget.monthlyPace).toBeCloseTo(
+      metrics.cashFlow + metrics.monthlyPrincipalRepayment
+    );
+  });
+});
+
+describe("可投資淨資產進度（PRD 5.7 節）", () => {
+  // PRD 第 9 節 #60g
+  it("可投資淨資產 = 金融資產 − 金融負債，淨資產進度維持原算法", () => {
+    const result = calculateMetrics(
+      leveragedHomeownerInput({ targetNetWorth: 20000000 })
+    );
+
+    expect(result.netWorth).toBe(8400000);
+    expect(result.goalProgress).toBeCloseTo(42);
+    expect(result.investableNetWorth).toBe(2400000);
+    expect(result.investableGoalProgress).toBeCloseTo(12);
+  });
+
+  // PRD 第 9 節 #60h
+  it("沒有不動產也沒有房貸時，與淨資產及其進度完全相同", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 1000000, restricted: false },
+        ],
+        debts: [baseDebt({ category: "信貸", principal: 300000 })],
+        targetNetWorth: 2000000,
+      })
+    );
+
+    expect(result.investableNetWorth).toBe(result.netWorth);
+    expect(result.investableGoalProgress).toBe(result.goalProgress);
+    expect(result.goalProgress).toBeCloseTo(35);
+  });
+
+  // PRD 第 9 節 #60i
+  it("目標未設定時，可投資淨資產進度為 null", () => {
+    const result = calculateMetrics(leveragedHomeownerInput());
+
+    expect(result.investableNetWorth).toBe(2400000);
+    expect(result.investableGoalProgress).toBeNull();
+  });
+
+  it("金融負債大於金融資產時，可投資淨資產與進度為負數", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 500000, restricted: false },
+        ],
+        realEstateValue: 10000000,
+        debts: [
+          baseDebt({ id: "m", category: "房貸", principal: 4000000 }),
+          baseDebt({ id: "c", category: "信貸", principal: 1000000 }),
+        ],
+        targetNetWorth: 10000000,
+      })
+    );
+
+    expect(result.investableNetWorth).toBe(-500000);
+    expect(result.investableGoalProgress).toBeCloseTo(-5);
+    expect(result.goalProgress).toBeCloseTo(55);
+  });
+
+  it("不可動用現金計入可投資淨資產（屬於金融資產）", () => {
+    const result = calculateMetrics(
+      baseSnapshotInput({
+        cashSources: [
+          { id: "1", name: "現金", amount: 600000, restricted: false },
+          { id: "2", name: "期貨保證金", amount: 400000, restricted: true },
+        ],
+        realEstateValue: 5000000,
+        targetNetWorth: 10000000,
+      })
+    );
+
+    expect(result.investableNetWorth).toBe(1000000);
+    expect(result.investableGoalProgress).toBeCloseTo(10);
   });
 });

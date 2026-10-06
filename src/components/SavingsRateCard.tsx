@@ -29,17 +29,28 @@ interface SavingsRateCardProps {
   status: SavingsRateStatus;
   cashFlow: number;
   totalIncome: number;
+  /** 本月償還的負債本金合計；大於 0 時於卡片下方另列含償還本金的儲蓄率。 */
+  principalRepayment: number;
+  /** 含償還本金的儲蓄率（PRD 5.6 節），只作對照、不分級。 */
+  rateWithPrincipal: number;
 }
 
-/** 儲蓄率卡（PRD 5.6 節）：現金流 ÷ 總收入 × 100%，總收入為 0 時強制為 0。 */
+/**
+ * 儲蓄率卡（PRD 5.6 節）：現金流 ÷ 總收入 × 100%，總收入為 0 時強制為 0。
+ * 本月有償還負債本金時，下方另列把本金加回的儲蓄率（還本金不減少淨資產），主數字與燈號不受影響。
+ */
 export function SavingsRateCard({
   rate,
   status,
   cashFlow,
   totalIncome,
+  principalRepayment,
+  rateWithPrincipal,
 }: SavingsRateCardProps) {
   const style = STATUS_STYLES[status];
   const width = Math.min(100, Math.max(0, rate));
+  const showWithPrincipal = principalRepayment > 0;
+  const substitution = `${formatCurrency(cashFlow)} ÷ ${formatCurrency(totalIncome)} × 100% = ${formatPercent(rate)}`;
 
   return (
     <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
@@ -48,9 +59,21 @@ export function SavingsRateCard({
           <p className="text-sm text-slate-500 dark:text-neutral-400">儲蓄率</p>
           <FormulaInfoButton
             title="儲蓄率"
-            formula="儲蓄率 = 現金流 ÷ 總收入 × 100%"
-            substitution={`${formatCurrency(cashFlow)} ÷ ${formatCurrency(totalIncome)} × 100% = ${formatPercent(rate)}`}
-            note="總收入為 0 時強制為 0%，避免除以零"
+            formula={
+              showWithPrincipal
+                ? "儲蓄率 = 現金流 ÷ 總收入 × 100%\n含償還本金 =（現金流 + 本月償還本金）÷ 總收入 × 100%"
+                : "儲蓄率 = 現金流 ÷ 總收入 × 100%"
+            }
+            substitution={
+              showWithPrincipal
+                ? `儲蓄率：${substitution}\n含償還本金：(${formatCurrency(cashFlow)} + ${formatCurrency(principalRepayment)}) ÷ ${formatCurrency(totalIncome)} × 100% = ${formatPercent(rateWithPrincipal)}`
+                : substitution
+            }
+            note={
+              showWithPrincipal
+                ? "總收入為 0 時強制為 0%，避免除以零。還本金只是把現金換成負債減少，淨資產不變；燈號仍以現金基礎的儲蓄率為準"
+                : "總收入為 0 時強制為 0%，避免除以零"
+            }
           />
         </div>
         <span
@@ -73,6 +96,18 @@ export function SavingsRateCard({
           style={{ width: `${width}%` }}
         />
       </div>
+      {showWithPrincipal && (
+        <p
+          data-testid="savings-rate-with-principal"
+          className="mt-2 text-xs text-slate-500 dark:text-neutral-400"
+        >
+          含償還本金{" "}
+          <span className="font-medium text-slate-900 dark:text-neutral-50">
+            {formatPercent(rateWithPrincipal)}
+          </span>
+          （本月還本 {formatCurrency(principalRepayment)}）
+        </p>
+      )}
     </div>
   );
 }

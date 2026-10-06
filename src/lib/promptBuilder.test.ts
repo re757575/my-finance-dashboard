@@ -700,3 +700,135 @@ describe("提示詞：不動產／不可動用現金／質押維持率", () => {
     );
   });
 });
+
+describe("提示詞：金融負債比／含償還本金的儲蓄率／可投資淨資產進度", () => {
+  // PRD 第 9 節 #60k：現金 100 萬＋台股 300 萬＋不動產 1,200 萬；房貸 600 萬＋信貸 40 萬＋質押 120 萬
+  const draft = baseSnapshot({
+    cashSources: [
+      { id: "1", name: "活存", amount: 1000000, restricted: false },
+    ],
+    twStockValue: 3000000,
+    realEstateValue: 12000000,
+    debts: [
+      {
+        id: "d1",
+        name: "房貸",
+        category: "房貸",
+        principal: 6000000,
+        annualRate: 2.4,
+        remainingMonths: 240,
+        repaymentMethod: "amortizing",
+        collateralValue: 0,
+      },
+      {
+        id: "d2",
+        name: "信貸",
+        category: "信貸",
+        principal: 400000,
+        annualRate: 0,
+        remainingMonths: 0,
+        repaymentMethod: "amortizing",
+        collateralValue: 0,
+      },
+      {
+        id: "d3",
+        name: "質押",
+        category: "質押",
+        principal: 1200000,
+        annualRate: 0,
+        remainingMonths: 12,
+        repaymentMethod: "interestOnly",
+        collateralValue: 2400000,
+      },
+    ],
+    incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
+    monthlyExpense: 40000,
+    targetNetWorth: 20000000,
+  });
+  const params = {
+    currentDate: "2026-07-13",
+    draft,
+    metrics: calculateMetrics(draft),
+    recentSnapshots: [],
+  };
+
+  it("財務健康檢查：今日財務總覽列出三項對照指標", () => {
+    const prompt = buildFinancePrompt(params);
+
+    expect(prompt).toContain("- 負債比：47.5%（負債偏高（需注意調控））");
+    expect(prompt).toContain(
+      "- 金融負債比：40.0%（負債偏高（需注意調控）；房貸以外的負債 $1,600,000 ÷ 金融資產 $4,000,000，不含不動產與房貸）"
+    );
+    expect(prompt).toContain("- 儲蓄率：28.5%（高儲蓄率）");
+    expect(prompt).toContain(
+      "- 含償還本金的儲蓄率：48.0%（本月償還負債本金 $19,503，還本金不減少淨資產）"
+    );
+    expect(prompt).toContain(
+      "- FIRE／淨資產目標進度：42.0%（目標 $20,000,000）"
+    );
+    expect(prompt).toContain(
+      "- 可投資淨資產目標進度：12.0%（可投資淨資產 $2,400,000＝金融資產 − 房貸以外的負債，不含不動產與房貸）"
+    );
+  });
+
+  it("投資方向評估：負債比之後列出金融負債比，不含儲蓄率與目標進度", () => {
+    const prompt = buildInvestmentDirectionPrompt(params);
+
+    expect(prompt).toContain("- 金融負債比：40.0%");
+    expect(prompt).not.toContain("含償還本金的儲蓄率");
+    expect(prompt).not.toContain("可投資淨資產目標進度");
+  });
+
+  it("沒有不動產、房貸與攤還中的負債時，三行都不輸出", () => {
+    const plain = baseSnapshot({
+      cashSources: [
+        { id: "1", name: "活存", amount: 1000000, restricted: false },
+      ],
+      debts: [
+        {
+          id: "d1",
+          name: "質押",
+          category: "質押",
+          principal: 300000,
+          annualRate: 2.4,
+          remainingMonths: 12,
+          repaymentMethod: "interestOnly",
+          collateralValue: 600000,
+        },
+      ],
+      incomeSources: [{ id: "i1", name: "薪資", amount: 60000 }],
+      monthlyExpense: 30000,
+      targetNetWorth: 2000000,
+    });
+    const plainParams = {
+      currentDate: "2026-07-13",
+      draft: plain,
+      metrics: calculateMetrics(plain),
+      recentSnapshots: [],
+    };
+
+    for (const prompt of [
+      buildFinancePrompt(plainParams),
+      buildInvestmentDirectionPrompt(plainParams),
+    ]) {
+      expect(prompt).toContain("- 負債比：30.0%");
+      expect(prompt).not.toContain("金融負債比");
+      expect(prompt).not.toContain("含償還本金的儲蓄率");
+      expect(prompt).not.toContain("可投資淨資產目標進度");
+    }
+  });
+
+  it("未設定目標時不輸出可投資淨資產目標進度", () => {
+    const noTarget = { ...draft, targetNetWorth: 0 };
+    const prompt = buildFinancePrompt({
+      ...params,
+      draft: noTarget,
+      metrics: calculateMetrics(noTarget),
+    });
+
+    expect(prompt).toContain("- FIRE／淨資產目標進度：尚未設定目標淨資產");
+    expect(prompt).not.toContain("可投資淨資產目標進度");
+    // 金融負債比與目標無關，照常輸出
+    expect(prompt).toContain("- 金融負債比：40.0%");
+  });
+});

@@ -246,6 +246,10 @@ function App() {
                   status={metrics.debtRatioStatus}
                   totalLiabilities={metrics.totalLiabilities}
                   totalAssets={metrics.totalAssets}
+                  financialRatio={metrics.financialDebtRatio}
+                  financialStatus={metrics.financialDebtRatioStatus}
+                  financialLiabilities={metrics.financialLiabilities}
+                  financialAssets={metrics.financialAssets}
                 />
                 <CashRatioCard
                   ratio={metrics.cashRatio}
@@ -275,6 +279,8 @@ function App() {
                   status={metrics.savingsRateStatus}
                   cashFlow={metrics.cashFlow}
                   totalIncome={metrics.totalIncome}
+                  principalRepayment={metrics.monthlyPrincipalRepayment}
+                  rateWithPrincipal={metrics.savingsRateWithPrincipal}
                 />
                 <PledgeMaintenanceCard
                   ratio={metrics.pledgeMaintenanceRatio}
@@ -306,6 +312,8 @@ function App() {
               targetNetWorth={draft.targetNetWorth}
               monthlyExpense={draft.monthlyExpense}
               progress={metrics.goalProgress}
+              investableNetWorth={metrics.investableNetWorth}
+              investableProgress={metrics.investableGoalProgress}
               estimates={goalEstimates}
               onSetTarget={(targetNetWorth) => updateDraft({ targetNetWorth })}
             />

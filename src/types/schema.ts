@@ -98,6 +98,12 @@ export interface CalculatedMetrics {
   netWorth: number;
   debtRatio: number;
   debtRatioStatus: DebtRatioStatus;
+  /** 金融負債：類別不是「房貸」的負債剩餘本金合計（PRD 5.1a 節）。 */
+  financialLiabilities: number;
+  /** 金融負債比 = 金融負債 ÷ 金融資產 × 100；金融資產 ≤ 0 時為 null（PRD 5.1a 節）。 */
+  financialDebtRatio: number | null;
+  /** 沿用負債比的四級門檻；金融負債比為 null 時同為 null。 */
+  financialDebtRatioStatus: DebtRatioStatus | null;
   /** 現金比例 = 可動用現金 ÷ 金融資產 × 100（PRD 第 5 節）。 */
   cashRatio: number;
   /** 可動用現金：總現金扣除標記為「不可動用」的來源（PRD 第 5 節）。 */
@@ -130,8 +136,16 @@ export interface CalculatedMetrics {
   /** 儲蓄率 = 現金流 ÷ 總收入 × 100（PRD 5.6 節）。 */
   savingsRate: number;
   savingsRateStatus: SavingsRateStatus;
+  /** 本月償還的負債本金合計（PRD 5.7a 節），還本金不減少淨資產。 */
+  monthlyPrincipalRepayment: number;
+  /** 含償還本金的儲蓄率 =（現金流 + 本月償還本金）÷ 總收入 × 100，只作對照、不分級（PRD 5.6 節）。 */
+  savingsRateWithPrincipal: number;
   /** FIRE／淨資產目標進度 = 淨資產 ÷ 目標淨資產 × 100；目標為 0（未設定）時為 null（PRD 5.7 節）。 */
   goalProgress: number | null;
+  /** 可投資淨資產 = 金融資產 − 金融負債，不含不動產與房貸（PRD 5.7 節）。 */
+  investableNetWorth: number;
+  /** 可投資淨資產進度 = 可投資淨資產 ÷ 目標淨資產 × 100；目標未設定時為 null（PRD 5.7 節）。 */
+  investableGoalProgress: number | null;
   /** 質押類別負債的剩餘本金合計（PRD 5.8 節）。 */
   pledgePrincipal: number;
   /** 質押類別負債的質押股票市值合計（PRD 5.8 節）。 */
