@@ -74,12 +74,18 @@ export type BackupParseResult =
 /**
  * 讀取使用者選擇的備份檔並用與 LocalStorage 相同的規則驗證（PRD 第 6.1 節）。
  * 偵測到加密備份時：未提供密碼回傳 "encrypted"；提供密碼則解密後再走同一套驗證與遷移。
+ * 檔案本身讀不出來（例如拖曳進來的是資料夾）視為 "corrupted"，不拋出例外。
  */
 export async function parseBackupFile(
   file: File,
   password?: string
 ): Promise<BackupParseResult> {
-  const text = await readFileAsText(file);
+  let text: string;
+  try {
+    text = await readFileAsText(file);
+  } catch {
+    return { status: "corrupted" };
+  }
   if (!isEncryptedBackup(text)) return parseFinanceData(text);
   if (!password) return { status: "encrypted" };
 

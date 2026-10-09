@@ -84,6 +84,27 @@ describe("parseBackupFile", () => {
       foundVersion: 999,
     });
   });
+
+  // PRD 第 9 節 #64e：拖曳進來的可能是資料夾等讀不出內容的項目
+  it("檔案本身讀不出來時回傳 corrupted，不拋錯", async () => {
+    class FailingFileReader {
+      error = new DOMException("無法讀取", "NotReadableError");
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      readAsText() {
+        queueMicrotask(() => this.onerror?.());
+      }
+    }
+    vi.stubGlobal("FileReader", FailingFileReader);
+
+    try {
+      await expect(parseBackupFile(new File([], "資料夾"))).resolves.toEqual({
+        status: "corrupted",
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 describe("defaultEncryptedBackupFilename", () => {

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { createPortal, flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useFileDrop } from "@/hooks/useFileDrop";
 import { MIN_BACKUP_PASSWORD_LENGTH } from "@/lib/backupCrypto";
 import { daysBetweenDates } from "@/lib/dataFreshness";
 import { getCurrentDate } from "@/lib/storage";
@@ -39,6 +41,7 @@ function formatLastBackup(
 
 /**
  * 匯出/加密匯出/匯入備份、清空本地資料。清空前強制先觸發（明文）匯出（PRD 4.2 節，決策 Q9 選項 C）。
+ * 匯入的檔案可由按鈕選擇，或直接拖曳到頁面上任何位置；兩者都只是開啟同一個二次確認對話框。
  * 密碼只存在於對話框的 state，關閉對話框即清除，不寫入任何儲存位置。
  */
 export function DataManagement({
@@ -59,7 +62,9 @@ export function DataManagement({
   const [encryptConfirm, setEncryptConfirm] = useState("");
   const [encryptError, setEncryptError] = useState<string | null>(null);
   const [encrypting, setEncrypting] = useState(false);
+  const [dropError, setDropError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropErrorRef = useRef<HTMLParagraphElement>(null);
 
   function resetImportState() {
     setImportError(null);
@@ -67,15 +72,29 @@ export function DataManagement({
     setImportPassword("");
   }
 
+  function openImportDialog(file: File) {
+    setPendingFile(file);
+    setDropError(null);
+    resetImportState();
+    setImportDialogOpen(true);
+  }
+
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) {
-      setPendingFile(file);
-      resetImportState();
-      setImportDialogOpen(true);
-    }
+    if (file) openImportDialog(file);
     e.target.value = "";
   }
+
+  const isDraggingFile = useFileDrop((files) => {
+    if (files.length === 0) return;
+    if (files.length > 1) {
+      // 不猜測要匯入哪一個。訊息在資料管理區，使用者可能捲到別處：先渲染出來再帶回視線內
+      flushSync(() => setDropError("一次只能匯入一個備份檔，請重新拖曳。"));
+      dropErrorRef.current?.scrollIntoView?.({ block: "nearest" });
+      return;
+    }
+    openImportDialog(files[0]);
+  });
 
   function handleImportDialogChange(open: boolean) {
     setImportDialogOpen(open);
@@ -198,6 +217,36 @@ export function DataManagement({
           清空本地資料
         </Button>
       </div>
+      <p className="text-xs text-slate-500 dark:text-neutral-400 pointer-coarse:hidden">
+        也可以把備份檔直接拖曳到頁面上匯入
+      </p>
+      {dropError && (
+        <p
+          ref={dropErrorRef}
+          role="alert"
+          data-testid="import-drop-error"
+          className="text-xs text-rose-600 dark:text-rose-400"
+        >
+          {dropError}
+        </p>
+      )}
+      {isDraggingFile &&
+        createPortal(
+          <div
+            data-testid="import-drop-overlay"
+            className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+          >
+            <div className="rounded-xl border-2 border-dashed border-slate-300 dark:border-border bg-white dark:bg-card px-8 py-6 text-center shadow-lg">
+              <p className="text-base font-medium text-slate-900 dark:text-neutral-50">
+                放開以匯入備份檔
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+                放開後會先請你確認，不會直接覆蓋資料
+              </p>
+            </div>
+          </div>,
+          document.body
+        )}
 
       <Dialog open={importDialogOpen} onOpenChange={handleImportDialogChange}>
         <DialogContent>
@@ -207,6 +256,14 @@ export function DataManagement({
               匯入將會覆蓋目前瀏覽器中的所有資料，此操作無法復原。
             </DialogDescription>
           </DialogHeader>
+          {pendingFile && (
+            <p
+              data-testid="import-file-name"
+              className="text-sm break-all text-slate-600 dark:text-neutral-300"
+            >
+              檔案：{pendingFile.name}
+            </p>
+          )}
           {importNeedsPassword && (
             <div className="space-y-2">
               <p

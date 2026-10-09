@@ -19,6 +19,34 @@ test.beforeEach(async ({ page }) => {
   await page.reload();
 });
 
+/**
+ * 建立「從檔案總管拖曳檔案」的 DataTransfer，搭配 page.dispatchEvent 送出合成的拖放事件
+ * （真正的作業系統拖曳手勢無法自動化）。
+ */
+async function fileDataTransfer(page: Page, ...filePaths: string[]) {
+  const files = filePaths.map((filePath) => ({
+    name: path.basename(filePath),
+    text: fs.readFileSync(filePath, "utf8"),
+  }));
+  return page.evaluateHandle((list) => {
+    const dataTransfer = new DataTransfer();
+    for (const file of list) {
+      dataTransfer.items.add(
+        new File([file.text], file.name, { type: "application/json" })
+      );
+    }
+    return dataTransfer;
+  }, files);
+}
+
+function savedSnapshotCount(page: Page) {
+  return page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("my_finance_dashboard_data") ?? "{}")
+        .snapshots?.length ?? 0
+  );
+}
+
 // PRD 第 9 節 #17：匯出純前端觸發下載
 test("匯出備份會觸發檔案下載", async ({ page }) => {
   const downloadPromise = page.waitForEvent("download");
@@ -59,6 +87,142 @@ test("匯入毀損檔案顯示錯誤訊息，對話框保持開啟", async ({ pa
 
   await expect(page.getByText("確認匯入備份？")).toBeVisible();
   await expect(page.getByText(/無法讀取|版本不相容/)).toBeVisible();
+});
+
+// PRD 第 9 節 #64a、#64b：拖曳到頁面任何位置皆可，放開只是開啟二次確認
+test("拖曳備份檔到頁面：顯示遮罩，放開後二次確認，確認才覆蓋資料", async ({
+  page,
+}) => {
+  const dataTransfer = await fileDataTransfer(page, financeDataFixture);
+
+  await page.dispatchEvent("body", "dragenter", { dataTransfer });
+  await expect(page.getByTestId("import-drop-overlay")).toContainText(
+    "放開以匯入備份檔"
+  );
+
+  await page.dispatchEvent("h1", "drop", { dataTransfer });
+
+  await expect(page.getByTestId("import-drop-overlay")).toHaveCount(0);
+  await expect(page.getByText("確認匯入備份？")).toBeVisible();
+  await expect(page.getByTestId("import-file-name")).toHaveText(
+    "檔案：finance-data.json"
+  );
+  // 放開檔案本身不會寫入任何資料
+  expect(await savedSnapshotCount(page)).toBe(0);
+
+  await page.getByText("確認覆蓋匯入").click();
+
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  await expect(page.getByTestId("snapshot-row-2026-09-30")).toBeVisible();
+  await expect(page.getByTestId("total-assets")).not.toHaveText("$0");
+  expect(await savedSnapshotCount(page)).toBe(60);
+});
+
+// PRD 第 9 節 #64a
+test("拖曳檔案後拖離頁面：遮罩消失，不開啟對話框", async ({ page }) => {
+  const dataTransfer = await fileDataTransfer(page, sampleBackup);
+
+  await page.dispatchEvent("body", "dragenter", { dataTransfer });
+  await expect(page.getByTestId("import-drop-overlay")).toBeVisible();
+  await page.dispatchEvent("body", "dragleave", { dataTransfer });
+
+  await expect(page.getByTestId("import-drop-overlay")).toHaveCount(0);
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+});
+
+// PRD 第 9 節 #64c
+test("拖曳備份檔後取消：不覆蓋現有資料", async ({ page }) => {
+  const dataTransfer = await fileDataTransfer(page, sampleBackup);
+  await page.dispatchEvent("body", "drop", { dataTransfer });
+  await expect(page.getByText("確認匯入備份？")).toBeVisible();
+
+  await page.getByRole("button", { name: "取消" }).click();
+
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  await expect(page.getByTestId("total-assets")).toHaveText("$0");
+  expect(await savedSnapshotCount(page)).toBe(0);
+});
+
+// PRD 第 9 節 #64e
+test("拖曳毀損檔案：確認後顯示錯誤訊息，資料不變", async ({ page }) => {
+  const dataTransfer = await fileDataTransfer(page, corruptedBackup);
+  await page.dispatchEvent("body", "drop", { dataTransfer });
+  await page.getByText("確認覆蓋匯入").click();
+
+  await expect(page.getByText("確認匯入備份？")).toBeVisible();
+  await expect(page.getByText(/無法讀取|版本不相容/)).toBeVisible();
+  expect(await savedSnapshotCount(page)).toBe(0);
+});
+
+// PRD 第 9 節 #64f：不猜測要匯入哪一個
+test("一次拖曳多個檔案：不開啟對話框並顯示訊息，改拖單一檔案後訊息消失", async ({
+  page,
+}) => {
+  const both = await fileDataTransfer(page, sampleBackup, financeDataFixture);
+  await page.dispatchEvent("body", "drop", { dataTransfer: both });
+
+  await expect(page.getByTestId("import-drop-error")).toHaveText(
+    "一次只能匯入一個備份檔，請重新拖曳。"
+  );
+  await expect(page.getByTestId("import-drop-error")).toBeInViewport();
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  expect(await savedSnapshotCount(page)).toBe(0);
+
+  const single = await fileDataTransfer(page, sampleBackup);
+  await page.dispatchEvent("body", "drop", { dataTransfer: single });
+
+  await expect(page.getByTestId("import-drop-error")).toHaveCount(0);
+  await expect(page.getByText("確認匯入備份？")).toBeVisible();
+});
+
+// PRD 第 9 節 #64g、#64i：瀏覽器預設會直接開啟被放下的檔案、離開頁面
+test("檔案放到頁面上不會被瀏覽器開啟，未存檔的輸入仍在；文字拖曳不受影響", async ({
+  page,
+}) => {
+  await page.locator('label:has-text("台股市值") input').fill("50000");
+
+  const prevented = await page.evaluate(() => {
+    const dispatch = (dataTransfer: DataTransfer) => {
+      const event = new DragEvent("drop", {
+        dataTransfer,
+        bubbles: true,
+        cancelable: true,
+      });
+      document.body.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    const text = new DataTransfer();
+    text.setData("text/plain", "拖曳的文字");
+    const file = new DataTransfer();
+    file.items.add(new File(["不是備份檔"], "notes.txt"));
+    return { text: dispatch(text), file: dispatch(file) };
+  });
+
+  expect(prevented).toEqual({ text: false, file: true });
+  await expect(page.getByTestId("import-file-name")).toHaveText(
+    "檔案：notes.txt"
+  );
+  await page.getByRole("button", { name: "取消" }).click();
+  await expect(page.locator('label:has-text("台股市值") input')).toHaveValue(
+    "50000"
+  );
+  await expect(page.getByTestId("total-assets")).toHaveText("$50,000");
+});
+
+// PRD 第 9 節 #64h
+test("已有對話框開啟時拖曳檔案：不顯示遮罩，也不開啟匯入確認", async ({
+  page,
+}) => {
+  await page.getByText("加密匯出").click();
+  await expect(page.getByText("加密匯出備份")).toBeVisible();
+  const dataTransfer = await fileDataTransfer(page, sampleBackup);
+
+  await page.dispatchEvent("body", "dragenter", { dataTransfer });
+  await expect(page.getByTestId("import-drop-overlay")).toHaveCount(0);
+  await page.dispatchEvent("body", "drop", { dataTransfer });
+
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  await expect(page.getByText("加密匯出備份")).toBeVisible();
 });
 
 // PRD 4.2 節，決策 Q9 選項 C：清空前強制先匯出備份，再二次確認

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DataManagement } from "@/components/DataManagement";
 
 describe("DataManagement", () => {
@@ -80,6 +80,10 @@ describe("DataManagement", () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     expect(screen.getByText("確認匯入備份？")).toBeInTheDocument();
+    // PRD 第 9 節 #64j：顯示待匯入的檔名，避免選錯檔
+    expect(screen.getByTestId("import-file-name")).toHaveTextContent(
+      "檔案：backup.json"
+    );
 
     fireEvent.click(screen.getByText("確認覆蓋匯入"));
 
@@ -476,6 +480,223 @@ describe("DataManagement", () => {
       expect(
         screen.queryByTestId("import-needs-password")
       ).not.toBeInTheDocument();
+    });
+  });
+
+  // PRD 4.2「匯入還原」拖曳檔案匯入、第 9 節 #64a～#64h
+  describe("拖曳檔案匯入", () => {
+    const backup = new File(['{"schemaVersion":1,"snapshots":[]}'], "my.json", {
+      type: "application/json",
+    });
+    const other = new File(["{}"], "other.json", { type: "application/json" });
+
+    /** 從檔案總管拖曳檔案時的 dataTransfer（types 含 "Files"）。 */
+    function fileTransfer(...files: File[]) {
+      return { types: ["Files"], files };
+    }
+
+    function setup(onImport = vi.fn().mockResolvedValue({ ok: true })) {
+      render(
+        <DataManagement
+          onExport={vi.fn()}
+          onExportEncrypted={vi.fn()}
+          onImport={onImport}
+          onClearConfirmed={vi.fn()}
+        />
+      );
+      return onImport;
+    }
+
+    afterEach(() => {
+      // jsdom 未實作 scrollIntoView，個別案例會自行掛上假的
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    });
+
+    it("顯示可拖曳匯入的提示文字", () => {
+      setup();
+      expect(
+        screen.getByText("也可以把備份檔直接拖曳到頁面上匯入")
+      ).toBeInTheDocument();
+    });
+
+    it("檔案拖曳進入頁面時顯示遮罩，拖離後消失", () => {
+      setup();
+      expect(
+        screen.queryByTestId("import-drop-overlay")
+      ).not.toBeInTheDocument();
+
+      fireEvent.dragEnter(window, { dataTransfer: fileTransfer(backup) });
+
+      expect(screen.getByTestId("import-drop-overlay")).toHaveTextContent(
+        "放開以匯入備份檔"
+      );
+      expect(screen.getByTestId("import-drop-overlay")).toHaveTextContent(
+        "放開後會先請你確認，不會直接覆蓋資料"
+      );
+
+      fireEvent.dragLeave(window, { dataTransfer: fileTransfer(backup) });
+
+      expect(
+        screen.queryByTestId("import-drop-overlay")
+      ).not.toBeInTheDocument();
+    });
+
+    it("拖曳的不是檔案時不顯示遮罩", () => {
+      setup();
+
+      fireEvent.dragEnter(window, {
+        dataTransfer: { types: ["text/plain"], files: [] },
+      });
+
+      expect(
+        screen.queryByTestId("import-drop-overlay")
+      ).not.toBeInTheDocument();
+    });
+
+    it("放開單一檔案：只開啟二次確認並顯示檔名，確認後才呼叫 onImport", async () => {
+      const onImport = setup();
+
+      fireEvent.dragEnter(window, { dataTransfer: fileTransfer(backup) });
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup) });
+
+      expect(
+        screen.queryByTestId("import-drop-overlay")
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("確認匯入備份？")).toBeInTheDocument();
+      expect(screen.getByTestId("import-file-name")).toHaveTextContent(
+        "檔案：my.json"
+      );
+      // 放開檔案本身不會匯入任何資料
+      expect(onImport).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByText("確認覆蓋匯入"));
+
+      await waitFor(() => expect(onImport).toHaveBeenCalledWith(backup));
+      await waitFor(() =>
+        expect(screen.queryByText("確認匯入備份？")).not.toBeInTheDocument()
+      );
+    });
+
+    it("放開後取消：不呼叫 onImport", () => {
+      const onImport = setup();
+
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup) });
+      fireEvent.click(screen.getByRole("button", { name: "取消" }));
+
+      expect(screen.queryByText("確認匯入備份？")).not.toBeInTheDocument();
+      expect(onImport).not.toHaveBeenCalled();
+    });
+
+    it("拖曳的加密備份走相同的密碼流程", async () => {
+      const onImport = setup(
+        vi
+          .fn()
+          .mockResolvedValueOnce({ ok: false, needsPassword: true })
+          .mockResolvedValueOnce({ ok: true })
+      );
+
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup) });
+      fireEvent.click(screen.getByText("確認覆蓋匯入"));
+      fireEvent.change(await screen.findByLabelText("備份密碼"), {
+        target: { value: "correct-horse" },
+      });
+      fireEvent.click(screen.getByText("確認覆蓋匯入"));
+
+      await waitFor(() =>
+        expect(onImport).toHaveBeenLastCalledWith(backup, "correct-horse")
+      );
+    });
+
+    it("一次放開多個檔案：不開啟對話框，顯示錯誤並捲動到訊息", () => {
+      const scrollIntoView = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoView;
+      const onImport = setup();
+
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup, other) });
+
+      expect(screen.queryByText("確認匯入備份？")).not.toBeInTheDocument();
+      expect(screen.getByTestId("import-drop-error")).toHaveTextContent(
+        "一次只能匯入一個備份檔，請重新拖曳。"
+      );
+      expect(screen.getByRole("alert")).toBe(
+        screen.getByTestId("import-drop-error")
+      );
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.contexts[0]).toBe(
+        screen.getByTestId("import-drop-error")
+      );
+      expect(onImport).not.toHaveBeenCalled();
+    });
+
+    it("多檔錯誤在下次拖曳單一檔案時清除", () => {
+      setup();
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup, other) });
+      expect(screen.getByTestId("import-drop-error")).toBeInTheDocument();
+
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup) });
+
+      expect(screen.queryByTestId("import-drop-error")).not.toBeInTheDocument();
+      expect(screen.getByText("確認匯入備份？")).toBeInTheDocument();
+    });
+
+    it("多檔錯誤在改用按鈕選檔時清除", () => {
+      const { container } = render(
+        <DataManagement
+          onExport={vi.fn()}
+          onImport={vi.fn()}
+          onClearConfirmed={vi.fn()}
+        />
+      );
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup, other) });
+      expect(screen.getByTestId("import-drop-error")).toBeInTheDocument();
+
+      fireEvent.change(
+        container.querySelector('input[type="file"]') as HTMLInputElement,
+        { target: { files: [backup] } }
+      );
+
+      expect(screen.queryByTestId("import-drop-error")).not.toBeInTheDocument();
+    });
+
+    it("沒有帶任何檔案的放開（例如拖曳到一半被取消）不做任何事", () => {
+      const onImport = setup();
+
+      fireEvent.drop(window, { dataTransfer: fileTransfer() });
+
+      expect(screen.queryByText("確認匯入備份？")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("import-drop-error")).not.toBeInTheDocument();
+      expect(onImport).not.toHaveBeenCalled();
+    });
+
+    it("匯入確認對話框開啟中再放開另一個檔案：不顯示遮罩，待匯入的檔案不被換掉", async () => {
+      const onImport = setup();
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup) });
+
+      fireEvent.dragEnter(window, { dataTransfer: fileTransfer(other) });
+      expect(
+        screen.queryByTestId("import-drop-overlay")
+      ).not.toBeInTheDocument();
+      fireEvent.drop(window, { dataTransfer: fileTransfer(other) });
+
+      expect(screen.getByTestId("import-file-name")).toHaveTextContent(
+        "檔案：my.json"
+      );
+      fireEvent.click(screen.getByText("確認覆蓋匯入"));
+      await waitFor(() => expect(onImport).toHaveBeenCalledWith(backup));
+    });
+
+    it("其他對話框（加密匯出）開啟中放開檔案：不開啟匯入確認，原對話框維持開啟", () => {
+      setup();
+      fireEvent.click(screen.getByText("加密匯出"));
+
+      fireEvent.dragEnter(window, { dataTransfer: fileTransfer(backup) });
+      fireEvent.drop(window, { dataTransfer: fileTransfer(backup) });
+
+      expect(
+        screen.queryByTestId("import-drop-overlay")
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText("確認匯入備份？")).not.toBeInTheDocument();
+      expect(screen.getByText("加密匯出備份")).toBeInTheDocument();
     });
   });
 });
