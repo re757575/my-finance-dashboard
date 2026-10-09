@@ -487,3 +487,212 @@ describe("SnapshotComparison：每月定期定額", () => {
     expect(row("recurring-investment-r1")).toHaveTextContent("持平");
   });
 });
+
+// PRD 4.2「快照比較」、5.10 節「質押」、第 9 節 #55m～#55p
+describe("SnapshotComparison：質押", () => {
+  function pledge(
+    id: string,
+    name: string,
+    principal: number,
+    collateralValue: number
+  ): Debt {
+    return {
+      ...debt(id, name, principal),
+      category: "質押",
+      repaymentMethod: "interestOnly",
+      collateralValue,
+    };
+  }
+
+  const OCT_2 = snap("2026-10-02", {
+    debts: [pledge("d1", "股票質押", 500000, 900000)],
+  });
+  const OCT_3 = snap("2026-10-03", {
+    debts: [pledge("d1", "股票質押", 500000, 700000)],
+  });
+
+  function pledgeGroup() {
+    return screen.getByRole("columnheader", { name: "質押" }).closest("tbody")!;
+  }
+
+  // #55p
+  it("兩筆快照皆無質押負債時不顯示該組", () => {
+    render(<SnapshotComparison snapshots={[AUGUST, SEPTEMBER]} />);
+
+    expect(
+      screen.queryByRole("columnheader", { name: "質押" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("comparison-row-pledge-maintenance-ratio")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("comparison-row-pledge-collateral-total")
+    ).not.toBeInTheDocument();
+  });
+
+  // #55m
+  it("本金不變時負債列持平，質押組仍列出維持率與質押股票市值的增減", () => {
+    render(<SnapshotComparison snapshots={[OCT_2, OCT_3]} />);
+
+    expect(row("debt-d1")).toHaveTextContent(
+      "股票質押（質押）$500,000$500,000持平"
+    );
+    expect(row("pledge-maintenance-ratio")).toHaveTextContent(
+      "質押整戶維持率180.0%140.0%▼ 40.0 個百分點"
+    );
+    expect(row("pledge-maintenance-ratio")).not.toHaveTextContent("(");
+    expect(row("pledge-collateral-total")).toHaveTextContent(
+      "質押股票市值合計$900,000$700,000▼ $200,000 (-22.2%)"
+    );
+    expect(row("pledge-collateral-d1")).toHaveTextContent(
+      "股票質押$900,000$700,000▼ $200,000 (-22.2%)"
+    );
+  });
+
+  it("質押組排在負債之後，依序為維持率、合計、逐筆", () => {
+    render(
+      <SnapshotComparison
+        snapshots={[
+          snap("2026-10-02", {
+            debts: [
+              pledge("d1", "券商質押", 300000, 500000),
+              pledge("d2", "銀行質押", 200000, 300000),
+            ],
+          }),
+          snap("2026-10-03", {
+            debts: [
+              pledge("d1", "券商質押", 300000, 450000),
+              pledge("d2", "銀行質押", 200000, 300000),
+            ],
+          }),
+        ]}
+      />
+    );
+
+    expect(
+      screen
+        .getAllByRole("columnheader")
+        .map((element) => element.textContent)
+        .filter((title) => ["負債", "質押"].includes(title ?? ""))
+    ).toEqual(["負債", "質押"]);
+    expect(
+      within(pledgeGroup())
+        .getAllByTestId(/^comparison-row-/)
+        .map((element) => element.getAttribute("data-testid"))
+    ).toEqual([
+      "comparison-row-pledge-maintenance-ratio",
+      "comparison-row-pledge-collateral-total",
+      "comparison-row-pledge-collateral-d1",
+      "comparison-row-pledge-collateral-d2",
+    ]);
+    // #55n：整戶維持率以多筆合併計算
+    expect(row("pledge-maintenance-ratio")).toHaveTextContent(
+      "160.0%150.0%▼ 10.0 個百分點"
+    );
+    expect(row("pledge-collateral-total")).toHaveTextContent("▼ $50,000");
+    expect(row("pledge-collateral-d2")).toHaveTextContent("持平");
+  });
+
+  // #55o
+  it("基準日尚未填寫質押股票市值：維持率的基準日與增減顯示「—」，不加標示", () => {
+    render(
+      <SnapshotComparison
+        snapshots={[
+          snap("2026-10-02", { debts: [pledge("d1", "股票質押", 500000, 0)] }),
+          snap("2026-10-03", {
+            debts: [pledge("d1", "股票質押", 500000, 800000)],
+          }),
+        ]}
+      />
+    );
+
+    const ratio = row("pledge-maintenance-ratio");
+    expect(ratio).toHaveTextContent("質押整戶維持率—160.0%—");
+    expect(ratio).not.toHaveTextContent("新增");
+    expect(ratio).not.toHaveTextContent("個百分點");
+    expect(ratio).not.toHaveTextContent("持平");
+    expect(row("pledge-collateral-total")).toHaveTextContent(
+      "質押股票市值合計$0$800,000▲ $800,000"
+    );
+    expect(row("pledge-collateral-total")).not.toHaveTextContent("%");
+  });
+
+  // #55o
+  it("只有一方有質押負債時仍顯示該組，逐筆標示「新增」或「已移除」", () => {
+    const withoutPledge = snap("2026-10-02", {
+      debts: [debt("d0", "信貸", 200000)],
+    });
+    const withPledge = snap("2026-10-03", {
+      debts: [pledge("d1", "股票質押", 500000, 800000)],
+    });
+    const { rerender } = render(
+      <SnapshotComparison snapshots={[withoutPledge, withPledge]} />
+    );
+
+    expect(row("pledge-maintenance-ratio")).toHaveTextContent(
+      "質押整戶維持率—160.0%—"
+    );
+    expect(
+      within(row("pledge-maintenance-ratio")).queryByText("新增")
+    ).not.toBeInTheDocument();
+    expect(row("pledge-collateral-d1")).toHaveTextContent(
+      "股票質押新增—$800,000▲ $800,000"
+    );
+
+    // 反向：對象日沒有質押負債
+    rerender(
+      <SnapshotComparison
+        snapshots={[
+          { ...withPledge, date: "2026-10-02" },
+          { ...withoutPledge, date: "2026-10-03" },
+        ]}
+      />
+    );
+
+    expect(row("pledge-maintenance-ratio")).toHaveTextContent(
+      "質押整戶維持率160.0%——"
+    );
+    expect(
+      within(row("pledge-maintenance-ratio")).queryByText("已移除")
+    ).not.toBeInTheDocument();
+    expect(row("pledge-collateral-d1")).toHaveTextContent(
+      "股票質押已移除$800,000—▼ $800,000 (-100.0%)"
+    );
+  });
+
+  it("兩筆皆算不出維持率時三欄皆顯示「—」，不出現 NaN 或 Infinity", () => {
+    render(
+      <SnapshotComparison
+        snapshots={[
+          snap("2026-10-02", { debts: [pledge("d1", "股票質押", 0, 0)] }),
+          snap("2026-10-03", { debts: [pledge("d1", "股票質押", 500000, 0)] }),
+        ]}
+      />
+    );
+
+    expect(row("pledge-maintenance-ratio")).toHaveTextContent(
+      "質押整戶維持率———"
+    );
+    expect(pledgeGroup()).not.toHaveTextContent(/NaN|Infinity/);
+  });
+
+  it("維持率四捨五入後相同時顯示「持平」", () => {
+    render(
+      <SnapshotComparison
+        snapshots={[
+          snap("2026-10-02", {
+            debts: [pledge("d1", "股票質押", 500000, 800000)],
+          }),
+          snap("2026-10-03", {
+            debts: [pledge("d1", "股票質押", 500000, 800100)],
+          }),
+        ]}
+      />
+    );
+
+    expect(row("pledge-maintenance-ratio")).toHaveTextContent(
+      "160.0%160.0%持平"
+    );
+    expect(row("pledge-collateral-total")).toHaveTextContent("▲ $100");
+  });
+});

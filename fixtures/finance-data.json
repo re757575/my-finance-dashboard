@@ -70,7 +70,7 @@
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1960000
+          "collateralValue": 0
         },
         {
           "id": "debt-4",
@@ -175,7 +175,7 @@
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1870000
+          "collateralValue": 0
         },
         {
           "id": "debt-4",
@@ -280,7 +280,7 @@
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1980000
+          "collateralValue": 0
         },
         {
           "id": "debt-4",
@@ -2959,13 +2959,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1850000
+          "collateralValue": 1290000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 560000
         },
         {
           "id": "debt-4",
@@ -3069,13 +3079,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2020000
+          "collateralValue": 1410000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 610000
         },
         {
           "id": "debt-4",
@@ -3179,13 +3199,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1930000
+          "collateralValue": 1350000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 580000
         },
         {
           "id": "debt-4",
@@ -3289,13 +3319,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1950000
+          "collateralValue": 1360000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 590000
         },
         {
           "id": "debt-4",
@@ -3399,13 +3439,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1880000
+          "collateralValue": 1320000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 560000
         },
         {
           "id": "debt-4",
@@ -3509,13 +3559,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1910000
+          "collateralValue": 1340000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 570000
         },
         {
           "id": "debt-4",
@@ -3619,13 +3679,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1880000
+          "collateralValue": 1320000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 560000
         },
         {
           "id": "debt-4",
@@ -3729,13 +3799,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1960000
+          "collateralValue": 1370000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 590000
         },
         {
           "id": "debt-4",
@@ -3839,13 +3919,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 1940000
+          "collateralValue": 1360000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 580000
         },
         {
           "id": "debt-4",
@@ -3949,13 +4039,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2070000
+          "collateralValue": 1450000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 620000
         },
         {
           "id": "debt-4",
@@ -4059,13 +4159,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2180000
+          "collateralValue": 1530000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 650000
         },
         {
           "id": "debt-4",
@@ -4169,13 +4279,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2150000
+          "collateralValue": 1500000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 650000
         },
         {
           "id": "debt-4",
@@ -4279,13 +4399,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2320000
+          "collateralValue": 1620000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 700000
         },
         {
           "id": "debt-4",
@@ -4389,13 +4519,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2350000
+          "collateralValue": 1640000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 710000
         },
         {
           "id": "debt-4",
@@ -4499,13 +4639,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2420000
+          "collateralValue": 1690000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 730000
         },
         {
           "id": "debt-4",
@@ -4609,13 +4759,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2280000
+          "collateralValue": 1600000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 680000
         },
         {
           "id": "debt-4",
@@ -4719,13 +4879,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2290000
+          "collateralValue": 1600000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 690000
         },
         {
           "id": "debt-4",
@@ -4829,13 +4999,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2260000
+          "collateralValue": 1580000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 680000
         },
         {
           "id": "debt-4",
@@ -4939,13 +5119,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2190000
+          "collateralValue": 1530000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 660000
         },
         {
           "id": "debt-4",
@@ -5049,13 +5239,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2170000
+          "collateralValue": 1520000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 650000
         },
         {
           "id": "debt-4",
@@ -5159,13 +5359,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2140000
+          "collateralValue": 1500000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 640000
         },
         {
           "id": "debt-4",
@@ -5269,13 +5479,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2150000
+          "collateralValue": 1500000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 650000
         },
         {
           "id": "debt-4",
@@ -5379,13 +5599,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2200000
+          "collateralValue": 1540000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 660000
         },
         {
           "id": "debt-4",
@@ -5489,13 +5719,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2410000
+          "collateralValue": 1690000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 720000
         },
         {
           "id": "debt-4",
@@ -5599,13 +5839,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2490000
+          "collateralValue": 1740000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 750000
         },
         {
           "id": "debt-4",
@@ -5709,13 +5959,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2540000
+          "collateralValue": 1780000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 760000
         },
         {
           "id": "debt-4",
@@ -5819,13 +6079,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2560000
+          "collateralValue": 1790000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 770000
         },
         {
           "id": "debt-4",
@@ -5929,13 +6199,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2450000
+          "collateralValue": 1710000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 740000
         },
         {
           "id": "debt-4",
@@ -6039,13 +6319,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2520000
+          "collateralValue": 1760000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 760000
         },
         {
           "id": "debt-4",
@@ -6149,13 +6439,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2540000
+          "collateralValue": 1780000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 760000
         },
         {
           "id": "debt-4",
@@ -6259,13 +6559,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2770000
+          "collateralValue": 1940000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 830000
         },
         {
           "id": "debt-4",
@@ -6369,13 +6679,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2930000
+          "collateralValue": 2050000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 880000
         },
         {
           "id": "debt-4",
@@ -6479,13 +6799,23 @@
         },
         {
           "id": "debt-3",
-          "name": "範例股票質押",
+          "name": "範例股票質押（券商）",
           "category": "質押",
-          "principal": 1200000,
+          "principal": 800000,
           "annualRate": 2.4,
           "remainingMonths": 12,
           "repaymentMethod": "interestOnly",
-          "collateralValue": 2950000
+          "collateralValue": 2060000
+        },
+        {
+          "id": "debt-5",
+          "name": "範例股票質押（銀行）",
+          "category": "質押",
+          "principal": 400000,
+          "annualRate": 2.4,
+          "remainingMonths": 12,
+          "repaymentMethod": "interestOnly",
+          "collateralValue": 890000
         },
         {
           "id": "debt-4",

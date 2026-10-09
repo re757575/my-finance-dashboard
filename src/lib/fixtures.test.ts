@@ -102,6 +102,53 @@ describe("fixtures/finance-data.json", () => {
     expect(last).toBeGreaterThan(first);
   });
 
+  // PRD 5.8、5.10 節：快照比較的「質押」組需要這三種狀態才測得完整
+  it("質押資料涵蓋尚未填寫、單筆與多筆三種狀態，且本金合計始終不變", () => {
+    const snapshots = [...loadFixture().snapshots].sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+    const states = snapshots.map((snapshot) => {
+      const pledges = snapshot.debts.filter((debt) => debt.category === "質押");
+      const metrics = calculateMetrics(snapshot);
+      return {
+        date: snapshot.date,
+        count: pledges.length,
+        principal: metrics.pledgePrincipal,
+        status: metrics.pledgeMaintenanceStatus,
+      };
+    });
+
+    // 本金沒有還本：負債組恆為「持平」，變化只看得到質押股票市值與維持率
+    expect(new Set(states.map((state) => state.principal))).toEqual(
+      new Set([1200000])
+    );
+    // 最早幾筆尚未填寫質押股票市值（比照舊版資料遷移後的狀態），之後每筆都有
+    const unset = states.filter((state) => state.status === "unset");
+    expect(unset.map((state) => state.date)).toEqual([
+      "2021-10-31",
+      "2021-11-30",
+      "2021-12-31",
+    ]);
+    expect(states.some((state) => state.status === "none")).toBe(false);
+    // 2024-01 起由一筆拆成兩筆，最新一筆為多筆質押
+    expect(states.filter((state) => state.count === 1)).toHaveLength(27);
+    expect(states.filter((state) => state.count === 2)).toHaveLength(33);
+    expect(states.find((state) => state.count === 2)?.date).toBe("2024-01-31");
+    expect(states.at(-1)?.count).toBe(2);
+  });
+
+  it("每筆質押負債各自的維持率也從未低於追繳線", () => {
+    for (const snapshot of loadFixture().snapshots) {
+      for (const debt of snapshot.debts) {
+        if (debt.category !== "質押" || debt.collateralValue === 0) continue;
+        expect(
+          (debt.collateralValue / debt.principal) * 100,
+          `${snapshot.date} ${debt.name}`
+        ).toBeGreaterThanOrEqual(PLEDGE_MARGIN_CALL_RATIO);
+      }
+    }
+  });
+
   // PRD 5.7a 節：fixture 有目標淨資產、收支、攤還中的負債與跨一年以上的歷史，兩種估算都可算
   it("目標達成時間預估：依目前收支與依歷史變化皆可估算", () => {
     const data = loadFixture();

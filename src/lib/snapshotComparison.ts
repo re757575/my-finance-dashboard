@@ -1,5 +1,5 @@
 import { calculateMetrics, toSafeNumber } from "@/lib/calculations";
-import type { Snapshot } from "@/types/schema";
+import type { Debt, Snapshot } from "@/types/schema";
 
 /** 快照比較表的一列（PRD 4.2「快照比較」、5.10 節）。 */
 export interface ComparisonRow {
@@ -27,6 +27,15 @@ export interface SnapshotComparisonResult {
   cashSources: ComparisonRow[];
   /** 逐筆負債剩餘本金，以 id 對應。 */
   debts: ComparisonRow[];
+  /**
+   * 質押整戶維持率（%，PRD 5.8 節）：delta 為百分點，percent 一律為 null。
+   * 任一筆無法計算（無質押本金或尚未填寫質押股票市值）時該方為 null，無從比較，delta 為 0。
+   */
+  pledgeMaintenanceRatio: ComparisonRow;
+  /** 質押股票市值合計。 */
+  pledgeCollateralTotal: ComparisonRow;
+  /** 逐筆「質押」類別負債的質押股票市值，以 id 對應；兩筆快照皆無質押負債時為空陣列。 */
+  pledgeCollaterals: ComparisonRow[];
   /** 每月定期定額合計（PRD 5.3a 節）。 */
   recurringInvestmentTotal: ComparisonRow;
   /** 逐筆定期定額的每月投入金額，以 id 對應；兩筆快照的清單皆為空時為空陣列。 */
@@ -77,7 +86,7 @@ function compareItems<T extends { id: string }>(
 
 /**
  * 比較兩筆快照（PRD 5.10 節）：每個項目各自以該筆快照的欄位計算後相減（對象日 − 基準日），
- * 不讀取也不寫入任何其他資料。
+ * 不讀取也不寫入任何其他資料。負債只比較剩餘本金，質押的擔保品變化另列於 pledge* 三個欄位。
  */
 export function compareSnapshots(
   base: Snapshot,
@@ -106,6 +115,10 @@ export function compareSnapshots(
       )
     );
   }
+
+  const isPledge = (debt: Debt) => debt.category === "質押";
+  const pledgeRatioComparable =
+    b.pledgeMaintenanceRatio !== null && t.pledgeMaintenanceRatio !== null;
 
   return {
     baseDate: base.date,
@@ -138,6 +151,30 @@ export function compareSnapshots(
       target.debts,
       (debt) => toSafeNumber(debt.principal),
       (debt) => `${debt.name || "未命名"}（${debt.category}）`
+    ),
+    pledgeMaintenanceRatio: {
+      ...buildRow(
+        "pledge-maintenance-ratio",
+        "質押整戶維持率",
+        b.pledgeMaintenanceRatio,
+        t.pledgeMaintenanceRatio
+      ),
+      // 缺少的一方不是 0%，而是無法計算，不可拿來相減
+      ...(!pledgeRatioComparable && { delta: 0 }),
+      percent: null,
+    },
+    pledgeCollateralTotal: buildRow(
+      "pledge-collateral-total",
+      "質押股票市值合計",
+      b.pledgeCollateralValue,
+      t.pledgeCollateralValue
+    ),
+    pledgeCollaterals: compareItems(
+      "pledge-collateral",
+      base.debts.filter(isPledge),
+      target.debts.filter(isPledge),
+      (debt) => toSafeNumber(debt.collateralValue),
+      (debt) => debt.name || "未命名"
     ),
     recurringInvestmentTotal: buildRow(
       "recurring-investment-total",

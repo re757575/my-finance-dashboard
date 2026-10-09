@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import rawFinanceData from "../../fixtures/finance-data.json?raw";
+import { calculateMetrics } from "@/lib/calculations";
 import { compareSnapshots, type ComparisonRow } from "@/lib/snapshotComparison";
 import { parseFinanceData } from "@/lib/storage";
 import {
@@ -30,6 +31,15 @@ function debt(
     repaymentMethod: "amortizing",
     collateralValue: 0,
   };
+}
+
+function pledge(
+  id: string,
+  name: string,
+  principal: number,
+  collateralValue: number
+): Debt {
+  return { ...debt(id, name, principal, "質押"), collateralValue };
 }
 
 function snap(date: string, patch: Partial<Snapshot> = {}): Snapshot {
@@ -417,6 +427,100 @@ describe("compareSnapshots", () => {
       );
     });
 
+    const byDate = (date: string) => {
+      const snapshot = loadSnapshots().find((s) => s.date === date);
+      if (!snapshot) throw new Error(`fixture 沒有 ${date} 的快照`);
+      return snapshot;
+    };
+
+    // 最新兩筆：兩筆質押的本金都沒有還，但質押股票市值不同——維持率必須看得出變化
+    it("質押：本金不變時負債列持平，多筆質押合併計算的維持率仍有增減", () => {
+      const base = byDate("2026-08-31");
+      const target = byDate("2026-09-30");
+      const result = compareSnapshots(base, target);
+
+      expect(rowByKey(result.debts, "debt-debt-3").delta).toBe(0);
+      expect(rowByKey(result.debts, "debt-debt-5").delta).toBe(0);
+      expect(result.pledgeCollaterals.map((row) => row.key)).toEqual([
+        "pledge-collateral-debt-3",
+        "pledge-collateral-debt-5",
+      ]);
+      expect(result.pledgeCollateralTotal).toMatchObject({
+        base: 2930000,
+        target: 2950000,
+        delta: 20000,
+      });
+      expect(sum(result.pledgeCollaterals)).toBe(
+        result.pledgeCollateralTotal.delta
+      );
+      expect(result.pledgeMaintenanceRatio.base).toBe(
+        calculateMetrics(base).pledgeMaintenanceRatio
+      );
+      expect(result.pledgeMaintenanceRatio.target).toBe(
+        calculateMetrics(target).pledgeMaintenanceRatio
+      );
+      expect(result.pledgeMaintenanceRatio.base).toBeCloseTo(244.17, 1);
+      expect(result.pledgeMaintenanceRatio.target).toBeCloseTo(245.83, 1);
+      expect(result.pledgeMaintenanceRatio.delta).toBeCloseTo(1.67, 1);
+    });
+
+    // 2024-01 起質押由一筆拆成兩筆（本金合計不變）
+    it("質押：拆成兩筆時新的一筆視為新增，本金與質押股票市值的逐筆合計仍對得起來", () => {
+      const result = compareSnapshots(
+        byDate("2023-12-31"),
+        byDate("2024-01-31")
+      );
+
+      expect(rowByKey(result.debts, "debt-debt-3")).toMatchObject({
+        base: 1200000,
+        target: 800000,
+      });
+      expect(rowByKey(result.debts, "debt-debt-5")).toMatchObject({
+        base: null,
+        target: 400000,
+      });
+      expect(
+        rowByKey(result.pledgeCollaterals, "pledge-collateral-debt-5")
+      ).toMatchObject({ base: null, target: 560000, percent: null });
+      expect(result.pledgeCollateralTotal).toMatchObject({
+        base: 1770000,
+        target: 1850000,
+      });
+      expect(sum(result.pledgeCollaterals)).toBe(
+        result.pledgeCollateralTotal.delta
+      );
+      expect(result.pledgeMaintenanceRatio.base).toBeCloseTo(147.5);
+      expect(result.pledgeMaintenanceRatio.target).toBeCloseTo(154.17, 1);
+    });
+
+    // 最早 3 筆尚未填寫質押股票市值（比照舊版資料遷移後的狀態）
+    it("質押：基準日尚未填寫質押股票市值時維持率無從比較，不以 0 代入", () => {
+      const result = compareSnapshots(
+        byDate("2021-10-31"),
+        byDate("2026-09-30")
+      );
+
+      expect(result.pledgeMaintenanceRatio).toMatchObject({
+        base: null,
+        delta: 0,
+        percent: null,
+      });
+      expect(result.pledgeMaintenanceRatio.target).toBeCloseTo(245.83, 1);
+      expect(result.pledgeCollateralTotal).toMatchObject({
+        base: 0,
+        target: 2950000,
+        percent: null,
+      });
+
+      // 第一筆有填寫的快照起即可比較
+      const comparable = compareSnapshots(
+        byDate("2022-01-31"),
+        byDate("2026-09-30")
+      );
+      expect(comparable.pledgeMaintenanceRatio.base).toBeCloseTo(164.17, 1);
+      expect(comparable.pledgeMaintenanceRatio.delta).toBeCloseTo(81.67, 1);
+    });
+
     it("各類資產增減合計等於總資產的增減；總資產增減減去總負債增減等於淨資產增減", () => {
       const snapshots = loadSnapshots();
       const result = compareSnapshots(snapshots.at(-2)!, snapshots.at(-1)!);
@@ -564,5 +668,257 @@ describe("compareSnapshots：每月定期定額", () => {
     expect(withInvestments.assets).toEqual(without.assets);
     expect(withInvestments.cashSources).toEqual(without.cashSources);
     expect(withInvestments.debts).toEqual(without.debts);
+  });
+});
+
+// PRD 5.8、5.10 節「質押」、第 9 節 #55m～#55p
+describe("compareSnapshots：質押", () => {
+  // #55m：本金沒有還，只有質押股票市值變動
+  const base = snap("2026-10-02", {
+    debts: [pledge("d1", "股票質押", 500000, 900000)],
+  });
+  const target = snap("2026-10-03", {
+    debts: [pledge("d1", "股票質押", 500000, 700000)],
+  });
+
+  it("本金不變時負債列持平，維持率的增減是百分點、不換算相對百分比", () => {
+    const result = compareSnapshots(base, target);
+
+    expect(rowByKey(result.debts, "debt-d1").delta).toBe(0);
+    expect(result.pledgeMaintenanceRatio).toMatchObject({
+      key: "pledge-maintenance-ratio",
+      label: "質押整戶維持率",
+      percent: null,
+    });
+    expect(result.pledgeMaintenanceRatio.base).toBeCloseTo(180);
+    expect(result.pledgeMaintenanceRatio.target).toBeCloseTo(140);
+    expect(result.pledgeMaintenanceRatio.delta).toBeCloseTo(-40);
+  });
+
+  it("質押股票市值合計與逐筆的增減與百分比", () => {
+    const { pledgeCollateralTotal, pledgeCollaterals } = compareSnapshots(
+      base,
+      target
+    );
+
+    expect(pledgeCollateralTotal).toMatchObject({
+      key: "pledge-collateral-total",
+      label: "質押股票市值合計",
+      base: 900000,
+      target: 700000,
+      delta: -200000,
+    });
+    expect(pledgeCollateralTotal.percent).toBeCloseTo(-22.22, 1);
+    expect(pledgeCollaterals).toHaveLength(1);
+    expect(pledgeCollaterals[0]).toMatchObject({
+      key: "pledge-collateral-d1",
+      label: "股票質押",
+      base: 900000,
+      target: 700000,
+      delta: -200000,
+    });
+  });
+
+  it("反向比較時，增減正負相反", () => {
+    const result = compareSnapshots(target, base);
+
+    expect(result.pledgeMaintenanceRatio.delta).toBeCloseTo(40);
+    expect(result.pledgeCollateralTotal.delta).toBe(200000);
+  });
+
+  // #55n
+  it("多筆質押合併計算整戶維持率，逐筆增減合計等於合計的增減", () => {
+    const result = compareSnapshots(
+      snap("2026-10-02", {
+        debts: [
+          pledge("d1", "券商質押", 300000, 500000),
+          pledge("d2", "銀行質押", 200000, 300000),
+        ],
+      }),
+      snap("2026-10-03", {
+        debts: [
+          pledge("d1", "券商質押", 300000, 450000),
+          pledge("d2", "銀行質押", 200000, 300000),
+        ],
+      })
+    );
+
+    expect(result.pledgeMaintenanceRatio.base).toBeCloseTo(160);
+    expect(result.pledgeMaintenanceRatio.target).toBeCloseTo(150);
+    expect(result.pledgeMaintenanceRatio.delta).toBeCloseTo(-10);
+    expect(result.pledgeCollateralTotal.delta).toBe(-50000);
+    expect(
+      result.pledgeCollaterals.reduce((total, row) => total + row.delta, 0)
+    ).toBe(result.pledgeCollateralTotal.delta);
+    expect(
+      rowByKey(result.pledgeCollaterals, "pledge-collateral-d2").delta
+    ).toBe(0);
+  });
+
+  describe("維持率無法計算", () => {
+    // #55o
+    it("基準日尚未填寫質押股票市值：基準值為 null，不以 0 代入相減", () => {
+      const result = compareSnapshots(
+        snap("2026-10-02", { debts: [pledge("d1", "股票質押", 500000, 0)] }),
+        snap("2026-10-03", {
+          debts: [pledge("d1", "股票質押", 500000, 800000)],
+        })
+      );
+
+      expect(result.pledgeMaintenanceRatio).toMatchObject({
+        base: null,
+        delta: 0,
+        percent: null,
+      });
+      expect(result.pledgeMaintenanceRatio.target).toBeCloseTo(160);
+      // 市值本身仍可比較：基準值為 0，不算百分比
+      expect(result.pledgeCollateralTotal).toMatchObject({
+        base: 0,
+        target: 800000,
+        delta: 800000,
+        percent: null,
+      });
+    });
+
+    // #55o
+    it("基準日沒有質押負債：維持率基準值為 null，質押股票市值視為新增", () => {
+      const result = compareSnapshots(
+        snap("2026-10-02", { debts: [debt("d0", "信貸", 200000)] }),
+        snap("2026-10-03", {
+          debts: [pledge("d1", "股票質押", 500000, 800000)],
+        })
+      );
+
+      expect(result.pledgeMaintenanceRatio).toMatchObject({
+        base: null,
+        delta: 0,
+      });
+      expect(result.pledgeCollaterals).toEqual([
+        {
+          key: "pledge-collateral-d1",
+          label: "股票質押",
+          base: null,
+          target: 800000,
+          delta: 800000,
+          percent: null,
+        },
+      ]);
+    });
+
+    it("對象日沒有質押負債：維持率對象值為 null，質押股票市值視為已移除", () => {
+      const result = compareSnapshots(
+        snap("2026-10-02", {
+          debts: [pledge("d1", "股票質押", 500000, 800000)],
+        }),
+        snap("2026-10-03")
+      );
+
+      expect(result.pledgeMaintenanceRatio).toMatchObject({
+        target: null,
+        delta: 0,
+      });
+      expect(result.pledgeCollaterals[0]).toMatchObject({
+        base: 800000,
+        target: null,
+        delta: -800000,
+      });
+    });
+
+    it("質押本金為 0 時維持率為 null，不產生 NaN 或 Infinity", () => {
+      const result = compareSnapshots(
+        snap("2026-10-02", { debts: [pledge("d1", "股票質押", 0, 800000)] }),
+        snap("2026-10-03", { debts: [pledge("d1", "股票質押", 0, 0)] })
+      );
+
+      expect(result.pledgeMaintenanceRatio).toMatchObject({
+        base: null,
+        target: null,
+        delta: 0,
+      });
+      expect(Number.isFinite(result.pledgeCollateralTotal.delta)).toBe(true);
+    });
+  });
+
+  it("只計入類別為「質押」的負債；類別改變時視為新增或已移除", () => {
+    const result = compareSnapshots(
+      snap("2026-10-02", {
+        debts: [
+          // 類別不是質押：即使有 collateralValue 也不計入
+          { ...debt("d1", "原為信貸", 500000), collateralValue: 999999 },
+          pledge("d2", "股票質押", 200000, 300000),
+        ],
+      }),
+      snap("2026-10-03", {
+        debts: [
+          pledge("d1", "改為質押", 500000, 800000),
+          { ...debt("d2", "改為信貸", 200000), collateralValue: 300000 },
+        ],
+      })
+    );
+
+    expect(result.pledgeCollateralTotal).toMatchObject({
+      base: 300000,
+      target: 800000,
+    });
+    expect(
+      rowByKey(result.pledgeCollaterals, "pledge-collateral-d1")
+    ).toMatchObject({ label: "改為質押", base: null, target: 800000 });
+    expect(
+      rowByKey(result.pledgeCollaterals, "pledge-collateral-d2")
+    ).toMatchObject({ label: "股票質押", base: 300000, target: null });
+  });
+
+  it("名稱為空時顯示「未命名」；非數字的質押股票市值視為 0", () => {
+    const { pledgeCollaterals } = compareSnapshots(
+      snap("2026-10-02", { debts: [pledge("d1", "", 500000, 800000)] }),
+      snap("2026-10-03", {
+        debts: [
+          {
+            ...pledge("d1", "", 500000, 0),
+            collateralValue: "abc" as unknown as number,
+          },
+        ],
+      })
+    );
+
+    expect(pledgeCollaterals[0]).toMatchObject({
+      label: "未命名",
+      base: 800000,
+      target: 0,
+      delta: -800000,
+    });
+  });
+
+  // #55p
+  it("兩筆快照皆無質押負債時逐筆清單為空，維持率兩方皆為 null", () => {
+    const result = compareSnapshots(
+      snap("2026-10-02", { debts: [debt("d1", "信貸", 50000)] }),
+      snap("2026-10-03", { debts: [debt("d1", "信貸", 40000)] })
+    );
+
+    expect(result.pledgeCollaterals).toEqual([]);
+    expect(result.pledgeCollateralTotal).toMatchObject({
+      base: 0,
+      target: 0,
+      delta: 0,
+    });
+    expect(result.pledgeMaintenanceRatio).toMatchObject({
+      base: null,
+      target: null,
+      delta: 0,
+    });
+  });
+
+  it("質押股票市值不影響其他組的比較結果", () => {
+    const withoutCollateral = compareSnapshots(
+      snap("2026-10-02", { debts: [pledge("d1", "股票質押", 500000, 0)] }),
+      snap("2026-10-03", { debts: [pledge("d1", "股票質押", 500000, 0)] })
+    );
+    const withCollateral = compareSnapshots(base, target);
+
+    expect(withCollateral.summary).toEqual(withoutCollateral.summary);
+    expect(withCollateral.debtRatio).toEqual(withoutCollateral.debtRatio);
+    expect(withCollateral.assets).toEqual(withoutCollateral.assets);
+    expect(withCollateral.debts).toEqual(withoutCollateral.debts);
   });
 });

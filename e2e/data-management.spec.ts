@@ -540,6 +540,127 @@ test("快照比較：少於 2 筆時顯示提示，且不含今日未存檔的�
   await expect(page.getByLabel("比較基準日")).toHaveCount(0);
 });
 
+// PRD 4.2「快照比較」、5.10 節「質押」、第 9 節 #55m～#55o
+test("匯入全功能 fixture：快照比較列出質押整戶維持率與質押股票市值的增減", async ({
+  page,
+}) => {
+  await page.setInputFiles('input[type="file"]', financeDataFixture);
+  await page.getByText("確認覆蓋匯入").click();
+  await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+
+  const section = page.getByTestId("snapshot-comparison");
+  const row = (key: string) => section.getByTestId(`comparison-row-${key}`);
+  const ratio = row("pledge-maintenance-ratio");
+  const total = row("pledge-collateral-total");
+
+  // 最新兩筆：兩筆質押的本金都沒有還，負債組為持平；質押股票市值與維持率另列於「質押」組
+  await expect(
+    section.getByRole("columnheader", { name: "質押", exact: true })
+  ).toBeVisible();
+  await expect(row("debt-debt-3")).toContainText("持平");
+  await expect(row("debt-debt-5")).toContainText("持平");
+  await expect(ratio).toContainText("244.2%");
+  await expect(ratio).toContainText("245.8%");
+  await expect(ratio).toContainText("▲ 1.6 個百分點");
+  await expect(total).toContainText("$2,930,000");
+  await expect(total).toContainText("$2,950,000");
+  await expect(total).toContainText("▲ $20,000 (+0.7%)");
+  await expect(row("pledge-collateral-debt-3")).toContainText(
+    "▲ $10,000 (+0.5%)"
+  );
+  await expect(row("pledge-collateral-debt-5")).toContainText(
+    "▲ $10,000 (+1.1%)"
+  );
+  // 比較表的對象日維持率與看板上的維持率卡一致
+  await expect(page.getByTestId("pledge-maintenance-value")).toHaveText(
+    "245.8%"
+  );
+
+  // 質押由一筆拆成兩筆的那個月：新的一筆標示「新增」，整戶維持率仍合併計算
+  await page.getByLabel("比較基準日").selectOption("2023-12-31");
+  await page.getByLabel("比較對象日").selectOption("2024-01-31");
+  await expect(ratio).toContainText("147.5%");
+  await expect(ratio).toContainText("154.2%");
+  await expect(ratio).toContainText("▲ 6.7 個百分點");
+  await expect(total).toContainText("▲ $80,000 (+4.5%)");
+  await expect(row("pledge-collateral-debt-5")).toContainText("新增");
+  await expect(row("pledge-collateral-debt-5")).toContainText("▲ $560,000");
+  await expect(row("debt-debt-5")).toContainText("新增");
+
+  // 最早一筆尚未填寫質押股票市值：維持率無從比較，顯示「—」而不是以 0% 相減
+  await page.getByLabel("比較基準日").selectOption("2021-10-31");
+  await page.getByLabel("比較對象日").selectOption("2026-09-30");
+  await expect(ratio).toContainText("245.8%");
+  await expect(ratio).not.toContainText("個百分點");
+  await expect(ratio).not.toContainText("新增");
+  await expect(total).toContainText("▲ $2,950,000");
+  await expect(total).not.toContainText("%");
+
+  // 第一筆有填寫的快照起即可比較
+  await page.getByLabel("比較基準日").selectOption("2022-01-31");
+  await expect(ratio).toContainText("164.2%");
+  await expect(ratio).toContainText("▲ 81.6 個百分點");
+  await expect(total).toContainText("▲ $980,000 (+49.7%)");
+  await expect(section).not.toContainText(/NaN|Infinity/);
+});
+
+// PRD 5.10 節「質押」、第 9 節 #55m、#55o：每天更新質押股票市值後，快照比較看得出維持率的變化
+test("快照比較：質押本金不變時，仍看得出質押股票市值與維持率的變化", async ({
+  page,
+}) => {
+  const section = page.getByTestId("snapshot-comparison");
+  const row = (key: string) => section.getByTestId(`comparison-row-${key}`);
+
+  await page.clock.install({ time: new Date("2026-10-01T10:00:00") });
+  await page.reload();
+  await page.locator('label:has-text("台股市值") input').fill("1000000");
+  await page.getByTestId("save-button").click();
+  await expect(page.getByTestId("save-message")).toBeVisible();
+
+  // 隔天新增質押負債
+  await page.clock.setFixedTime(new Date("2026-10-02T09:00:00"));
+  await page.reload();
+  await expect(page.getByText("目前檢視日期：2026-10-02")).toBeVisible();
+  await page.getByRole("button", { name: "+ 新增負債" }).click();
+  await page.getByLabel("負債類別").selectOption("質押");
+  await page.getByLabel("備註名稱").fill("股票質押");
+  await page.getByLabel("剩餘本金").fill("500000");
+  await page.getByLabel("質押股票市值").fill("900000");
+  await page.getByTestId("save-button").click();
+  await expect(row("pledge-maintenance-ratio")).toContainText("180.0%");
+  // 基準日沒有質押負債：維持率無從比較，不顯示增減
+  await expect(row("pledge-maintenance-ratio")).not.toContainText("個百分點");
+
+  // 再隔一天只更新質押股票市值，本金沒有還
+  await page.clock.setFixedTime(new Date("2026-10-03T09:00:00"));
+  await page.reload();
+  await expect(page.getByText("目前檢視日期：2026-10-03")).toBeVisible();
+  await page.getByLabel("質押股票市值").fill("700000");
+  await page.getByTestId("save-button").click();
+
+  await expect(page.getByLabel("比較基準日")).toHaveValue("2026-10-02");
+  await expect(page.getByLabel("比較對象日")).toHaveValue("2026-10-03");
+  await expect(
+    section
+      .locator('[data-testid^="comparison-row-debt-"]')
+      .filter({ hasText: "股票質押（質押）" })
+  ).toContainText("持平");
+  await expect(row("pledge-maintenance-ratio")).toContainText("180.0%");
+  await expect(row("pledge-maintenance-ratio")).toContainText("140.0%");
+  await expect(row("pledge-maintenance-ratio")).toContainText(
+    "▼ 40.0 個百分點"
+  );
+  await expect(row("pledge-collateral-total")).toContainText(
+    "▼ $200,000 (-22.2%)"
+  );
+
+  // 進入修正模式看到的維持率，與比較表的基準日一致
+  await page.getByRole("button", { name: "修正 2026-10-02 的快照" }).click();
+  await expect(page.getByTestId("pledge-maintenance-value")).toHaveText(
+    "180.0%"
+  );
+});
+
 // PRD 4.2「目標達成時間預估」、第 9 節 #56a～#56l
 test("匯入全功能 fixture：目標達成時間預估並列兩種估算，並隨表單即時更新", async ({
   page,

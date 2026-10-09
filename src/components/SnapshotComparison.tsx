@@ -25,15 +25,22 @@ function roundForDisplay(value: number, isRatio: boolean): number {
  * 比較表的一列。增減以「畫面上顯示的兩個數值」相減，讓表格自己對得起來，
  * 也避免浮點誤差或不足 1 元的差異顯示成「▲ $0」。
  * 窄螢幕時改為兩行：第一行項目名稱，第二行「基準日數值 → 對象日數值」與增減（PRD 7 節）。
+ * null 預設代表「該筆快照沒有這個項目」（標示新增／已移除、以 0 計算增減）；
+ * nullMeans 為 "unavailable" 時代表「該筆快照算不出這個數值」，不標示也不計算增減。
  */
 function ComparisonTableRow({
   row,
   kind = "amount",
+  nullMeans = "missing-item",
 }: {
   row: ComparisonRow;
   kind?: "amount" | "ratio";
+  nullMeans?: "missing-item" | "unavailable";
 }) {
   const isRatio = kind === "ratio";
+  const showItemBadges = nullMeans === "missing-item";
+  const isComparable =
+    showItemBadges || (row.base !== null && row.target !== null);
   const formatValue = isRatio ? formatPercent : formatCurrency;
   const displayDelta = roundForDisplay(
     roundForDisplay(row.target ?? 0, isRatio) -
@@ -51,12 +58,12 @@ function ComparisonTableRow({
         className="w-full text-left font-normal sm:w-auto sm:py-1.5 sm:pr-2"
       >
         {row.label}
-        {row.base === null && (
+        {showItemBadges && row.base === null && (
           <span className="ml-2 rounded-full bg-sky-50 dark:bg-sky-950 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300">
             新增
           </span>
         )}
-        {row.target === null && (
+        {showItemBadges && row.target === null && (
           <span className="ml-2 rounded-full bg-slate-100 dark:bg-muted px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-neutral-300">
             已移除
           </span>
@@ -69,11 +76,15 @@ function ComparisonTableRow({
         {row.target === null ? "—" : formatValue(row.target)}
       </td>
       <td className="ml-auto text-xs whitespace-nowrap sm:ml-0 sm:py-1.5 sm:pl-2 sm:text-right sm:text-sm">
-        <DeltaText
-          delta={displayDelta}
-          percent={row.percent}
-          formatValue={isRatio ? formatPoints : formatCurrency}
-        />
+        {isComparable ? (
+          <DeltaText
+            delta={displayDelta}
+            percent={row.percent}
+            formatValue={isRatio ? formatPoints : formatCurrency}
+          />
+        ) : (
+          <span className="text-slate-400 dark:text-neutral-400">—</span>
+        )}
       </td>
     </tr>
   );
@@ -246,6 +257,26 @@ export function SnapshotComparison({ snapshots }: SnapshotComparisonProps) {
                 <ComparisonTableRow key={row.key} row={row} />
               ))}
             </ComparisonGroup>
+            {/* 負債組只比本金，質押未還本時恆為持平；擔保品與維持率的變化另列一組，兩筆皆無質押負債時整組不顯示 */}
+            {comparison.pledgeCollaterals.length > 0 && (
+              <ComparisonGroup title="質押">
+                {[
+                  <ComparisonTableRow
+                    key={comparison.pledgeMaintenanceRatio.key}
+                    row={comparison.pledgeMaintenanceRatio}
+                    kind="ratio"
+                    nullMeans="unavailable"
+                  />,
+                  <ComparisonTableRow
+                    key={comparison.pledgeCollateralTotal.key}
+                    row={comparison.pledgeCollateralTotal}
+                  />,
+                  ...comparison.pledgeCollaterals.map((row) => (
+                    <ComparisonTableRow key={row.key} row={row} />
+                  )),
+                ]}
+              </ComparisonGroup>
+            )}
             {/* 比較的是每月投入金額的調整，不是期間累計投入；兩筆皆無定期定額時整組不顯示 */}
             {comparison.recurringInvestments.length > 0 && (
               <ComparisonGroup title="每月定期定額">
