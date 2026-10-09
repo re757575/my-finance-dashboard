@@ -2,6 +2,16 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.13](https://github.com/re757575/my-finance-dashboard/compare/v0.3.12...v0.3.13) (2026-10-09)
+
+### Features
+
+- **儀表板:** 新增拖曳檔案匯入還原 ([08b8223](https://github.com/re757575/my-finance-dashboard/commit/08b82233057cb015fb7876b05e7e7247c9362731))
+
+### Bug Fixes
+
+- **儀表板:** 修正快照比較看不出質押維持率變化的問題 ([ba72821](https://github.com/re757575/my-finance-dashboard/commit/ba72821c3e7bc35b0055ea7ac8b720e307b6b264))
+
 ## [0.3.12](https://github.com/re757575/my-finance-dashboard/compare/v0.3.11...v0.3.12) (2026-10-06)
 
 ### Features
