@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { expandSnapshotSections } from "./helpers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sampleBackup = path.join(__dirname, "fixtures/sample-backup.json");
@@ -113,6 +114,7 @@ test("拖曳備份檔到頁面：顯示遮罩，放開後二次確認，確認�
   await page.getByText("確認覆蓋匯入").click();
 
   await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  await expandSnapshotSections(page);
   await expect(page.getByTestId("snapshot-row-2026-09-30")).toBeVisible();
   await expect(page.getByTestId("total-assets")).not.toHaveText("$0");
   expect(await savedSnapshotCount(page)).toBe(60);
@@ -301,6 +303,7 @@ async function seedSnapshotDates(
     { dates, backupIso }
   );
   await page.reload();
+  await expandSnapshotSections(page);
 }
 
 /** 同 seedSnapshotDates，但快照日期與上次備份時間皆以「今天往前推 n 天」指定。 */
@@ -496,6 +499,7 @@ test("匯入全功能 fixture：歷史快照 60 筆、各看板卡片皆有數�
   await page.setInputFiles('input[type="file"]', financeDataFixture);
   await page.getByText("確認覆蓋匯入").click();
   await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  await expandSnapshotSections(page);
 
   // 歷史快照：預設只顯示最新 10 筆，可展開看到全部 60 筆
   await expect(page.getByTestId("snapshot-row-2026-09-30")).toBeVisible();
@@ -542,6 +546,7 @@ test("匯入全功能 fixture：趨勢圖範圍六個選項依序排列，1 年�
   await page.setInputFiles('input[type="file"]', financeDataFixture);
   await page.getByText("確認覆蓋匯入").click();
   await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  await expandSnapshotSections(page);
 
   const range = page.getByLabel("趨勢圖範圍");
   const lineChart = (count: number) =>
@@ -642,6 +647,7 @@ test("匯入全功能 fixture：快照比較預設比較最新兩筆，可切換
   await page.setInputFiles('input[type="file"]', financeDataFixture);
   await page.getByText("確認覆蓋匯入").click();
   await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  await expandSnapshotSections(page);
 
   const section = page.getByTestId("snapshot-comparison");
   const row = (key: string) => section.getByTestId(`comparison-row-${key}`);
@@ -690,6 +696,7 @@ test("匯入全功能 fixture：快照比較預設比較最新兩筆，可切換
 test("快照比較：少於 2 筆時顯示提示，且不含今日未存檔的草稿", async ({
   page,
 }) => {
+  await expandSnapshotSections(page);
   const section = page.getByTestId("snapshot-comparison");
   await expect(section.getByTestId("snapshot-comparison-empty")).toHaveText(
     "至少需要 2 筆已存檔的快照才能比較"
@@ -711,6 +718,7 @@ test("匯入全功能 fixture：快照比較列出質押整戶維持率與質押
   await page.setInputFiles('input[type="file"]', financeDataFixture);
   await page.getByText("確認覆蓋匯入").click();
   await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
+  await expandSnapshotSections(page);
 
   const section = page.getByTestId("snapshot-comparison");
   const row = (key: string) => section.getByTestId(`comparison-row-${key}`);
@@ -785,6 +793,7 @@ test("快照比較：質押本金不變時，仍看得出質押股票市值與�
   await page.clock.setFixedTime(new Date("2026-10-02T09:00:00"));
   await page.reload();
   await expect(page.getByText("目前檢視日期：2026-10-02")).toBeVisible();
+  await expandSnapshotSections(page);
   await page.getByRole("button", { name: "+ 新增負債" }).click();
   await page.getByLabel("負債類別").selectOption("質押");
   await page.getByLabel("備註名稱").fill("股票質押");
@@ -799,6 +808,7 @@ test("快照比較：質押本金不變時，仍看得出質押股票市值與�
   await page.clock.setFixedTime(new Date("2026-10-03T09:00:00"));
   await page.reload();
   await expect(page.getByText("目前檢視日期：2026-10-03")).toBeVisible();
+  await expandSnapshotSections(page);
   await page.getByLabel("質押股票市值").fill("700000");
   await page.getByTestId("save-button").click();
 

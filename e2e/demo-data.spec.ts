@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { expandSnapshotSections } from "./helpers";
 
 // PRD 4.2「範例資料」、6.2 節、第 9 節 #63a～#63n
 
@@ -110,6 +111,7 @@ test("載入範例資料：看板與趨勢圖都有數值，快照日期平移�
   ).toBeVisible();
 
   // 歷史快照：日期已平移，筆數不變
+  await expandSnapshotSections(page);
   await expect(page.getByTestId("snapshot-row-2026-10-06")).toBeVisible();
   await expect(page.getByTestId("snapshot-row-2026-09-06")).toBeVisible();
   await expect(page.getByTestId("snapshot-row-2026-09-30")).toHaveCount(0);
@@ -203,6 +205,7 @@ test("清除範例資料：二次確認後清空，不強制匯出備份，主�
   await expect(banner(page)).toHaveCount(0);
   await expect(page.getByTestId("total-assets")).toHaveText("$0");
   await expect(page.getByText("尚未新增現金來源")).toBeVisible();
+  await expandSnapshotSections(page);
   await expect(page.getByTestId("snapshot-history-empty")).toBeVisible();
   const state = await stored(page);
   expect(state.raw).toBeNull();

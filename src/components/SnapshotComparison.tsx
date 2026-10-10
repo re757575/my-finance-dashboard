@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { type ReactNode, useId, useMemo, useState } from "react";
+import { SectionToggleHeading } from "@/components/SectionToggleHeading";
 import { DeltaText } from "@/components/charts/DeltaText";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { compareSnapshots, type ComparisonRow } from "@/lib/snapshotComparison";
@@ -131,8 +132,12 @@ function ComparisonGroup({
  * 快照比較區（PRD 4.2「快照比較」、5.10 節）：任選兩筆已存檔快照，逐項列出增減（對象日 − 基準日）。
  * 純即時計算，不寫入任何資料；比較結果只在選取的兩筆快照改變時重算，
  * 表單輸入造成的重新渲染不會觸發重算。
+ * 整個區塊預設收合（只存在元件 state），收合時不渲染日期選單與表格、也不計算比較結果；
+ * 已選的兩個日期在收合期間保留。
  */
 export function SnapshotComparison({ snapshots }: SnapshotComparisonProps) {
+  const [open, setOpen] = useState(false);
+  const contentId = useId();
   const [selectedBase, setSelectedBase] = useState<string | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
 
@@ -149,19 +154,22 @@ export function SnapshotComparison({ snapshots }: SnapshotComparisonProps) {
 
   const comparison = useMemo(
     () =>
-      base && target && base.date !== target.date
+      open && base && target && base.date !== target.date
         ? compareSnapshots(base, target)
         : null,
-    [base, target]
+    [open, base, target]
   );
 
   return (
     <section className="space-y-3" data-testid="snapshot-comparison">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-neutral-100">
-          快照比較
-        </h2>
-        {base && target && (
+        <SectionToggleHeading
+          title="快照比較"
+          open={open}
+          onToggle={() => setOpen((prev) => !prev)}
+          contentId={contentId}
+        />
+        {open && base && target && (
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-neutral-300">
             {/* 每組「標籤＋選單」各自成對，窄螢幕換行時不會把標籤與選單拆開 */}
             <span className="flex items-center gap-2">
@@ -198,107 +206,112 @@ export function SnapshotComparison({ snapshots }: SnapshotComparisonProps) {
         )}
       </div>
 
-      {!base || !target ? (
-        <p
-          data-testid="snapshot-comparison-empty"
-          className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
-        >
-          至少需要 2 筆已存檔的快照才能比較
-        </p>
-      ) : comparison === null ? (
-        <p
-          data-testid="snapshot-comparison-same-date"
-          className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
-        >
-          請選擇兩筆不同的快照
-        </p>
-      ) : (
-        <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
-          <table
-            data-testid="snapshot-comparison-table"
-            className="block w-full text-sm text-slate-700 dark:text-neutral-200 sm:table"
+      <div id={contentId} hidden={!open}>
+        {!open ? null : !base || !target ? (
+          <p
+            data-testid="snapshot-comparison-empty"
+            className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
           >
-            {/* 窄螢幕不顯示欄位標題：兩個日期已在上方的下拉選單 */}
-            <thead className="hidden sm:table-header-group">
-              <tr className="text-xs text-slate-500 dark:text-neutral-400">
-                <th scope="col" className="pr-2 pb-1 text-left font-medium">
-                  項目
-                </th>
-                <th scope="col" className="px-2 pb-1 text-right font-medium">
-                  {comparison.baseDate}
-                </th>
-                <th scope="col" className="px-2 pb-1 text-right font-medium">
-                  {comparison.targetDate}
-                </th>
-                <th scope="col" className="pb-1 pl-2 text-right font-medium">
-                  增減
-                </th>
-              </tr>
-            </thead>
-            <ComparisonGroup title="總覽">
-              {[
-                ...comparison.summary.map((row) => (
-                  <ComparisonTableRow key={row.key} row={row} />
-                )),
-                <ComparisonTableRow
-                  key={comparison.debtRatio.key}
-                  row={comparison.debtRatio}
-                  kind="ratio"
-                />,
-              ]}
-            </ComparisonGroup>
-            <ComparisonGroup title="資產">
-              {comparison.assets.map((row) => (
-                <ComparisonTableRow key={row.key} row={row} />
-              ))}
-            </ComparisonGroup>
-            <ComparisonGroup title="現金來源" emptyText="兩筆快照皆無現金來源">
-              {comparison.cashSources.map((row) => (
-                <ComparisonTableRow key={row.key} row={row} />
-              ))}
-            </ComparisonGroup>
-            <ComparisonGroup title="負債" emptyText="兩筆快照皆無負債">
-              {comparison.debts.map((row) => (
-                <ComparisonTableRow key={row.key} row={row} />
-              ))}
-            </ComparisonGroup>
-            {/* 負債組只比本金，質押未還本時恆為持平；擔保品與維持率的變化另列一組，兩筆皆無質押負債時整組不顯示 */}
-            {comparison.pledgeCollaterals.length > 0 && (
-              <ComparisonGroup title="質押">
+            至少需要 2 筆已存檔的快照才能比較
+          </p>
+        ) : comparison === null ? (
+          <p
+            data-testid="snapshot-comparison-same-date"
+            className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
+          >
+            請選擇兩筆不同的快照
+          </p>
+        ) : (
+          <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
+            <table
+              data-testid="snapshot-comparison-table"
+              className="block w-full text-sm text-slate-700 dark:text-neutral-200 sm:table"
+            >
+              {/* 窄螢幕不顯示欄位標題：兩個日期已在上方的下拉選單 */}
+              <thead className="hidden sm:table-header-group">
+                <tr className="text-xs text-slate-500 dark:text-neutral-400">
+                  <th scope="col" className="pr-2 pb-1 text-left font-medium">
+                    項目
+                  </th>
+                  <th scope="col" className="px-2 pb-1 text-right font-medium">
+                    {comparison.baseDate}
+                  </th>
+                  <th scope="col" className="px-2 pb-1 text-right font-medium">
+                    {comparison.targetDate}
+                  </th>
+                  <th scope="col" className="pb-1 pl-2 text-right font-medium">
+                    增減
+                  </th>
+                </tr>
+              </thead>
+              <ComparisonGroup title="總覽">
                 {[
+                  ...comparison.summary.map((row) => (
+                    <ComparisonTableRow key={row.key} row={row} />
+                  )),
                   <ComparisonTableRow
-                    key={comparison.pledgeMaintenanceRatio.key}
-                    row={comparison.pledgeMaintenanceRatio}
+                    key={comparison.debtRatio.key}
+                    row={comparison.debtRatio}
                     kind="ratio"
-                    nullMeans="unavailable"
                   />,
-                  <ComparisonTableRow
-                    key={comparison.pledgeCollateralTotal.key}
-                    row={comparison.pledgeCollateralTotal}
-                  />,
-                  ...comparison.pledgeCollaterals.map((row) => (
-                    <ComparisonTableRow key={row.key} row={row} />
-                  )),
                 ]}
               </ComparisonGroup>
-            )}
-            {/* 比較的是每月投入金額的調整，不是期間累計投入；兩筆皆無定期定額時整組不顯示 */}
-            {comparison.recurringInvestments.length > 0 && (
-              <ComparisonGroup title="每月定期定額">
-                {[
-                  <ComparisonTableRow
-                    key={comparison.recurringInvestmentTotal.key}
-                    row={comparison.recurringInvestmentTotal}
-                  />,
-                  ...comparison.recurringInvestments.map((row) => (
-                    <ComparisonTableRow key={row.key} row={row} />
-                  )),
-                ]}
+              <ComparisonGroup title="資產">
+                {comparison.assets.map((row) => (
+                  <ComparisonTableRow key={row.key} row={row} />
+                ))}
               </ComparisonGroup>
-            )}
-          </table>
-        </div>
-      )}
+              <ComparisonGroup
+                title="現金來源"
+                emptyText="兩筆快照皆無現金來源"
+              >
+                {comparison.cashSources.map((row) => (
+                  <ComparisonTableRow key={row.key} row={row} />
+                ))}
+              </ComparisonGroup>
+              <ComparisonGroup title="負債" emptyText="兩筆快照皆無負債">
+                {comparison.debts.map((row) => (
+                  <ComparisonTableRow key={row.key} row={row} />
+                ))}
+              </ComparisonGroup>
+              {/* 負債組只比本金，質押未還本時恆為持平；擔保品與維持率的變化另列一組，兩筆皆無質押負債時整組不顯示 */}
+              {comparison.pledgeCollaterals.length > 0 && (
+                <ComparisonGroup title="質押">
+                  {[
+                    <ComparisonTableRow
+                      key={comparison.pledgeMaintenanceRatio.key}
+                      row={comparison.pledgeMaintenanceRatio}
+                      kind="ratio"
+                      nullMeans="unavailable"
+                    />,
+                    <ComparisonTableRow
+                      key={comparison.pledgeCollateralTotal.key}
+                      row={comparison.pledgeCollateralTotal}
+                    />,
+                    ...comparison.pledgeCollaterals.map((row) => (
+                      <ComparisonTableRow key={row.key} row={row} />
+                    )),
+                  ]}
+                </ComparisonGroup>
+              )}
+              {/* 比較的是每月投入金額的調整，不是期間累計投入；兩筆皆無定期定額時整組不顯示 */}
+              {comparison.recurringInvestments.length > 0 && (
+                <ComparisonGroup title="每月定期定額">
+                  {[
+                    <ComparisonTableRow
+                      key={comparison.recurringInvestmentTotal.key}
+                      row={comparison.recurringInvestmentTotal}
+                    />,
+                    ...comparison.recurringInvestments.map((row) => (
+                      <ComparisonTableRow key={row.key} row={row} />
+                    )),
+                  ]}
+                </ComparisonGroup>
+              )}
+            </table>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

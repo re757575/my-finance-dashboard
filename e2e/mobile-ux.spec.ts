@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { expandSnapshotSections } from "./helpers";
 
 // PRD 4.2「金額千分位顯示」「固定儲存列」、第 7 節「版面佈局」、第 9 節 #65a～#65k
 
@@ -294,6 +295,7 @@ test("390px 修正模式：捲到輸入區，固定儲存列改為「儲存修�
   await page.setViewportSize(PHONE);
   await seedSnapshots(page, [10, 0]);
   const pastDate = dateDaysAgo(10);
+  await expandSnapshotSections(page);
 
   await page.getByRole("button", { name: `修正 ${pastDate} 的快照` }).click();
   await expect(page.getByTestId("snapshot-edit-banner")).toBeInViewport();

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { expandSnapshotSections } from "./helpers";
 
 // PRD 4.2「寫入失敗防護」「未存檔離開提醒」「多分頁資料同步」「跨日自動換日」、第 9 節 #51a～#54d
 
@@ -105,10 +106,14 @@ test("多分頁：另一分頁存檔與刪除後自動同步，存檔不會把�
     return date;
   }, STORAGE_KEY);
   await page.reload();
+  await expandSnapshotSections(page);
 
   const otherPage = await context.newPage();
   await otherPage.goto("/");
   await expect(otherPage.getByTestId("total-assets")).toHaveText("$10,000");
+  // 分頁 B 也要展開，後面才能確認清單真的同步（收合時找不到任何一列）
+  await expandSnapshotSections(otherPage);
+  await expect(otherPage.getByTestId(`snapshot-row-${oldDate}`)).toBeVisible();
 
   // 分頁 A 存檔今天 → 沒有未存檔編輯的分頁 B 自動更新為已存檔狀態
   await twStockInput(page).fill("70000");

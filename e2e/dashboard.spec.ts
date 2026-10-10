@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { expandSnapshotSections } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -597,6 +598,7 @@ async function seedHistory(page: Page, daysAgo: number[]) {
     );
   }, daysAgo.map(dateDaysAgo));
   await page.reload();
+  await expandSnapshotSections(page);
 }
 
 function storedAmounts(page: Page) {
@@ -618,6 +620,7 @@ const rows = (page: Page) => page.locator('[data-testid^="snapshot-row-"]');
 test("歷史快照清單：由新到舊、今天沒有修正按鈕、超過 10 筆可展開", async ({
   page,
 }) => {
+  await expandSnapshotSections(page);
   await expect(page.getByTestId("snapshot-history-empty")).toHaveText(
     "尚未有已存檔的快照"
   );

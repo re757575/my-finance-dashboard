@@ -1,9 +1,27 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render as renderCollapsed,
+  screen,
+  within,
+} from "@testing-library/react";
+import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SnapshotComparison } from "@/components/SnapshotComparison";
 import { compareSnapshots } from "@/lib/snapshotComparison";
 import type { CashSource, Debt, Snapshot } from "@/types/schema";
 import { createEmptySnapshot } from "@/types/schema";
+
+const toggle = () => screen.getByRole("button", { name: "快照比較" });
+
+/**
+ * 區塊預設收合（PRD 4.2「快照比較與歷史快照預設收合」）：既有案例檢查的都是展開後的內容，
+ * 渲染後先展開；要檢查收合狀態的案例改用 `renderCollapsed`。
+ */
+function render(ui: ReactElement) {
+  const view = renderCollapsed(ui);
+  fireEvent.click(toggle());
+  return view;
+}
 
 // 包一層 spy 以計算 compareSnapshots 的呼叫次數，行為與原函式完全相同
 vi.mock("@/lib/snapshotComparison", async (importOriginal) => {
@@ -694,5 +712,76 @@ describe("SnapshotComparison：質押", () => {
       "160.0%160.0%持平"
     );
     expect(row("pledge-collateral-total")).toHaveTextContent("▲ $100");
+  });
+});
+
+// PRD 4.2「快照比較與歷史快照預設收合」、第 9 節 #66a～#66f
+describe("SnapshotComparison：預設收合", () => {
+  beforeEach(() => {
+    vi.mocked(compareSnapshots).mockClear();
+  });
+
+  it("預設只顯示標題，不渲染日期選單與表格，也不計算比較結果", () => {
+    renderCollapsed(<SnapshotComparison snapshots={[AUGUST, SEPTEMBER]} />);
+
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("比較基準日")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("snapshot-comparison-table")
+    ).not.toBeInTheDocument();
+    expect(compareSnapshots).not.toHaveBeenCalled();
+  });
+
+  it("點擊標題展開，再點一次收合", () => {
+    renderCollapsed(<SnapshotComparison snapshots={[AUGUST, SEPTEMBER]} />);
+
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("比較基準日")).toBeInTheDocument();
+    expect(screen.getByTestId("snapshot-comparison-table")).toBeInTheDocument();
+
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("比較基準日")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("snapshot-comparison-table")
+    ).not.toBeInTheDocument();
+  });
+
+  it("收合再展開後，已選的日期維持不變", () => {
+    renderCollapsed(
+      <SnapshotComparison snapshots={[JULY, AUGUST, SEPTEMBER]} />
+    );
+    fireEvent.click(toggle());
+    fireEvent.change(screen.getByLabelText("比較基準日"), {
+      target: { value: JULY.date },
+    });
+
+    fireEvent.click(toggle());
+    fireEvent.click(toggle());
+
+    expect(screen.getByLabelText("比較基準日")).toHaveValue(JULY.date);
+  });
+
+  it("空狀態提示同樣要展開才看得到", () => {
+    renderCollapsed(<SnapshotComparison snapshots={[]} />);
+    expect(
+      screen.queryByTestId("snapshot-comparison-empty")
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(toggle());
+    expect(screen.getByTestId("snapshot-comparison-empty")).toBeInTheDocument();
+  });
+
+  it("標題的 aria-controls 指向內容容器", () => {
+    renderCollapsed(<SnapshotComparison snapshots={[AUGUST, SEPTEMBER]} />);
+    fireEvent.click(toggle());
+
+    const content = document.getElementById(
+      toggle().getAttribute("aria-controls")!
+    );
+    expect(content).toContainElement(
+      screen.getByTestId("snapshot-comparison-table")
+    );
   });
 });

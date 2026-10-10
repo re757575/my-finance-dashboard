@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
+import { SectionToggleHeading } from "@/components/SectionToggleHeading";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +34,7 @@ interface SnapshotHistoryProps {
  * 淨資產／總資產一律用該筆快照自己的欄位計算（PRD 5.4 節）。
  * 展開全部後清單在固定高度內捲動；每列指標只在快照資料或展開狀態改變時重算，
  * 表單輸入造成的重新渲染不會觸發重算（PRD 4.2）。
+ * 整個區塊預設收合（只存在元件 state），收合時不渲染清單、也不計算各列指標。
  */
 export function SnapshotHistory({
   snapshots,
@@ -41,6 +43,8 @@ export function SnapshotHistory({
   onEdit,
   onDelete,
 }: SnapshotHistoryProps) {
+  const [open, setOpen] = useState(false);
+  const contentId = useId();
   const [expanded, setExpanded] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
@@ -50,13 +54,16 @@ export function SnapshotHistory({
   );
   const rows = useMemo(
     () =>
-      (expanded ? sorted : sorted.slice(0, DEFAULT_VISIBLE_COUNT)).map(
-        (snapshot) => {
-          const { netWorth, totalAssets } = calculateMetrics(snapshot);
-          return { snapshot, netWorth, totalAssets };
-        }
-      ),
-    [sorted, expanded]
+      (!open
+        ? []
+        : expanded
+          ? sorted
+          : sorted.slice(0, DEFAULT_VISIBLE_COUNT)
+      ).map((snapshot) => {
+        const { netWorth, totalAssets } = calculateMetrics(snapshot);
+        return { snapshot, netWorth, totalAssets };
+      }),
+    [sorted, expanded, open]
   );
   const hasMore = sorted.length > DEFAULT_VISIBLE_COUNT;
 
@@ -68,105 +75,110 @@ export function SnapshotHistory({
 
   return (
     <section className="space-y-3" data-testid="snapshot-history">
-      <h2 className="text-lg font-semibold text-slate-800 dark:text-neutral-100">
-        歷史快照
-      </h2>
+      <SectionToggleHeading
+        title="歷史快照"
+        open={open}
+        onToggle={() => setOpen((prev) => !prev)}
+        contentId={contentId}
+      />
 
-      {sorted.length === 0 ? (
-        <p
-          data-testid="snapshot-history-empty"
-          className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
-        >
-          尚未有已存檔的快照
-        </p>
-      ) : (
-        <div className="@container rounded-xl bg-white dark:bg-card p-2 shadow-sm">
-          <ul
-            data-testid="snapshot-history-list"
-            // 捲動區需可用鍵盤聚焦，鍵盤使用者才能捲動（PRD 4.2、7 節）
-            tabIndex={expanded ? 0 : undefined}
-            aria-label={expanded ? "歷史快照清單" : undefined}
-            className={`divide-y divide-slate-100 dark:divide-border ${expanded ? EXPANDED_LIST_CLASS : ""}`}
+      <div id={contentId} hidden={!open}>
+        {!open ? null : sorted.length === 0 ? (
+          <p
+            data-testid="snapshot-history-empty"
+            className="rounded-xl bg-white dark:bg-card p-4 text-sm text-slate-400 dark:text-neutral-400 shadow-sm"
           >
-            {rows.map(({ snapshot, netWorth, totalAssets }) => {
-              const isToday = snapshot.date === currentDate;
-              const isEditing = snapshot.date === editingDate;
-              return (
-                <li
-                  key={snapshot.date}
-                  data-testid={`snapshot-row-${snapshot.date}`}
-                  className="flex items-center justify-between gap-2 px-2 py-2 text-sm"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-slate-900 dark:text-neutral-50">
-                      {snapshot.date}
-                      {isToday && (
-                        <span className="ml-2 rounded-full bg-sky-50 dark:bg-sky-950 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300">
-                          今天
+            尚未有已存檔的快照
+          </p>
+        ) : (
+          <div className="@container rounded-xl bg-white dark:bg-card p-2 shadow-sm">
+            <ul
+              data-testid="snapshot-history-list"
+              // 捲動區需可用鍵盤聚焦，鍵盤使用者才能捲動（PRD 4.2、7 節）
+              tabIndex={expanded ? 0 : undefined}
+              aria-label={expanded ? "歷史快照清單" : undefined}
+              className={`divide-y divide-slate-100 dark:divide-border ${expanded ? EXPANDED_LIST_CLASS : ""}`}
+            >
+              {rows.map(({ snapshot, netWorth, totalAssets }) => {
+                const isToday = snapshot.date === currentDate;
+                const isEditing = snapshot.date === editingDate;
+                return (
+                  <li
+                    key={snapshot.date}
+                    data-testid={`snapshot-row-${snapshot.date}`}
+                    className="flex items-center justify-between gap-2 px-2 py-2 text-sm"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-900 dark:text-neutral-50">
+                        {snapshot.date}
+                        {isToday && (
+                          <span className="ml-2 rounded-full bg-sky-50 dark:bg-sky-950 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300">
+                            今天
+                          </span>
+                        )}
+                        {isEditing && (
+                          <span className="ml-2 rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                            修正中
+                          </span>
+                        )}
+                      </p>
+                      <p className="flex flex-col text-xs @sm:flex-row @sm:flex-wrap @sm:gap-x-3 text-slate-500 dark:text-neutral-400">
+                        <span>
+                          淨資產{" "}
+                          <span
+                            className={
+                              netWorth < 0
+                                ? "text-rose-600 dark:text-rose-400"
+                                : undefined
+                            }
+                          >
+                            {formatCurrency(netWorth)}
+                          </span>
                         </span>
-                      )}
-                      {isEditing && (
-                        <span className="ml-2 rounded-full bg-amber-50 dark:bg-amber-950 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
-                          修正中
-                        </span>
-                      )}
-                    </p>
-                    <p className="flex flex-col text-xs @sm:flex-row @sm:flex-wrap @sm:gap-x-3 text-slate-500 dark:text-neutral-400">
-                      <span>
-                        淨資產{" "}
-                        <span
-                          className={
-                            netWorth < 0
-                              ? "text-rose-600 dark:text-rose-400"
-                              : undefined
-                          }
+                        <span>總資產 {formatCurrency(totalAssets)}</span>
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      {!isToday && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          aria-label={`修正 ${snapshot.date} 的快照`}
+                          onClick={() => onEdit(snapshot.date)}
                         >
-                          {formatCurrency(netWorth)}
-                        </span>
-                      </span>
-                      <span>總資產 {formatCurrency(totalAssets)}</span>
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    {!isToday && (
+                          修正
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        aria-label={`修正 ${snapshot.date} 的快照`}
-                        onClick={() => onEdit(snapshot.date)}
+                        aria-label={`刪除 ${snapshot.date} 的快照`}
+                        onClick={() => setPendingDelete(snapshot.date)}
                       >
-                        修正
+                        刪除
                       </Button>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      aria-label={`刪除 ${snapshot.date} 的快照`}
-                      onClick={() => setPendingDelete(snapshot.date)}
-                    >
-                      刪除
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          {hasMore && (
-            <div className="px-2 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setExpanded((prev) => !prev)}
-              >
-                {expanded ? "收合" : `顯示全部（${sorted.length} 筆）`}
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {hasMore && (
+              <div className="px-2 pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExpanded((prev) => !prev)}
+                >
+                  {expanded ? "收合" : `顯示全部（${sorted.length} 筆）`}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <Dialog
         open={pendingDelete !== null}

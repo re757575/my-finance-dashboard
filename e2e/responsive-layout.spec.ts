@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expandSnapshotSections } from "./helpers";
 
 // PRD 第 7 節「版面佈局」：1024px 以上雙欄、以下單欄；窄欄位不截斷內容
 
@@ -23,6 +24,8 @@ async function importFixture(page: Page) {
   await page.getByText("確認覆蓋匯入").click();
   await expect(page.getByText("確認匯入備份？")).toHaveCount(0);
   await expect(page.getByLabel("來源名稱").first()).toBeVisible();
+  // 版面檢查要涵蓋展開後的快照比較與歷史快照
+  await expandSnapshotSections(page);
 }
 
 /**
@@ -32,6 +35,7 @@ async function importFixture(page: Page) {
 async function loadDemo(page: Page) {
   await page.getByRole("button", { name: "載入範例資料" }).click();
   await expect(page.getByLabel("來源名稱").first()).toBeVisible();
+  await expandSnapshotSections(page);
 }
 
 const SUMMARY_TEST_IDS = ["total-assets", "total-liabilities", "net-worth"];

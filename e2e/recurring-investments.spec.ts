@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { expandSnapshotSections } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -207,6 +208,7 @@ test("快照比較列出每月定期定額的合計與逐筆增減；兩筆皆�
 
   await seed(true);
   await page.reload();
+  await expandSnapshotSections(page);
 
   const comparison = page.getByTestId("snapshot-comparison");
   await expect(comparison.getByText("每月定期定額")).toBeVisible();
@@ -228,6 +230,7 @@ test("快照比較列出每月定期定額的合計與逐筆增減；兩筆皆�
   // 兩筆快照都沒有定期定額：整組不顯示，其餘各組照常
   await seed(false);
   await page.reload();
+  await expandSnapshotSections(page);
 
   await expect(page.getByTestId("comparison-row-cash")).toBeVisible();
   await expect(comparison.getByText("每月定期定額")).toHaveCount(0);

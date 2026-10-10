@@ -1,9 +1,26 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import {
+  fireEvent,
+  render as renderCollapsed,
+  screen,
+} from "@testing-library/react";
+import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { calculateMetrics } from "@/lib/calculations";
 import type { Debt, Snapshot } from "@/types/schema";
 import { createEmptySnapshot } from "@/types/schema";
+
+const toggle = () => screen.getByRole("button", { name: "歷史快照" });
+
+/**
+ * 區塊預設收合（PRD 4.2「快照比較與歷史快照預設收合」）：既有案例檢查的都是展開後的內容，
+ * 渲染後先展開；要檢查收合狀態的案例改用 `renderCollapsed`。
+ */
+function render(ui: ReactElement) {
+  const view = renderCollapsed(ui);
+  fireEvent.click(toggle());
+  return view;
+}
 
 // 包一層 spy 以計算 calculateMetrics 的呼叫次數，行為與原函式完全相同
 vi.mock("@/lib/calculations", async (importOriginal) => {
@@ -71,13 +88,13 @@ function rowDates(): string[] {
 
 describe("SnapshotHistory", () => {
   // PRD 第 9 節 #48a
-  it("沒有快照時顯示「尚未有已存檔的快照」，沒有任何按鈕", () => {
+  it("沒有快照時顯示「尚未有已存檔的快照」，除了標題的收合鈕沒有其他按鈕", () => {
     renderHistory();
 
     expect(screen.getByTestId("snapshot-history-empty")).toHaveTextContent(
       "尚未有已存檔的快照"
     );
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toEqual([toggle()]);
   });
 
   // PRD 第 9 節 #48
@@ -355,7 +372,7 @@ describe("SnapshotHistory", () => {
       };
     }
 
-    it("收合時只為顯示的 10 筆計算指標", () => {
+    it("未按「顯示全部」時只為顯示的 10 筆計算指標", () => {
       renderWithRerender(manySnapshots(400));
 
       expect(calculateMetrics).toHaveBeenCalledTimes(10);
@@ -418,5 +435,88 @@ describe("SnapshotHistory", () => {
         "$999,999"
       );
     });
+  });
+});
+
+// PRD 4.2「快照比較與歷史快照預設收合」、第 9 節 #66a～#66f
+describe("SnapshotHistory：預設收合", () => {
+  const props = {
+    currentDate: "2026-09-30",
+    editingDate: null,
+    onEdit: vi.fn(),
+    onDelete: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.mocked(calculateMetrics).mockClear();
+  });
+
+  it("預設只顯示標題，不渲染清單與操作按鈕，也不計算各列指標", () => {
+    renderCollapsed(
+      <SnapshotHistory snapshots={manySnapshots(12)} {...props} />
+    );
+
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByTestId("snapshot-history-list")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^刪除 / })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /顯示全部/ })
+    ).not.toBeInTheDocument();
+    expect(calculateMetrics).not.toHaveBeenCalled();
+  });
+
+  it("點擊標題展開，再點一次收合", () => {
+    renderCollapsed(
+      <SnapshotHistory snapshots={manySnapshots(3)} {...props} />
+    );
+
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByTestId("snapshot-history-list")).toBeInTheDocument();
+
+    fireEvent.click(toggle());
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByTestId("snapshot-history-list")
+    ).not.toBeInTheDocument();
+  });
+
+  it("收合再展開後，「顯示全部」的狀態維持不變", () => {
+    renderCollapsed(
+      <SnapshotHistory snapshots={manySnapshots(12)} {...props} />
+    );
+    fireEvent.click(toggle());
+    fireEvent.click(screen.getByRole("button", { name: "顯示全部（12 筆）" }));
+    expect(screen.getAllByTestId(/^snapshot-row-/)).toHaveLength(12);
+
+    fireEvent.click(toggle());
+    fireEvent.click(toggle());
+
+    expect(screen.getAllByTestId(/^snapshot-row-/)).toHaveLength(12);
+  });
+
+  it("空狀態提示同樣要展開才看得到", () => {
+    renderCollapsed(<SnapshotHistory snapshots={[]} {...props} />);
+    expect(
+      screen.queryByTestId("snapshot-history-empty")
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(toggle());
+    expect(screen.getByTestId("snapshot-history-empty")).toBeInTheDocument();
+  });
+
+  it("修正中的快照不會讓區塊自動展開", () => {
+    renderCollapsed(
+      <SnapshotHistory
+        snapshots={manySnapshots(3)}
+        {...props}
+        editingDate="2026-01-02"
+      />
+    );
+    expect(toggle()).toHaveAttribute("aria-expanded", "false");
   });
 });
