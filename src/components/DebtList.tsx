@@ -163,8 +163,9 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-[1.3fr_1fr_1fr] items-end gap-2">
-        <label className="block space-y-1">
+      {/* 卡片寬度不足時本金獨佔一行：千分位後的八、九位數金額放不進三等分的欄位 */}
+      <div className="grid grid-cols-2 items-end gap-2 @sm:grid-cols-[1.3fr_1fr_1fr]">
+        <label className="col-span-2 block space-y-1 @sm:col-span-1">
           <span className="text-xs text-slate-500 dark:text-neutral-400">
             剩餘本金
             {estimated?.principal && <EstimatedBadge />}

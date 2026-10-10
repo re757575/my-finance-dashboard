@@ -54,7 +54,7 @@ describe("TargetNetWorthInput", () => {
       />
     );
 
-    expect(screen.getByLabelText("目標淨資產")).toHaveValue("5000000");
+    expect(screen.getByLabelText("目標淨資產")).toHaveValue("5,000,000");
   });
 
   it("點擊公式說明 icon 會顯示建議值的計算過程", () => {

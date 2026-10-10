@@ -7,7 +7,7 @@ describe("ExpenseInput", () => {
     render(<ExpenseInput value={30000} onChange={vi.fn()} />);
 
     expect(screen.getByLabelText("本月支出（不含負債月付）")).toHaveValue(
-      "30000"
+      "30,000"
     );
   });
 

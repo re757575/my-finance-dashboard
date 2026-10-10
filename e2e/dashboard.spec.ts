@@ -689,7 +689,7 @@ test("修正歷史快照：只覆蓋該日，儲存後今日草稿還原，重�
   ]);
   // 今日草稿（含尚未存檔的本月支出）原樣還原
   await expect(page.locator('label:has-text("本月支出") input')).toHaveValue(
-    "30000"
+    "30,000"
   );
   await expect(page.getByTestId("total-assets")).toHaveText("$300,000");
 
@@ -727,7 +727,7 @@ test("取消修正會還原今日草稿；修正中可直接切換對象，且�
 
   await expect(page.getByTestId("snapshot-edit-banner")).toHaveCount(0);
   await expect(page.locator('label:has-text("本月支出") input')).toHaveValue(
-    "30000"
+    "30,000"
   );
   await expect(page.getByTestId("total-assets")).toHaveText("$300,000");
   await expect(page.getByTestId("copy-prompt-button")).toBeEnabled();

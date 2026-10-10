@@ -125,6 +125,16 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 
   `{色}` 為 amber／rose／emerald／green／sky。進度條、燈號圓點與圖表數列的填色（`bg-*-500`、`text-*-500`、`fill-*`、資產配置色塊的 `*-600`／`slate-500`）及疊在色塊上的 `text-white` 深淺色共用，不需對應。深色下的文字下限是 `neutral-400`（`neutral-500` 在卡片上對比不足 WCAG AA）。hover 等變體寫成 `dark:hover:…`。
 
+### 單欄版面順序、固定儲存列與金額千分位
+
+規格見 [docs/PRD.md](docs/PRD.md) 4.2「金額千分位顯示」「固定儲存列」、第 7 節「版面佈局」。
+
+- **雙欄切換點是 `lg`（1024px）**。`App.tsx` 的格線有三個區塊：輸入區（`data-testid="input-form"`，雙欄時在左欄並跨兩列）、當下看板（`dashboard-now`，右欄上半）、其餘（右欄下半）。`useMediaQuery(SINGLE_COLUMN_QUERY)`（`src/hooks/useMediaQuery.ts`，與 `lg:` 互補；環境沒有 `matchMedia` 時為 false，所以 jsdom 一律是雙欄）判斷是否單欄。
+- **單欄且已有快照時，看板的 DOM 順序排在輸入區之前**（沒有快照時輸入區在前）。刻意調整 DOM 順序而不是用 CSS `order`，鍵盤與螢幕閱讀器的順序才會與畫面一致；雙欄的 DOM 順序永遠是輸入區在前。對調時（`hasLoaded` 之後才算）回到頁面頂端；看板上方的「↓ 前往輸入區」只在看板在前時出現。
+- **進入修正模式的捲動**：`handleEdit` 用 `flushSync` 先讓表單換成該日快照再捲動（否則版面高度還在變，平滑捲動會被瀏覽器中斷）；雙欄捲到頁面頂端、單欄捲到輸入區。
+- **`StickySaveBar`** 只在單欄渲染，顯示條件是 `isDirty && hasUnsavedEdits`（使用者動過而且存得下去）或有 `saveMessage`。它的按鈕與訊息用獨立的 `data-testid`（`sticky-save-button`／`sticky-save-message`），既有測試用的 `save-button`／`save-message` 仍指表單底部那一組。顯示時 `PwaUpdatePrompt` 以 `aboveStickyBar` 往上移。
+- **金額千分位**在 `useNumberInputText`：未聚焦時 `text` 是千分位（`formatGroupedNumberText`），聚焦時還原成純數字並全選。所有數字輸入框都走這個 hook，測試斷言輸入框的值時要用千分位後的字串（如 `"5,000,000"`）；用 `fill()`／`fireEvent.change` 輸入純數字不受影響。
+
 ### 元件分層
 
 - `src/components/*.tsx`：業務元件（輸入表單、看板卡片、趨勢區塊），大多為純展示元件，透過 `onChange`/`value` 與 `App.tsx` 溝通。

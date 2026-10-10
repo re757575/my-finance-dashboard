@@ -104,16 +104,17 @@ async function expectConsistentRepaymentRows(page: Page) {
   }
 }
 
-test("820px 平板寬度：改為單欄，輸入欄位不被截斷、指標數字不超出卡片", async ({
+test("820px 平板寬度：改為單欄且看板在前，輸入欄位不被截斷、指標數字不超出卡片", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 820, height: 1180 });
   await loadDemo(page);
 
-  // 單欄：看板排在輸入區下方，而不是右側
-  const saveBox = await page.getByTestId("save-button").boundingBox();
-  const assetsBox = await page.getByTestId("total-assets").boundingBox();
-  expect(assetsBox!.y).toBeGreaterThan(saveBox!.y);
+  // 單欄：看板與輸入區上下排列、左緣對齊，而不是左右並排；已有快照時看板在前（PRD 第 7 節）
+  const dashboardBox = await page.getByTestId("dashboard-now").boundingBox();
+  const formBox = await page.getByTestId("input-form").boundingBox();
+  expect(formBox!.x).toBe(dashboardBox!.x);
+  expect(formBox!.y).toBeGreaterThan(dashboardBox!.y + dashboardBox!.height);
 
   await expectNotClipped(page.getByLabel("來源名稱"));
   await expectNotClipped(page.getByLabel("收入名稱"));

@@ -143,7 +143,7 @@ describe("DebtList", () => {
 
     it("質押類別顯示質押股票市值欄位與該筆維持率", () => {
       render(<DebtList value={[pledge]} onChange={vi.fn()} />);
-      expect(screen.getByLabelText("質押股票市值")).toHaveValue("800000");
+      expect(screen.getByLabelText("質押股票市值")).toHaveValue("800,000");
       expect(screen.getByTestId("debt-maintenance-ratio")).toHaveTextContent(
         "160.0%"
       );

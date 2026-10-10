@@ -204,7 +204,7 @@ test("檔案放到頁面上不會被瀏覽器開啟，未存檔的輸入仍在�
   );
   await page.getByRole("button", { name: "取消" }).click();
   await expect(page.locator('label:has-text("台股市值") input')).toHaveValue(
-    "50000"
+    "50,000"
   );
   await expect(page.getByTestId("total-assets")).toHaveText("$50,000");
 });

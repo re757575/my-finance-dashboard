@@ -603,6 +603,8 @@ export function useLocalSnapshots() {
 
   return {
     currentDate,
+    /** 初次讀取 LocalStorage 是否已完成；完成前的快照筆數一律為 0，不代表真的沒有資料。 */
+    hasLoaded,
     loadStatus,
     draft,
     metrics,

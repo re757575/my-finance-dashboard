@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toSafeNumber } from "@/lib/calculations";
 
 interface UseNumberInputTextOptions {
@@ -22,6 +22,24 @@ function sanitizeNumericText(raw: string, allowNegative: boolean): string {
   return s;
 }
 
+/** 數值 → 編輯中的純數字文字：0 顯示空字串，方便直接覆蓋輸入。 */
+function toPlainText(value: number): string {
+  return value === 0 ? "" : String(value);
+}
+
+/**
+ * 數值 → 未聚焦時顯示的文字：整數部分加千分位（如 5,487,138.5），小數部分原樣保留
+ * （PRD 4.2「金額千分位顯示」）。
+ */
+export function formatGroupedNumberText(value: number): string {
+  const plain = toPlainText(value);
+  // 科學記號（極大／極小值）無從分組，原樣顯示
+  if (plain === "" || plain.includes("e")) return plain;
+  const [integer, fraction] = plain.split(".");
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return fraction === undefined ? grouped : `${grouped}.${fraction}`;
+}
+
 /**
  * 數字輸入框的受控文字狀態管理。
  *
@@ -31,6 +49,9 @@ function sanitizeNumericText(raw: string, allowNegative: boolean): string {
  *
  * 顯示文字本身也即時過濾非數字字元，並在 `min >= 0` 時擋掉負號——不只是把最終算出的
  * 數值 clamp 到 0，而是連畫面上都不該讓使用者看到自己「打得出」負數或文字。
+ *
+ * 未聚焦時以千分位顯示，方便核對位數；聚焦時還原成純數字再全選，編輯過程不會有逗號
+ * 干擾游標位置（貼上含逗號的數字時，逗號會被上面的過濾規則去掉）。
  */
 export function useNumberInputText({
   value,
@@ -38,14 +59,21 @@ export function useNumberInputText({
   min,
 }: UseNumberInputTextOptions) {
   const allowNegative = min === undefined || min < 0;
-  const [text, setText] = useState(() => (value === 0 ? "" : String(value)));
+  const [text, setText] = useState(() => formatGroupedNumberText(value));
   const isFocused = useRef(false);
+  // 聚焦時若文字由千分位換成純數字，要等重新渲染後才能全選（否則選取範圍會被新的 value 沖掉）
+  const pendingSelect = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isFocused.current) {
-      setText(value === 0 ? "" : String(value));
+      setText(formatGroupedNumberText(value));
     }
   }, [value]);
+
+  useLayoutEffect(() => {
+    pendingSelect.current?.select();
+    pendingSelect.current = null;
+  }, [text]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const sanitized = sanitizeNumericText(e.target.value, allowNegative);
@@ -56,12 +84,18 @@ export function useNumberInputText({
 
   function handleFocus(e: React.FocusEvent<HTMLInputElement>) {
     isFocused.current = true;
-    e.target.select();
+    const plain = toPlainText(value);
+    if (plain === text) {
+      e.target.select();
+      return;
+    }
+    pendingSelect.current = e.target;
+    setText(plain);
   }
 
   function handleBlur() {
     isFocused.current = false;
-    setText(value === 0 ? "" : String(value));
+    setText(formatGroupedNumberText(value));
   }
 
   return { text, handleChange, handleFocus, handleBlur };
