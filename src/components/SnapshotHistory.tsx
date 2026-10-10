@@ -80,7 +80,7 @@ export function SnapshotHistory({
           尚未有已存檔的快照
         </p>
       ) : (
-        <div className="rounded-xl bg-white dark:bg-card p-2 shadow-sm">
+        <div className="@container rounded-xl bg-white dark:bg-card p-2 shadow-sm">
           <ul
             data-testid="snapshot-history-list"
             // 捲動區需可用鍵盤聚焦，鍵盤使用者才能捲動（PRD 4.2、7 節）
@@ -95,9 +95,9 @@ export function SnapshotHistory({
                 <li
                   key={snapshot.date}
                   data-testid={`snapshot-row-${snapshot.date}`}
-                  className="flex flex-wrap items-center justify-between gap-2 px-2 py-2 text-sm"
+                  className="flex items-center justify-between gap-2 px-2 py-2 text-sm"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium text-slate-900 dark:text-neutral-50">
                       {snapshot.date}
                       {isToday && (
@@ -111,18 +111,20 @@ export function SnapshotHistory({
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      淨資產{" "}
-                      <span
-                        className={
-                          netWorth < 0
-                            ? "text-rose-600 dark:text-rose-400"
-                            : undefined
-                        }
-                      >
-                        {formatCurrency(netWorth)}
+                    <p className="flex flex-col text-xs @sm:flex-row @sm:flex-wrap @sm:gap-x-3 text-slate-500 dark:text-neutral-400">
+                      <span>
+                        淨資產{" "}
+                        <span
+                          className={
+                            netWorth < 0
+                              ? "text-rose-600 dark:text-rose-400"
+                              : undefined
+                          }
+                        >
+                          {formatCurrency(netWorth)}
+                        </span>
                       </span>
-                      　總資產 {formatCurrency(totalAssets)}
+                      <span>總資產 {formatCurrency(totalAssets)}</span>
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">

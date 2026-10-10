@@ -164,9 +164,9 @@ function App() {
         {canLoadDemo && <DemoDataOffer onLoad={loadDemoData} />}
         {isDemo && <DemoDataBanner onExit={clearAllData} />}
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 左欄：輸入區 */}
-          <div className="space-y-4 rounded-xl bg-white dark:bg-card p-4 shadow-sm md:col-span-1 md:self-start">
+          <div className="space-y-4 rounded-xl bg-white dark:bg-card p-4 shadow-sm lg:col-span-1 lg:self-start">
             <SnapshotEditBanner date={editingDate} onCancel={cancelEditing} />
             <CashSourceList
               value={draft.cashSources}
@@ -244,7 +244,7 @@ function App() {
           </div>
 
           {/* 右欄：看板與趨勢 */}
-          <div className="space-y-6 md:col-span-2">
+          <div className="space-y-6 lg:col-span-2">
             <section className="space-y-3">
               <div className="flex justify-end">
                 <CopyPromptButton

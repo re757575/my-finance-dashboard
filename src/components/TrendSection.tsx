@@ -90,7 +90,7 @@ export function TrendSection({
               );
               if (selected) onRangeChange(selected.value);
             }}
-            className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-sm"
+            className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-base md:text-sm"
           >
             {RANGE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>

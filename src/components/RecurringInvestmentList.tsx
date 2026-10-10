@@ -33,7 +33,7 @@ export function RecurringInvestmentList({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="@container space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
           每月定期定額清單
@@ -57,7 +57,7 @@ export function RecurringInvestmentList({
         </p>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3 @md:space-y-2">
         {value.map((investment) => (
           <RecurringInvestmentRow
             key={investment.id}
@@ -92,13 +92,14 @@ function RecurringInvestmentRow({
     min: 0,
   });
 
+  // 欄寬不足時名稱獨佔一行（比照現金來源清單），避免名稱被金額欄擠到截斷。
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 @md:flex-nowrap">
       <Input
         placeholder="標的名稱（如 0050／VT）"
         value={investment.name}
         onChange={(e) => onUpdate({ name: e.target.value })}
-        className="flex-1"
+        className="@md:flex-1"
         aria-label="定期定額名稱"
       />
       <Input
@@ -109,7 +110,7 @@ function RecurringInvestmentRow({
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        className="w-32"
+        className="flex-1 @md:w-32 @md:flex-none"
         aria-label="定期定額金額"
       />
       <button

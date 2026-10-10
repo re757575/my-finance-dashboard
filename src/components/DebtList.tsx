@@ -126,7 +126,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
       : null;
 
   return (
-    <div className="space-y-2 rounded-lg border border-slate-200 dark:border-border p-3">
+    <div className="@container space-y-2 rounded-lg border border-slate-200 dark:border-border p-3">
       <div className="flex items-center gap-2">
         <select
           aria-label="負債類別"
@@ -138,7 +138,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
               repaymentMethod: DEFAULT_REPAYMENT_METHOD_BY_CATEGORY[category],
             });
           }}
-          className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-sm"
+          className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-base md:text-sm"
         >
           {DEBT_CATEGORIES.map((category) => (
             <option key={category} value={category}>
@@ -163,7 +163,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-[1.3fr_1fr_1fr] items-end gap-2">
         <label className="block space-y-1">
           <span className="text-xs text-slate-500 dark:text-neutral-400">
             剩餘本金
@@ -214,8 +214,8 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
       </div>
 
       {isPledge && (
-        <div className="grid grid-cols-3 items-end gap-2">
-          <label className="col-span-2 block space-y-1">
+        <div className="flex items-end gap-2">
+          <label className="block min-w-0 flex-1 space-y-1">
             <span className="text-xs text-slate-500 dark:text-neutral-400">
               質押股票市值
             </span>
@@ -230,7 +230,7 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
               aria-label="質押股票市值"
             />
           </label>
-          <p className="pb-2 text-right text-xs text-slate-500 dark:text-neutral-400">
+          <p className="shrink-0 pb-2 text-right text-xs whitespace-nowrap text-slate-500 dark:text-neutral-400">
             維持率：
             <span
               data-testid="debt-maintenance-ratio"
@@ -244,12 +244,13 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      {/* 卡片寬度不足時固定排成兩行，避免各筆負債因金額長短不同而有的折行、有的不折 */}
+      <div className="flex flex-col gap-1 @sm:flex-row @sm:items-center @sm:justify-between">
         <RepaymentMethodToggle
           value={debt.repaymentMethod}
           onChange={(repaymentMethod) => onUpdate({ repaymentMethod })}
         />
-        <p className="text-sm text-slate-500 dark:text-neutral-400">
+        <p className="self-end text-sm whitespace-nowrap text-slate-500 dark:text-neutral-400 @sm:self-auto">
           該筆每月應還：
           <span
             data-testid="debt-monthly-payment"
@@ -279,7 +280,7 @@ function RepaymentMethodToggle({
     <div
       role="group"
       aria-label="攤還方式"
-      className="inline-flex rounded-full border border-slate-200 dark:border-border p-0.5 text-xs"
+      className="inline-flex shrink-0 self-start rounded-full border border-slate-200 dark:border-border p-0.5 text-xs whitespace-nowrap @sm:self-auto"
     >
       {options.map((option) => (
         <button

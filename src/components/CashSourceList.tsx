@@ -53,7 +53,7 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
   const restrictedTotal = sumRestrictedCashSources(value);
 
   return (
-    <div className="space-y-2">
+    <div className="@container space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
           多來源現金清單
@@ -69,7 +69,7 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
         </p>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3 @md:space-y-2">
         {value.map((source) => (
           <CashSourceRow
             key={source.id}
@@ -121,13 +121,14 @@ function CashSourceRow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 容器寬度不足（手機、桌面左欄）時名稱獨佔一行，避免被金額與操作鈕擠到看不出是哪個帳戶。
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 @md:flex-nowrap">
       <Input
         placeholder="來源名稱"
         value={source.name}
         onChange={(e) => onUpdate({ name: e.target.value })}
-        className="flex-1"
+        className="@md:flex-1"
         aria-label="來源名稱"
       />
       <Input
@@ -139,7 +140,7 @@ function CashSourceRow({
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        className="w-32"
+        className="flex-1 @md:w-32 @md:flex-none"
         aria-label="金額"
       />
       <button

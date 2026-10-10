@@ -16,7 +16,7 @@ export function ThemeToggle({ value, onChange }: ThemeToggleProps) {
     <select
       aria-label="顯示主題"
       data-testid="theme-toggle"
-      className="h-9 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-sm dark:border-input dark:bg-input/30"
+      className="h-9 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-base md:text-sm dark:border-input dark:bg-input/30"
       value={value}
       onChange={(e) => {
         if (isThemePreference(e.target.value)) onChange(e.target.value);

@@ -78,14 +78,14 @@ function SummaryCard({
   formula: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
+    <div className="@container rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-center gap-1">
         <p className="text-sm text-slate-500 dark:text-neutral-400">{label}</p>
         {formula}
       </div>
       <p
         data-testid={testId}
-        className={`mt-1 text-2xl font-bold sm:text-3xl ${negative ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-neutral-50"}`}
+        className={`mt-1 text-2xl font-bold wrap-anywhere sm:text-[clamp(1.25rem,14.5cqw,1.875rem)] ${negative ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-neutral-50"}`}
       >
         {formatCurrency(value)}
       </p>

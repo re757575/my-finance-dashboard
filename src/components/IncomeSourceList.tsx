@@ -27,7 +27,7 @@ export function IncomeSourceList({ value, onChange }: IncomeSourceListProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="@container space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
           每月收入清單
@@ -43,7 +43,7 @@ export function IncomeSourceList({ value, onChange }: IncomeSourceListProps) {
         </p>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3 @md:space-y-2">
         {value.map((source) => (
           <IncomeSourceRow
             key={source.id}
@@ -74,13 +74,14 @@ function IncomeSourceRow({ source, onUpdate, onRemove }: IncomeSourceRowProps) {
     min: 0,
   });
 
+  // 欄寬不足時名稱獨佔一行（比照現金來源清單），避免名稱被金額欄擠到截斷。
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 @md:flex-nowrap">
       <Input
         placeholder="收入名稱（如薪資／接案）"
         value={source.name}
         onChange={(e) => onUpdate({ name: e.target.value })}
-        className="flex-1"
+        className="@md:flex-1"
         aria-label="收入名稱"
       />
       <Input
@@ -91,7 +92,7 @@ function IncomeSourceRow({ source, onUpdate, onRemove }: IncomeSourceRowProps) {
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        className="w-32"
+        className="flex-1 @md:w-32 @md:flex-none"
         aria-label="收入金額"
       />
       <button

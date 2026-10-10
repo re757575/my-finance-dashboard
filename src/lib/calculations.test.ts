@@ -649,7 +649,7 @@ describe("advanceDebtByMonths", () => {
     expect(advanceDebtByMonths(debt, 6)).toEqual(debt);
   });
 
-  it("本息平均攤還：往前推進 k 期後，剩餘本金依攤還表遞減、剩餘期數同步遞減", () => {
+  it("本息平均攤還：往前推進 k 期後，剩餘本金依攤還表遞減（四捨五入到元）、剩餘期數同步遞減", () => {
     const principal = 5000000;
     const annualRate = 2.4;
     const remainingMonths = 240;
@@ -667,7 +667,20 @@ describe("advanceDebtByMonths", () => {
     );
 
     expect(advanced.remainingMonths).toBe(228);
-    expect(advanced.principal).toBeCloseTo(expectedBalance, 2);
+    // 估算值會直接帶入輸入欄位，四捨五入到元（PRD 5.2a 節）
+    expect(advanced.principal).toBe(Math.round(expectedBalance));
+  });
+
+  it("本息平均攤還：估算後的剩餘本金一律是整數，不帶小數", () => {
+    for (const monthsElapsed of [1, 2, 7, 13]) {
+      const advanced = advanceDebtByMonths(
+        baseDebt({ principal: 5487138, annualRate: 2.2, remainingMonths: 241 }),
+        monthsElapsed
+      );
+      expect(Number.isInteger(advanced.principal)).toBe(true);
+      expect(advanced.principal).toBeGreaterThan(0);
+      expect(advanced.principal).toBeLessThan(5487138);
+    }
   });
 
   it("只計息：往前推進 k 期後，本金維持不變，只遞減剩餘期數", () => {

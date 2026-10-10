@@ -10,7 +10,7 @@ interface SnapshotComparisonProps {
 }
 
 const SELECT_CLASS =
-  "h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-sm";
+  "h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-base md:text-sm";
 
 function formatPoints(value: number): string {
   return `${value.toFixed(1)} 個百分點`;
@@ -162,33 +162,38 @@ export function SnapshotComparison({ snapshots }: SnapshotComparisonProps) {
           快照比較
         </h2>
         {base && target && (
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-neutral-300">
-            <span>從</span>
-            <select
-              aria-label="比較基準日"
-              value={base.date}
-              onChange={(e) => setSelectedBase(e.target.value)}
-              className={SELECT_CLASS}
-            >
-              {sorted.map((s) => (
-                <option key={s.date} value={s.date}>
-                  {s.date}
-                </option>
-              ))}
-            </select>
-            <span>到</span>
-            <select
-              aria-label="比較對象日"
-              value={target.date}
-              onChange={(e) => setSelectedTarget(e.target.value)}
-              className={SELECT_CLASS}
-            >
-              {sorted.map((s) => (
-                <option key={s.date} value={s.date}>
-                  {s.date}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-neutral-300">
+            {/* 每組「標籤＋選單」各自成對，窄螢幕換行時不會把標籤與選單拆開 */}
+            <span className="flex items-center gap-2">
+              <span>從</span>
+              <select
+                aria-label="比較基準日"
+                value={base.date}
+                onChange={(e) => setSelectedBase(e.target.value)}
+                className={SELECT_CLASS}
+              >
+                {sorted.map((s) => (
+                  <option key={s.date} value={s.date}>
+                    {s.date}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <span className="flex items-center gap-2">
+              <span>到</span>
+              <select
+                aria-label="比較對象日"
+                value={target.date}
+                onChange={(e) => setSelectedTarget(e.target.value)}
+                className={SELECT_CLASS}
+              >
+                {sorted.map((s) => (
+                  <option key={s.date} value={s.date}>
+                    {s.date}
+                  </option>
+                ))}
+              </select>
+            </span>
           </div>
         )}
       </div>

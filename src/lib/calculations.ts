@@ -158,7 +158,8 @@ export function advanceDebtByMonths(debt: Debt, monthsElapsed: number): Debt {
 
   return {
     ...debt,
-    principal: newRemainingMonths === 0 ? 0 : Math.max(0, balance),
+    // 估算值會直接帶入輸入欄位，四捨五入到元，避免出現一長串小數（PRD 5.2a 節）
+    principal: newRemainingMonths === 0 ? 0 : Math.round(Math.max(0, balance)),
     remainingMonths: newRemainingMonths,
   };
 }

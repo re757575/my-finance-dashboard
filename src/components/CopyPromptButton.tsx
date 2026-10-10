@@ -49,13 +49,13 @@ export function CopyPromptButton({
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <select
           aria-label="AI 分析提示詞模式"
           value={mode}
           onChange={(e) => setMode(e.target.value as PromptMode)}
           disabled={disabled}
-          className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-sm disabled:opacity-50"
+          className="h-9 rounded-md border border-slate-200 bg-white dark:border-input dark:bg-input/30 px-2 text-base md:text-sm disabled:opacity-50"
         >
           {PROMPT_MODE_OPTIONS.map(([value, label]) => (
             <option key={value} value={value}>
