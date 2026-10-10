@@ -376,4 +376,104 @@ describe("TrendLineChart", () => {
       for (const text of texts) expect(text).toHaveClass("text-xs");
     });
   });
+
+  // PRD 4.2「快照備註」第 5 點、第 9 節 #72e
+  describe("快照備註", () => {
+    const noted = [
+      { date: "2026-07-11", value: 100000 },
+      { date: "2026-07-12", value: 120000, note: "換工作" },
+      { date: "2026-07-13", value: 150000, note: "" },
+    ];
+
+    it("只有有備註的節點畫出圓環標記", () => {
+      const { container } = render(
+        <TrendLineChart title="淨資產趨勢" points={noted} />
+      );
+
+      const markers = container.querySelectorAll(
+        '[data-testid^="chart-note-marker-"]'
+      );
+      expect(markers).toHaveLength(1);
+      expect(markers[0]).toHaveAttribute("data-testid", "chart-note-marker-1");
+      // 圓環：只有外框、沒有填色，套在既有節點外
+      const ring = markers[0].querySelector("circle");
+      expect(ring).toHaveAttribute("fill", "none");
+      expect(ring).toHaveAttribute("stroke", "currentColor");
+      expect(markers[0].querySelectorAll("circle")).toHaveLength(1);
+    });
+
+    it("沒有任何備註時不畫標記", () => {
+      const { container } = render(
+        <TrendLineChart title="淨資產趨勢" points={points} />
+      );
+
+      expect(
+        container.querySelector('[data-testid^="chart-note-marker-"]')
+      ).toBeNull();
+    });
+
+    it("有備註的節點 Tooltip 最後多一行備註，其他節點沒有", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={noted}
+          formatValue={formatCurrency}
+          showDelta
+        />
+      );
+
+      fireEvent.click(screen.getAllByTestId("chart-node-1")[0]);
+      const tooltip = screen.getByTestId("chart-tooltip");
+      expect(
+        within(tooltip).getByTestId("chart-tooltip-note").textContent
+      ).toBe("備註：換工作");
+      expect(tooltip.lastElementChild).toBe(
+        within(tooltip).getByTestId("chart-tooltip-note")
+      );
+
+      fireEvent.click(screen.getAllByTestId("chart-node-0")[0]);
+      expect(screen.getByTestId("chart-tooltip").textContent).toContain(
+        "2026-07-11"
+      );
+      expect(
+        screen.queryByTestId("chart-tooltip-note")
+      ).not.toBeInTheDocument();
+
+      // 空字串視為沒有備註
+      fireEvent.click(screen.getAllByTestId("chart-node-2")[0]);
+      expect(
+        screen.queryByTestId("chart-tooltip-note")
+      ).not.toBeInTheDocument();
+    });
+
+    it("全螢幕檢視同樣有標記與備註行", () => {
+      render(<TrendLineChart title="淨資產趨勢" points={noted} />);
+      fireEvent.click(screen.getByLabelText("淨資產趨勢全螢幕檢視"));
+
+      const dialog = screen.getByRole("dialog");
+      expect(
+        within(dialog).getByTestId("chart-note-marker-1")
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).queryByTestId("chart-note-marker-0")
+      ).not.toBeInTheDocument();
+
+      fireEvent.click(within(dialog).getByTestId("chart-node-1"));
+      expect(within(dialog).getByTestId("chart-tooltip-note").textContent).toBe(
+        "備註：換工作"
+      );
+    });
+
+    it("備註行可在 Tooltip 內換行，不把 Tooltip 撐得過寬", () => {
+      render(<TrendLineChart title="淨資產趨勢" points={noted} />);
+
+      fireEvent.click(screen.getAllByTestId("chart-node-1")[0]);
+
+      expect(screen.getByTestId("chart-tooltip-note")).toHaveClass(
+        "max-w-40",
+        "whitespace-normal",
+        "break-words"
+      );
+    });
+  });
 });

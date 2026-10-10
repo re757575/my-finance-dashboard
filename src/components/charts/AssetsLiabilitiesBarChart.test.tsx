@@ -50,4 +50,57 @@ describe("AssetsLiabilitiesBarChart", () => {
     expect(texts).toHaveLength(points.length);
     for (const text of texts) expect(text).toHaveClass("text-xs");
   });
+
+  // PRD 4.2「快照備註」第 5 點、第 9 節 #72f
+  describe("快照備註", () => {
+    const noted = [
+      points[0],
+      { ...points[1], note: "換工作" },
+      { ...points[2], note: "" },
+    ];
+
+    it("有備註的節點上方畫出帶圓心的圓環標記，其他節點沒有", () => {
+      const { container } = render(
+        <AssetsLiabilitiesBarChart points={noted} />
+      );
+
+      const markers = container.querySelectorAll(
+        '[data-testid^="chart-note-marker-"]'
+      );
+      expect(markers).toHaveLength(1);
+      expect(markers[0]).toHaveAttribute("data-testid", "chart-note-marker-1");
+      expect(markers[0].querySelectorAll("circle")).toHaveLength(2);
+    });
+
+    it("有備註的節點 Tooltip 多一行備註，原本的內容不變", () => {
+      render(<AssetsLiabilitiesBarChart points={noted} />);
+
+      fireEvent.click(screen.getAllByTestId("chart-node-1")[0]);
+      expect(screen.getByTestId("chart-tooltip").textContent).toBe(
+        "2026-07-12 資產 $160,000 ／ 負債 $18,000備註：換工作"
+      );
+      expect(screen.getByTestId("chart-tooltip-note").textContent).toBe(
+        "備註：換工作"
+      );
+
+      fireEvent.click(screen.getAllByTestId("chart-node-0")[0]);
+      expect(
+        screen.queryByTestId("chart-tooltip-note")
+      ).not.toBeInTheDocument();
+    });
+
+    it("全螢幕檢視同樣有標記與備註行", () => {
+      render(<AssetsLiabilitiesBarChart points={noted} />);
+      fireEvent.click(screen.getByLabelText("資產負債對比全螢幕檢視"));
+
+      const dialog = screen.getByRole("dialog");
+      expect(
+        within(dialog).getByTestId("chart-note-marker-1")
+      ).toBeInTheDocument();
+      fireEvent.click(within(dialog).getByTestId("chart-node-1"));
+      expect(within(dialog).getByTestId("chart-tooltip-note").textContent).toBe(
+        "備註：換工作"
+      );
+    });
+  });
 });

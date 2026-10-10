@@ -34,8 +34,11 @@ interface RawSnapshotV2 extends RawSnapshotV1 {
   usStockCurrency: "USD" | "TWD";
 }
 
+/** V8 以前的快照（尚無 note）。 */
+type RawSnapshotV8 = Omit<Snapshot, "note">;
+
 /** V7 以前的快照（尚無 recurringInvestments）。 */
-type RawSnapshotV7 = Omit<Snapshot, "recurringInvestments">;
+type RawSnapshotV7 = Omit<RawSnapshotV8, "recurringInvestments">;
 
 /** V6 以前的負債／現金來源／快照（尚無 collateralValue、restricted、realEstateValue）。 */
 type RawDebtV6 = Omit<Debt, "collateralValue">;
@@ -183,13 +186,27 @@ function migrateV6ToV7(raw: { schemaVersion: 6; snapshots: RawSnapshotV6[] }): {
  * V7（無每月定期定額清單）→ V8：每筆快照補上 recurringInvestments: []（視為沒有定期定額），
  * 不臆測回填任何項目；定期定額不算支出，現金流、儲蓄率等既有計算結果與遷移前完全一致。
  */
-function migrateV7ToV8(raw: {
-  schemaVersion: 7;
-  snapshots: RawSnapshotV7[];
-}): FinanceData {
+function migrateV7ToV8(raw: { schemaVersion: 7; snapshots: RawSnapshotV7[] }): {
+  schemaVersion: 8;
+  snapshots: RawSnapshotV8[];
+} {
   return {
     schemaVersion: 8,
     snapshots: raw.snapshots.map((s) => ({ ...s, recurringInvestments: [] })),
+  };
+}
+
+/**
+ * V8（無快照備註）→ V9：每筆快照補上 note: ""（視為沒有備註），不臆測回填任何內容；
+ * 備註只供顯示、不參與計算，所有計算結果與遷移前完全一致。
+ */
+function migrateV8ToV9(raw: {
+  schemaVersion: 8;
+  snapshots: RawSnapshotV8[];
+}): FinanceData {
+  return {
+    schemaVersion: 9,
+    snapshots: raw.snapshots.map((s) => ({ ...s, note: "" })),
   };
 }
 
@@ -205,7 +222,7 @@ function migrateFinanceData(parsed: {
     const v3 = migrateV2ToV3(v2);
     const v4 = migrateV3ToV4(v3);
     const v5 = migrateV4ToV5(v4);
-    return migrateV7ToV8(migrateV6ToV7(migrateV5ToV6(v5)));
+    return migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(migrateV5ToV6(v5))));
   }
   if (parsed.schemaVersion === 2) {
     const v3 = migrateV2ToV3(
@@ -213,38 +230,49 @@ function migrateFinanceData(parsed: {
     );
     const v4 = migrateV3ToV4(v3);
     const v5 = migrateV4ToV5(v4);
-    return migrateV7ToV8(migrateV6ToV7(migrateV5ToV6(v5)));
+    return migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(migrateV5ToV6(v5))));
   }
   if (parsed.schemaVersion === 3) {
     const v4 = migrateV3ToV4(
       parsed as { schemaVersion: 3; snapshots: RawSnapshotV3[] }
     );
     const v5 = migrateV4ToV5(v4);
-    return migrateV7ToV8(migrateV6ToV7(migrateV5ToV6(v5)));
+    return migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(migrateV5ToV6(v5))));
   }
   if (parsed.schemaVersion === 4) {
     const v5 = migrateV4ToV5(
       parsed as { schemaVersion: 4; snapshots: RawSnapshotV4[] }
     );
-    return migrateV7ToV8(migrateV6ToV7(migrateV5ToV6(v5)));
+    return migrateV8ToV9(migrateV7ToV8(migrateV6ToV7(migrateV5ToV6(v5))));
   }
   if (parsed.schemaVersion === 5) {
-    return migrateV7ToV8(
-      migrateV6ToV7(
-        migrateV5ToV6(
-          parsed as { schemaVersion: 5; snapshots: RawSnapshotV5[] }
+    return migrateV8ToV9(
+      migrateV7ToV8(
+        migrateV6ToV7(
+          migrateV5ToV6(
+            parsed as { schemaVersion: 5; snapshots: RawSnapshotV5[] }
+          )
         )
       )
     );
   }
   if (parsed.schemaVersion === 6) {
-    return migrateV7ToV8(
-      migrateV6ToV7(parsed as { schemaVersion: 6; snapshots: RawSnapshotV6[] })
+    return migrateV8ToV9(
+      migrateV7ToV8(
+        migrateV6ToV7(
+          parsed as { schemaVersion: 6; snapshots: RawSnapshotV6[] }
+        )
+      )
     );
   }
   if (parsed.schemaVersion === 7) {
-    return migrateV7ToV8(
-      parsed as { schemaVersion: 7; snapshots: RawSnapshotV7[] }
+    return migrateV8ToV9(
+      migrateV7ToV8(parsed as { schemaVersion: 7; snapshots: RawSnapshotV7[] })
+    );
+  }
+  if (parsed.schemaVersion === 8) {
+    return migrateV8ToV9(
+      parsed as { schemaVersion: 8; snapshots: RawSnapshotV8[] }
     );
   }
   return null;

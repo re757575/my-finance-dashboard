@@ -28,6 +28,7 @@ import { SavingsRateCard } from "@/components/SavingsRateCard";
 import { SnapshotComparison } from "@/components/SnapshotComparison";
 import { SnapshotEditBanner } from "@/components/SnapshotEditBanner";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
+import { SnapshotNoteInput } from "@/components/SnapshotNoteInput";
 import { StickySaveBar } from "@/components/StickySaveBar";
 import { StockInputs } from "@/components/StockInputs";
 import { StressTestCard } from "@/components/StressTestCard";
@@ -285,6 +286,12 @@ function App() {
           />
         </InputSection>
       </div>
+
+      {/* 備註屬於整筆快照，不放進任何可收合的區塊（PRD 4.2「快照備註」） */}
+      <SnapshotNoteInput
+        value={draft.note}
+        onChange={(note) => updateDraft({ note })}
+      />
 
       <div className="space-y-1">
         <Button

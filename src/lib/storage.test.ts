@@ -526,7 +526,95 @@ describe("parseFinanceData", () => {
     }
   });
 
-  it("V1 一路遷移到目前版本時，也會補上 V7、V8 的新欄位", () => {
+  // PRD 第 9 節 #72i：V8（無快照備註）遷移為 V9，補上空字串，不臆測回填
+  it("V8 舊格式資料會自動遷移為目前版本，補上空的 note", () => {
+    const v8Raw = JSON.stringify({
+      schemaVersion: 8,
+      snapshots: [
+        {
+          date: "2026-09-30",
+          updatedAt: "2026-09-30T09:12:00Z",
+          cashSources: [
+            { id: "x", name: "現金", amount: 1000, restricted: false },
+          ],
+          twStockValue: 0,
+          usStockValue: 0,
+          usStockCurrency: "USD",
+          exchangeRate: 0,
+          realEstateValue: 5000000,
+          debts: [],
+          incomeSources: [{ id: "i", name: "薪資", amount: 60000 }],
+          monthlyExpense: 30000,
+          recurringInvestments: [{ id: "r1", name: "0050", amount: 10000 }],
+          targetNetWorth: 5000000,
+          targetCashRatio: 30,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v8Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      const snapshot = result.data.snapshots[0];
+      expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+      expect(result.data.schemaVersion).toBe(9);
+      expect(snapshot.note).toBe("");
+      // 既有欄位不受影響
+      expect(snapshot.date).toBe("2026-09-30");
+      expect(snapshot.updatedAt).toBe("2026-09-30T09:12:00Z");
+      expect(snapshot.monthlyExpense).toBe(30000);
+      expect(snapshot.realEstateValue).toBe(5000000);
+      expect(snapshot.recurringInvestments).toEqual([
+        { id: "r1", name: "0050", amount: 10000 },
+      ]);
+    }
+  });
+
+  it("目前版本的資料原樣保留快照備註，不經過遷移", () => {
+    const raw = JSON.stringify({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      snapshots: [{ ...createEmptySnapshot("2026-10-06"), note: "買房" }],
+    });
+
+    const result = parseFinanceData(raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.data.snapshots[0].note).toBe("買房");
+    }
+  });
+
+  it("V7 以前的資料一路遷移時也會補上空的 note", () => {
+    const v7Raw = JSON.stringify({
+      schemaVersion: 7,
+      snapshots: [
+        {
+          date: "2026-09-30",
+          updatedAt: "2026-09-30T09:12:00Z",
+          cashSources: [],
+          twStockValue: 0,
+          usStockValue: 0,
+          usStockCurrency: "USD",
+          exchangeRate: 0,
+          realEstateValue: 0,
+          debts: [],
+          incomeSources: [],
+          monthlyExpense: 0,
+          targetNetWorth: 0,
+          targetCashRatio: 0,
+        },
+      ],
+    });
+
+    const result = parseFinanceData(v7Raw);
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+      expect(result.data.snapshots[0].note).toBe("");
+      expect(result.data.snapshots[0].recurringInvestments).toEqual([]);
+    }
+  });
+
+  it("V1 一路遷移到目前版本時，也會補上 V7、V8、V9 的新欄位", () => {
     const v1Raw = JSON.stringify({
       schemaVersion: 1,
       snapshots: [
@@ -552,6 +640,7 @@ describe("parseFinanceData", () => {
       expect(snapshot.cashSources[0].restricted).toBe(false);
       expect(snapshot.debts.every((d) => d.collateralValue === 0)).toBe(true);
       expect(snapshot.recurringInvestments).toEqual([]);
+      expect(snapshot.note).toBe("");
     }
   });
 });

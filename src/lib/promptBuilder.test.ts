@@ -26,6 +26,7 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     recurringInvestments: [],
     targetNetWorth: 0,
     targetCashRatio: 0,
+    note: "",
     ...overrides,
   };
 }

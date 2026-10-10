@@ -141,7 +141,7 @@ describe("useLocalSnapshots", () => {
   // PRD 第 4.2 節：今日無快照時，自動帶入最近一筆快照的資料
   it("importBackup 成功時覆蓋資料，並依最新快照預帶今日表單", async () => {
     const importedData = {
-      schemaVersion: 8 as const,
+      schemaVersion: 9 as const,
       snapshots: [
         {
           date: "2026-01-01",
@@ -160,6 +160,7 @@ describe("useLocalSnapshots", () => {
           recurringInvestments: [],
           targetNetWorth: 0,
           targetCashRatio: 0,
+          note: "",
         },
       ],
     };
@@ -238,7 +239,7 @@ describe("useLocalSnapshots", () => {
     it("今日草稿依經過的月數自動遞減本息平均攤還負債的剩餘本金／期數，並標示為系統估算", () => {
       const pastDate = dateMonthsAgo(3);
       persistFinanceData({
-        schemaVersion: 8,
+        schemaVersion: 9,
         snapshots: [
           {
             ...createEmptySnapshot(pastDate),
@@ -272,7 +273,7 @@ describe("useLocalSnapshots", () => {
     it("只計息負債只遞減剩餘期數，本金維持不變且不標示為估算", () => {
       const pastDate = dateMonthsAgo(2);
       persistFinanceData({
-        schemaVersion: 8,
+        schemaVersion: 9,
         snapshots: [
           {
             ...createEmptySnapshot(pastDate),
@@ -305,7 +306,7 @@ describe("useLocalSnapshots", () => {
     it("使用者手動修改被估算的欄位後，該欄位的估算標示會消失", () => {
       const pastDate = dateMonthsAgo(3);
       persistFinanceData({
-        schemaVersion: 8,
+        schemaVersion: 9,
         snapshots: [
           {
             ...createEmptySnapshot(pastDate),
@@ -344,7 +345,7 @@ describe("useLocalSnapshots", () => {
     it("save() 之後清除所有估算標示（使用者已確認當下數值）", () => {
       const pastDate = dateMonthsAgo(3);
       persistFinanceData({
-        schemaVersion: 8,
+        schemaVersion: 9,
         snapshots: [
           {
             ...createEmptySnapshot(pastDate),
@@ -374,7 +375,7 @@ describe("useLocalSnapshots", () => {
 
     it("同一曆月內建立草稿（沒有經過任何一期）時，不做遞減也不標示估算", () => {
       persistFinanceData({
-        schemaVersion: 8,
+        schemaVersion: 9,
         snapshots: [
           {
             ...createEmptySnapshot(dateMonthsAgo(0)),
@@ -395,7 +396,7 @@ describe("useLocalSnapshots", () => {
 describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
   function saveSnapshotOn(date: string) {
     persistFinanceData({
-      schemaVersion: 8,
+      schemaVersion: 9,
       snapshots: [createEmptySnapshot(date)],
     });
   }
@@ -495,7 +496,7 @@ describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
     vi.mocked(parseBackupFile).mockResolvedValue({
       status: "ok",
       data: {
-        schemaVersion: 8,
+        schemaVersion: 9,
         snapshots: [createEmptySnapshot("2026-01-01")],
       },
     });
@@ -545,7 +546,7 @@ describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
         data: {
-          schemaVersion: 8,
+          schemaVersion: 9,
           snapshots: [createEmptySnapshot("2026-01-01")],
         },
       });
@@ -612,7 +613,7 @@ describe("useLocalSnapshots：備份紀錄與加密匯出", () => {
 
     it("依日期排序取最早與最近，與寫入順序無關", () => {
       persistFinanceData({
-        schemaVersion: 8,
+        schemaVersion: 9,
         snapshots: [
           createEmptySnapshot("2026-03-01"),
           createEmptySnapshot("2026-01-15"),
@@ -656,7 +657,7 @@ describe("useLocalSnapshots：修正與刪除歷史快照", () => {
   }
 
   function seed(...snapshots: ReturnType<typeof snap>[]) {
-    persistFinanceData({ schemaVersion: 8, snapshots });
+    persistFinanceData({ schemaVersion: 9, snapshots });
   }
 
   function storedSnapshots() {
@@ -1124,7 +1125,7 @@ describe("useLocalSnapshots：修正與刪除歷史快照", () => {
       seed(snap("2026-01-10", 100000), snap("2026-02-10", 200000));
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
-        data: { schemaVersion: 8, snapshots: [snap("2026-05-05", 55555)] },
+        data: { schemaVersion: 9, snapshots: [snap("2026-05-05", 55555)] },
       });
       const { result } = renderHook(() => useLocalSnapshots());
       act(() => {
@@ -1190,7 +1191,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
   }
 
   function seed(...snapshots: ReturnType<typeof snap>[]) {
-    persistFinanceData({ schemaVersion: 8, snapshots });
+    persistFinanceData({ schemaVersion: 9, snapshots });
   }
 
   function storedDates() {
@@ -1284,7 +1285,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
       seed(snap("2026-01-10", 100000));
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
-        data: { schemaVersion: 8, snapshots: [snap("2026-05-05", 55555)] },
+        data: { schemaVersion: 9, snapshots: [snap("2026-05-05", 55555)] },
       });
       const { result } = renderHook(() => useLocalSnapshots());
       failWrites();
@@ -1430,7 +1431,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
     it("匯入還原與清空資料後不再提醒", async () => {
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
-        data: { schemaVersion: 8, snapshots: [snap("2026-05-05", 55555)] },
+        data: { schemaVersion: 9, snapshots: [snap("2026-05-05", 55555)] },
       });
       const { result } = renderHook(() => useLocalSnapshots());
       act(() => {
@@ -1469,7 +1470,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
     function otherTabSaves(...snapshots: ReturnType<typeof snap>[]) {
       otherTabWrites(
         STORAGE_KEY,
-        JSON.stringify({ schemaVersion: 8, snapshots })
+        JSON.stringify({ schemaVersion: 9, snapshots })
       );
     }
 
@@ -1650,7 +1651,7 @@ describe("useLocalSnapshots：資料安全防護", () => {
     it("回到前景時換日：沒有未存檔編輯就重新帶入最近一筆，跨月時負債自動估算", () => {
       setToday("2026-09-30");
       persistFinanceData({
-        schemaVersion: 8,
+        schemaVersion: 9,
         snapshots: [
           {
             ...createEmptySnapshot("2026-09-15"),
@@ -1790,7 +1791,7 @@ describe("useLocalSnapshots：趨勢圖範圍", () => {
   }
 
   function seed(...snapshots: ReturnType<typeof snap>[]) {
-    persistFinanceData({ schemaVersion: 8, snapshots });
+    persistFinanceData({ schemaVersion: 9, snapshots });
   }
 
   function setToday(date: string) {
@@ -1923,7 +1924,7 @@ describe("useLocalSnapshots：範例資料", () => {
   }
 
   function seed(...snapshots: ReturnType<typeof snap>[]) {
-    persistFinanceData({ schemaVersion: 8, snapshots });
+    persistFinanceData({ schemaVersion: 9, snapshots });
   }
 
   function storedDates() {
@@ -2352,7 +2353,7 @@ describe("useLocalSnapshots：範例資料", () => {
       await loadDemo(result);
       vi.mocked(parseBackupFile).mockResolvedValue({
         status: "ok",
-        data: { schemaVersion: 8, snapshots: [snap("2026-01-01", 88888)] },
+        data: { schemaVersion: 9, snapshots: [snap("2026-01-01", 88888)] },
       });
 
       await act(async () => {
@@ -2435,7 +2436,7 @@ describe("useLocalSnapshots：範例資料", () => {
       otherTabWrites(
         STORAGE_KEY,
         JSON.stringify({
-          schemaVersion: 8,
+          schemaVersion: 9,
           snapshots: [snap("2026-09-06", 100), snap(TODAY, 200)],
         })
       );
@@ -2482,6 +2483,357 @@ describe("useLocalSnapshots：範例資料", () => {
 
       expect(result.current.isDemo).toBe(false);
       expect(result.current.canLoadDemo).toBe(true);
+    });
+  });
+});
+
+// PRD 4.2「快照備註」、第 9 節 #72a～#72k
+describe("useLocalSnapshots：快照備註", () => {
+  function snap(date: string, note = "") {
+    return {
+      ...createEmptySnapshot(date),
+      updatedAt: `${date}T00:00:00.000Z`,
+      cashSources: [
+        { id: "c1", name: "銀行", amount: 100000, restricted: false },
+      ],
+      note,
+    };
+  }
+
+  function seed(...snapshots: ReturnType<typeof snap>[]) {
+    persistFinanceData({ schemaVersion: 9, snapshots });
+  }
+
+  /** 已存檔的「日期 → 備註」。 */
+  function storedNotes(): Record<string, string> {
+    const loaded = loadFinanceData();
+    if (loaded.status !== "ok") throw new Error("expected ok");
+    return Object.fromEntries(
+      loaded.data.snapshots.map((s) => [s.date, s.note])
+    );
+  }
+
+  function setToday(date: string) {
+    vi.setSystemTime(new Date(`${date}T10:00:00`));
+  }
+
+  /** 模擬使用者切回這個分頁。 */
+  function returnToPage() {
+    act(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    setToday("2026-10-02");
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("沒有資料時草稿的備註為空字串", () => {
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    expect(result.current.draft.note).toBe("");
+  });
+
+  // #72a
+  it("備註隨快照存檔，重新開啟後今天的表單帶回今天的備註", () => {
+    const first = renderHook(() => useLocalSnapshots());
+    act(() => {
+      first.result.current.updateDraft({ note: "買房" });
+    });
+    act(() => {
+      expect(first.result.current.save().ok).toBe(true);
+    });
+    expect(storedNotes()).toEqual({ "2026-10-02": "買房" });
+    expect(first.result.current.isDirty).toBe(false);
+    first.unmount();
+
+    const { result } = renderHook(() => useLocalSnapshots());
+    expect(result.current.draft.note).toBe("買房");
+    expect(result.current.isDirty).toBe(false);
+  });
+
+  // #72c
+  it("存檔時正規化備註：去除前後空白，連續空白與換行併成一個空格", () => {
+    const { result } = renderHook(() => useLocalSnapshots());
+    act(() => {
+      result.current.updateDraft({ note: "  換工作 \n  加薪 " });
+    });
+    // 輸入過程不干涉使用者打字
+    expect(result.current.draft.note).toBe("  換工作 \n  加薪 ");
+
+    act(() => {
+      result.current.save();
+    });
+
+    expect(storedNotes()).toEqual({ "2026-10-02": "換工作 加薪" });
+    // 表單同步成存下來的內容，不會因為空白差異而顯示未存檔
+    expect(result.current.draft.note).toBe("換工作 加薪");
+    expect(result.current.isDirty).toBe(false);
+    expect(result.current.hasUnsavedEdits).toBe(false);
+  });
+
+  it("只有空白的備註存成空字串", () => {
+    const { result } = renderHook(() => useLocalSnapshots());
+    act(() => {
+      result.current.updateDraft({ note: "   " });
+    });
+    act(() => {
+      result.current.save();
+    });
+
+    expect(storedNotes()).toEqual({ "2026-10-02": "" });
+  });
+
+  // #72b
+  it("今日草稿帶入最近一筆資料時不沿用備註，其餘欄位照常帶入", () => {
+    seed(snap("2026-10-01", "買房"));
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    expect(result.current.draft.date).toBe("2026-10-02");
+    expect(result.current.draft.note).toBe("");
+    expect(result.current.draft.cashSources[0].amount).toBe(100000);
+    // 系統帶入、使用者沒動過：不算未存檔編輯
+    expect(result.current.hasUnsavedEdits).toBe(false);
+
+    act(() => {
+      result.current.save();
+    });
+    expect(storedNotes()).toEqual({ "2026-10-01": "買房", "2026-10-02": "" });
+  });
+
+  // #72h
+  it("只修改備註也算未存檔編輯；改回原內容後就不算", () => {
+    seed(snap("2026-10-02", "買房"));
+    const { result } = renderHook(() => useLocalSnapshots());
+    expect(result.current.isDirty).toBe(false);
+    expect(result.current.hasUnsavedEdits).toBe(false);
+
+    act(() => {
+      result.current.updateDraft({ note: "買房簽約" });
+    });
+    expect(result.current.isDirty).toBe(true);
+    expect(result.current.hasUnsavedEdits).toBe(true);
+
+    act(() => {
+      result.current.updateDraft({ note: "買房" });
+    });
+    expect(result.current.isDirty).toBe(false);
+    expect(result.current.hasUnsavedEdits).toBe(false);
+  });
+
+  it("備註不影響任何計算結果", () => {
+    seed(snap("2026-10-02"));
+    const { result } = renderHook(() => useLocalSnapshots());
+    const before = result.current.metrics;
+
+    act(() => {
+      result.current.updateDraft({ note: "買房" });
+    });
+
+    expect(result.current.metrics).toEqual(before);
+  });
+
+  // #72g
+  it("修正模式：載入該日備註，儲存只改那一天，離開後還原今日草稿的備註", () => {
+    seed(snap("2026-09-20"), snap("2026-09-25", "調薪"), snap("2026-10-02"));
+    const { result } = renderHook(() => useLocalSnapshots());
+    act(() => {
+      result.current.updateDraft({ note: "今天的備註" });
+    });
+
+    act(() => {
+      result.current.startEditing("2026-09-25");
+    });
+    expect(result.current.draft.note).toBe("調薪");
+
+    act(() => {
+      result.current.startEditing("2026-09-20");
+    });
+    expect(result.current.draft.note).toBe("");
+    act(() => {
+      result.current.updateDraft({ note: " 還清信貸 " });
+    });
+    act(() => {
+      expect(result.current.save().ok).toBe(true);
+    });
+
+    expect(storedNotes()).toEqual({
+      "2026-09-20": "還清信貸",
+      "2026-09-25": "調薪",
+      "2026-10-02": "",
+    });
+    expect(result.current.editingDate).toBeNull();
+    expect(result.current.draft.date).toBe("2026-10-02");
+    expect(result.current.draft.note).toBe("今天的備註");
+    expect(result.current.hasUnsavedEdits).toBe(true);
+  });
+
+  it("取消修正不會寫入備註", () => {
+    seed(snap("2026-09-20"), snap("2026-10-02"));
+    const { result } = renderHook(() => useLocalSnapshots());
+    act(() => {
+      result.current.startEditing("2026-09-20");
+    });
+    act(() => {
+      result.current.updateDraft({ note: "還清信貸" });
+    });
+    act(() => {
+      result.current.cancelEditing();
+    });
+
+    expect(storedNotes()).toEqual({ "2026-09-20": "", "2026-10-02": "" });
+    expect(result.current.draft.note).toBe("");
+  });
+
+  it("匯入的備份保留各筆快照的備註，今日草稿不沿用", async () => {
+    vi.mocked(parseBackupFile).mockResolvedValue({
+      status: "ok",
+      data: { schemaVersion: 9, snapshots: [snap("2026-09-20", "買房")] },
+    });
+    const { result } = renderHook(() => useLocalSnapshots());
+
+    await act(async () => {
+      const res = await result.current.importBackup(
+        new File(["x"], "backup.json")
+      );
+      expect(res.ok).toBe(true);
+    });
+
+    expect(result.current.snapshots.map((s) => s.note)).toEqual(["買房"]);
+    expect(result.current.draft.date).toBe("2026-10-02");
+    expect(result.current.draft.note).toBe("");
+  });
+
+  describe("跨日", () => {
+    it("沒有未存檔編輯：重新帶入最近一筆資料，前一天的備註不沿用", () => {
+      seed(snap("2026-10-02", "買房"));
+      const { result } = renderHook(() => useLocalSnapshots());
+      expect(result.current.draft.note).toBe("買房");
+
+      setToday("2026-10-03");
+      returnToPage();
+
+      expect(result.current.draft.date).toBe("2026-10-03");
+      expect(result.current.draft.note).toBe("");
+      expect(result.current.hasUnsavedEdits).toBe(false);
+    });
+
+    // #72k
+    it("保留的草稿不帶走使用者沒改過的備註", () => {
+      seed(snap("2026-10-02", "買房"));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+
+      setToday("2026-10-03");
+      returnToPage();
+
+      expect(result.current.draft.date).toBe("2026-10-03");
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+      expect(result.current.draft.note).toBe("");
+      expect(result.current.hasUnsavedEdits).toBe(true);
+
+      act(() => {
+        result.current.save();
+      });
+      expect(storedNotes()).toEqual({
+        "2026-10-02": "買房",
+        "2026-10-03": "",
+      });
+    });
+
+    it("使用者剛改過、尚未存檔的備註跟著草稿到新的一天", () => {
+      seed(snap("2026-10-02", "買房"));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ note: "交屋" });
+      });
+
+      setToday("2026-10-03");
+      returnToPage();
+
+      expect(result.current.draft.date).toBe("2026-10-03");
+      expect(result.current.draft.note).toBe("交屋");
+      expect(result.current.hasUnsavedEdits).toBe(true);
+
+      act(() => {
+        result.current.save();
+      });
+      expect(storedNotes()).toEqual({
+        "2026-10-02": "買房",
+        "2026-10-03": "交屋",
+      });
+    });
+
+    it("沒有任何前景事件就跨日存檔：沒改過的備註不寫進新的一天", () => {
+      seed(snap("2026-10-02", "買房"));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+
+      setToday("2026-10-03");
+      act(() => {
+        result.current.save();
+      });
+
+      expect(storedNotes()).toEqual({
+        "2026-10-02": "買房",
+        "2026-10-03": "",
+      });
+      expect(result.current.draft.date).toBe("2026-10-03");
+      expect(result.current.draft.note).toBe("");
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+      expect(result.current.isDirty).toBe(false);
+    });
+
+    it("沒有任何前景事件就跨日存檔：剛改過的備註寫進新的一天", () => {
+      seed(snap("2026-10-02", "買房"));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ note: "交屋" });
+      });
+
+      setToday("2026-10-03");
+      act(() => {
+        result.current.save();
+      });
+
+      expect(storedNotes()).toEqual({
+        "2026-10-02": "買房",
+        "2026-10-03": "交屋",
+      });
+    });
+
+    it("修正模式中跨日：暫存的今日草稿同樣不帶走沒改過的備註", () => {
+      seed(snap("2026-09-20", "調薪"), snap("2026-10-02", "買房"));
+      const { result } = renderHook(() => useLocalSnapshots());
+      act(() => {
+        result.current.updateDraft({ monthlyExpense: 30000 });
+      });
+      act(() => {
+        result.current.startEditing("2026-09-20");
+      });
+
+      setToday("2026-10-03");
+      returnToPage();
+
+      // 被修正的那一天不受換日影響
+      expect(result.current.draft.date).toBe("2026-09-20");
+      expect(result.current.draft.note).toBe("調薪");
+
+      act(() => {
+        result.current.cancelEditing();
+      });
+      expect(result.current.draft.date).toBe("2026-10-03");
+      expect(result.current.draft.monthlyExpense).toBe(30000);
+      expect(result.current.draft.note).toBe("");
     });
   });
 });

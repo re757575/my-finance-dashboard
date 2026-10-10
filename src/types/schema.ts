@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 export interface CashSource {
   id: string;
@@ -68,6 +68,11 @@ export interface Snapshot {
   targetNetWorth: number;
   /** 目標現金比例（0-100），選填，0 代表尚未設定；股票目標比例＝100 減此值（PRD 4.2 節「AI 分析提示詞多模式」資產配置再平衡建議）。 */
   targetCashRatio: number;
+  /**
+   * 快照備註：記下這一天發生的事（如「買房」「換工作」），選填，空字串代表沒有備註。
+   * 只供趨勢圖節點與歷史快照清單顯示，不參與任何計算；今日草稿不沿用上一筆的備註（PRD 4.2「快照備註」）。
+   */
+  note: string;
 }
 
 export interface FinanceData {
@@ -196,5 +201,6 @@ export function createEmptySnapshot(date: string): Snapshot {
     recurringInvestments: [],
     targetNetWorth: 0,
     targetCashRatio: 0,
+    note: "",
   };
 }

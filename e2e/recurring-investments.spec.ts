@@ -100,7 +100,7 @@ test("定期定額隨快照存檔，重新整理後仍保留", async ({ page }) 
   const stored = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("my_finance_dashboard_data") ?? "{}")
   );
-  expect(stored.schemaVersion).toBe(8);
+  expect(stored.schemaVersion).toBe(9);
   expect(
     stored.snapshots[0].recurringInvestments.map(
       (investment: { name: string; amount: number }) => [
@@ -158,7 +158,7 @@ test("V7 舊資料遷移後補上空的定期定額清單，現金流不變", as
   const stored = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("my_finance_dashboard_data") ?? "{}")
   );
-  expect(stored.schemaVersion).toBe(8);
+  expect(stored.schemaVersion).toBe(9);
   expect(stored.snapshots[0].recurringInvestments).toEqual([]);
   expect(stored.snapshots.at(-1).recurringInvestments).toHaveLength(1);
 });

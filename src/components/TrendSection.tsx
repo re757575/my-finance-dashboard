@@ -5,6 +5,7 @@ import { NetWorthPerformance } from "@/components/NetWorthPerformance";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateMetrics } from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { normalizeSnapshotNote } from "@/lib/snapshotNote";
 import type { TrendRange } from "@/hooks/useLocalSnapshots";
 import type { Snapshot } from "@/types/schema";
 
@@ -49,8 +50,10 @@ export function TrendSection({
   onRangeChange,
   targetNetWorth,
 }: TrendSectionProps) {
+  // note 隨每個節點傳給各圖表：有備註的節點以圓環標示、Tooltip 多一行（PRD 4.2「快照備註」）
   const points = visibleSnapshots.map((s) => ({
     date: s.date,
+    note: normalizeSnapshotNote(s.note),
     ...calculateMetrics(s),
   }));
 
@@ -67,6 +70,7 @@ export function TrendSection({
     )
     .map((p) => ({
       date: p.date,
+      note: p.note,
       cashRatio: p.cashRatio,
       restrictedCashRatio: p.restrictedCashRatio,
       twStockRatio: p.twStockRatio,
@@ -116,7 +120,11 @@ export function TrendSection({
         <TabsContent value="assets" className={CHART_GRID_CLASS_NAME}>
           <TrendLineChart
             title="淨資產趨勢"
-            points={points.map((p) => ({ date: p.date, value: p.netWorth }))}
+            points={points.map((p) => ({
+              date: p.date,
+              note: p.note,
+              value: p.netWorth,
+            }))}
             formatValue={formatCurrency}
             colorClassName="text-blue-500"
             showDelta
@@ -124,7 +132,11 @@ export function TrendSection({
           />
           <TrendLineChart
             title="現金趨勢"
-            points={points.map((p) => ({ date: p.date, value: p.totalCash }))}
+            points={points.map((p) => ({
+              date: p.date,
+              note: p.note,
+              value: p.totalCash,
+            }))}
             formatValue={formatCurrency}
             colorClassName="text-teal-500"
             showDelta
@@ -133,6 +145,7 @@ export function TrendSection({
             title="股票趨勢"
             points={points.map((p) => ({
               date: p.date,
+              note: p.note,
               value: p.totalStockValue,
             }))}
             formatValue={formatCurrency}
@@ -143,13 +156,18 @@ export function TrendSection({
         <TabsContent value="liabilities" className={CHART_GRID_CLASS_NAME}>
           <TrendLineChart
             title="負債比趨勢"
-            points={points.map((p) => ({ date: p.date, value: p.debtRatio }))}
+            points={points.map((p) => ({
+              date: p.date,
+              note: p.note,
+              value: p.debtRatio,
+            }))}
             formatValue={formatPercent}
             colorClassName="text-amber-500"
           />
           <AssetsLiabilitiesBarChart
             points={points.map((p) => ({
               date: p.date,
+              note: p.note,
               assets: p.totalAssets,
               liabilities: p.totalLiabilities,
             }))}
@@ -158,6 +176,7 @@ export function TrendSection({
             title="每月應還款趨勢"
             points={points.map((p) => ({
               date: p.date,
+              note: p.note,
               value: p.totalMonthlyDebtPayment,
             }))}
             formatValue={formatCurrency}
@@ -169,7 +188,11 @@ export function TrendSection({
           <AllocationAreaChart points={allocationPoints} />
           <TrendLineChart
             title="儲蓄率趨勢"
-            points={points.map((p) => ({ date: p.date, value: p.savingsRate }))}
+            points={points.map((p) => ({
+              date: p.date,
+              note: p.note,
+              value: p.savingsRate,
+            }))}
             formatValue={formatPercent}
             colorClassName="text-sky-500"
           />

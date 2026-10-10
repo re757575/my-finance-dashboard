@@ -2,6 +2,7 @@ import {
   fireEvent,
   render as renderCollapsed,
   screen,
+  within,
 } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -518,5 +519,73 @@ describe("SnapshotHistory：預設收合", () => {
       />
     );
     expect(toggle()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  // PRD 4.2「快照備註」第 6、9 點、第 9 節 #72a
+  describe("快照備註", () => {
+    it("有備註的列在日期下方顯示備註，沒有備註的列不多一行", () => {
+      renderHistory({
+        snapshots: [
+          snap("2026-09-10", 1000),
+          { ...snap("2026-09-20", 2000), note: "買房" },
+        ],
+      });
+
+      const noted = screen.getByTestId("snapshot-row-2026-09-20");
+      expect(
+        within(noted).getByTestId("snapshot-note-2026-09-20").textContent
+      ).toBe("備註：買房");
+      expect(
+        screen.queryByTestId("snapshot-note-2026-09-10")
+      ).not.toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("snapshot-row-2026-09-10")).queryByText(
+          /備註/
+        )
+      ).not.toBeInTheDocument();
+    });
+
+    it("備註排在日期之後、淨資產之前", () => {
+      renderHistory({
+        snapshots: [{ ...snap("2026-09-20", 2000), note: "買房" }],
+      });
+
+      const text =
+        screen.getByTestId("snapshot-row-2026-09-20").textContent ?? "";
+      expect(text.indexOf("2026-09-20")).toBeLessThan(
+        text.indexOf("備註：買房")
+      );
+      expect(text.indexOf("備註：買房")).toBeLessThan(text.indexOf("淨資產"));
+    });
+
+    it("顯示時套用正規化：只有空白或不是文字的備註不顯示", () => {
+      renderHistory({
+        snapshots: [
+          { ...snap("2026-09-10", 1000), note: "   " },
+          { ...snap("2026-09-15", 1000), note: 123 as unknown as string },
+          { ...snap("2026-09-20", 2000), note: "  換工作 \n 加薪 " },
+        ],
+      });
+
+      expect(
+        screen.queryByTestId("snapshot-note-2026-09-10")
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("snapshot-note-2026-09-15")
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId("snapshot-note-2026-09-20").textContent).toBe(
+        "備註：換工作 加薪"
+      );
+    });
+
+    it("過長的備註可換行，不撐寬清單", () => {
+      renderHistory({
+        snapshots: [{ ...snap("2026-09-20", 2000), note: "字".repeat(50) }],
+      });
+
+      expect(screen.getByTestId("snapshot-note-2026-09-20")).toHaveClass(
+        "break-words"
+      );
+    });
   });
 });

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { calculateMetrics } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
+import { normalizeSnapshotNote } from "@/lib/snapshotNote";
 import type { Snapshot } from "@/types/schema";
 
 /** 預設只顯示最新幾筆，避免長期使用後清單過長（PRD 4.2「歷史快照清單」）。 */
@@ -32,6 +33,7 @@ interface SnapshotHistoryProps {
  * 歷史快照清單（PRD 4.2）：列出已存檔的每日快照（由新到舊），每筆可修正或刪除。
  * 今天的那一筆不顯示「修正」（本來就是主表單），仍可刪除；刪除前以 Dialog 二次確認。
  * 淨資產／總資產一律用該筆快照自己的欄位計算（PRD 5.4 節）。
+ * 有備註的快照在日期下方多一行備註（PRD 4.2「快照備註」）。
  * 展開全部後清單在固定高度內捲動；每列指標只在快照資料或展開狀態改變時重算，
  * 表單輸入造成的重新渲染不會觸發重算（PRD 4.2）。
  * 整個區塊預設收合（只存在元件 state），收合時不渲染清單、也不計算各列指標。
@@ -61,7 +63,8 @@ export function SnapshotHistory({
           : sorted.slice(0, DEFAULT_VISIBLE_COUNT)
       ).map((snapshot) => {
         const { netWorth, totalAssets } = calculateMetrics(snapshot);
-        return { snapshot, netWorth, totalAssets };
+        const note = normalizeSnapshotNote(snapshot.note);
+        return { snapshot, netWorth, totalAssets, note };
       }),
     [sorted, expanded, open]
   );
@@ -99,7 +102,7 @@ export function SnapshotHistory({
               aria-label={expanded ? "歷史快照清單" : undefined}
               className={`divide-y divide-slate-100 dark:divide-border ${expanded ? EXPANDED_LIST_CLASS : ""}`}
             >
-              {rows.map(({ snapshot, netWorth, totalAssets }) => {
+              {rows.map(({ snapshot, netWorth, totalAssets, note }) => {
                 const isToday = snapshot.date === currentDate;
                 const isEditing = snapshot.date === editingDate;
                 return (
@@ -122,6 +125,14 @@ export function SnapshotHistory({
                           </span>
                         )}
                       </p>
+                      {note && (
+                        <p
+                          data-testid={`snapshot-note-${snapshot.date}`}
+                          className="text-xs break-words text-slate-600 dark:text-neutral-300"
+                        >
+                          備註：{note}
+                        </p>
+                      )}
                       <p className="flex flex-col text-xs @sm:flex-row @sm:flex-wrap @sm:gap-x-3 text-slate-500 dark:text-neutral-400">
                         <span>
                           淨資產{" "}

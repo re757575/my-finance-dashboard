@@ -1,11 +1,23 @@
 import { useState } from "react";
 import { ChartExpandButton } from "@/components/charts/ChartExpandButton";
+import {
+  ChartNoteMarker,
+  ChartTooltipNote,
+} from "@/components/charts/ChartNote";
 import { ChartTooltip } from "@/components/charts/ChartTooltip";
 import { EmptyTrendCard } from "@/components/charts/EmptyTrendCard";
 import { formatCurrency, formatShortDate } from "@/lib/format";
 
+/** note 為該筆快照的備註，有值時該組長條上方以圓環標示、Tooltip 多一行（PRD 4.2「快照備註」）。 */
+interface AssetsLiabilitiesPoint {
+  date: string;
+  assets: number;
+  liabilities: number;
+  note?: string;
+}
+
 interface AssetsLiabilitiesBarChartProps {
-  points: { date: string; assets: number; liabilities: number }[];
+  points: AssetsLiabilitiesPoint[];
 }
 
 const COMPACT_WIDTH = 320;
@@ -17,9 +29,11 @@ const FULLSCREEN_LABEL_HEIGHT = 28;
 const FULLSCREEN_HEIGHT = FULLSCREEN_CHART_HEIGHT + FULLSCREEN_LABEL_HEIGHT;
 const FULLSCREEN_PADDING = 32;
 const FULLSCREEN_GROUP_SPACING = 48;
+/** 備註標記畫在繪圖區上緣之上（最高的長條頂端即為上緣）。 */
+const NOTE_MARKER_OFFSET = 8;
 
 interface BarChartSvgProps {
-  points: { date: string; assets: number; liabilities: number }[];
+  points: AssetsLiabilitiesPoint[];
   variant: "compact" | "fullscreen";
 }
 
@@ -79,6 +93,15 @@ function BarChartSvg({ points, variant }: BarChartSvgProps) {
                   rx={1}
                   className="fill-rose-400"
                 />
+                {p.note && (
+                  <ChartNoteMarker
+                    cx={groupX + groupWidth / 2}
+                    cy={padding - NOTE_MARKER_OFFSET}
+                    index={i}
+                    withDot
+                    className="text-slate-500 dark:text-neutral-400"
+                  />
+                )}
                 <rect
                   x={groupX}
                   y={0}
@@ -118,8 +141,11 @@ function BarChartSvg({ points, variant }: BarChartSvgProps) {
             height={totalHeight}
             clampToBounds={isFullscreen}
           >
-            {active.date} 資產 {formatCurrency(active.assets)} ／ 負債{" "}
-            {formatCurrency(active.liabilities)}
+            <p>
+              {active.date} 資產 {formatCurrency(active.assets)} ／ 負債{" "}
+              {formatCurrency(active.liabilities)}
+            </p>
+            <ChartTooltipNote note={active.note} />
           </ChartTooltip>
         )}
       </div>

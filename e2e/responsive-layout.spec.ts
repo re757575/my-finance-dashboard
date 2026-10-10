@@ -244,8 +244,12 @@ test("歷史快照：淨資產與總資產分開顯示，不黏在一起", async
     .locator('[data-testid^="snapshot-row-"]')
     .evaluateAll((rows) =>
       rows
-        // 排除只有「刪除」一顆按鈕的今日列
-        .filter((el) => el.querySelectorAll("button").length === 2)
+        // 排除只有「刪除」一顆按鈕的今日列，以及有備註而多一行的列（PRD 4.2「快照備註」）
+        .filter(
+          (el) =>
+            el.querySelectorAll("button").length === 2 &&
+            !el.querySelector('[data-testid^="snapshot-note-"]')
+        )
         .map((el) => Math.round(el.getBoundingClientRect().height))
     );
   expect(rowHeights.length).toBeGreaterThan(1);

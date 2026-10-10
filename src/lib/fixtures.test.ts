@@ -5,6 +5,7 @@ import {
   calculateMetrics,
   PLEDGE_MARGIN_CALL_RATIO,
 } from "@/lib/calculations";
+import { normalizeSnapshotNote } from "@/lib/snapshotNote";
 import { getLatestSnapshot, parseFinanceData } from "@/lib/storage";
 import { CURRENT_SCHEMA_VERSION } from "@/types/schema";
 
@@ -168,5 +169,43 @@ describe("fixtures/finance-data.json", () => {
       toDate: "2026-09-30",
     });
     expect(estimates.history.months).toBeGreaterThan(0);
+  });
+
+  // PRD 4.2「快照備註」：範例資料有幾筆示範用的備註，供趨勢圖節點標記與歷史快照清單展示
+  it("每筆快照都有 note 欄位，其中幾筆有備註且已是正規化後的內容", () => {
+    const { snapshots } = loadFixture();
+
+    expect(
+      snapshots.every((snapshot) => typeof snapshot.note === "string")
+    ).toBe(true);
+    const noted = snapshots.filter((snapshot) => snapshot.note !== "");
+    expect(noted.map((snapshot) => [snapshot.date, snapshot.note])).toEqual([
+      ["2022-10-31", "新一期信用卡分期"],
+      ["2023-01-31", "多一筆定期定額"],
+      ["2023-10-31", "調薪"],
+      ["2024-01-31", "質押拆成券商與銀行兩筆"],
+      ["2025-10-31", "換工作"],
+      ["2026-04-30", "副業收入增加"],
+    ]);
+    for (const snapshot of noted) {
+      expect(normalizeSnapshotNote(snapshot.note), snapshot.date).toBe(
+        snapshot.note
+      );
+    }
+  });
+
+  it("載入範例資料後預設的 1 年範圍內至少有一筆備註", () => {
+    const { snapshots } = loadFixture();
+    const latest = getLatestSnapshot(loadFixture())!;
+    const cutoff = new Date(`${latest.date}T00:00:00Z`);
+    cutoff.setUTCDate(cutoff.getUTCDate() - 364);
+    const cutoffDate = cutoff.toISOString().slice(0, 10);
+
+    const inRange = snapshots.filter(
+      (snapshot) => snapshot.date >= cutoffDate && snapshot.note !== ""
+    );
+    expect(inRange.length).toBeGreaterThanOrEqual(1);
+    // 最新一筆沒有備註：載入範例資料後，今日表單的備註欄是空的
+    expect(latest.note).toBe("");
   });
 });

@@ -30,6 +30,7 @@ import {
 } from "@/lib/backup";
 import { CryptoUnavailableError } from "@/lib/backupCrypto";
 import { loadDemoFinanceData } from "@/lib/demoData";
+import { normalizeSnapshotNote } from "@/lib/snapshotNote";
 import {
   createEmptySnapshot,
   type CalculatedMetrics,
@@ -79,6 +80,7 @@ function computeEstimatedDebtFields(
 /**
  * 依 PRD 4.2「今日表單自動帶入最近一筆資料」：今天無快照時，沿用最近一筆數值但日期/時間戳改為今天，
  * 並依經過的曆月數自動估算負債的剩餘本金／剩餘期數（見「負債剩餘本金／期數自動估算」）。
+ * 唯一不沿用的是快照備註：備註屬於被記錄的那一天（PRD 4.2「快照備註」）。
  */
 function buildInitialDraft(
   data: FinanceData,
@@ -97,12 +99,29 @@ function buildInitialDraft(
         date: currentDate,
         updatedAt: new Date().toISOString(),
         debts,
+        note: "",
       },
       estimatedFields: computeEstimatedDebtFields(latest.debts, debts),
     };
   }
 
   return { snapshot: createEmptySnapshot(currentDate), estimatedFields: {} };
+}
+
+/**
+ * 跨日時把有未存檔編輯的草稿改成新一天的草稿（PRD 4.2「跨日自動換日」）：內容保留、只換日期。
+ * 快照備註屬於原本那一天，使用者沒改過（與 baseline 相同）就不帶到新的一天（PRD 4.2「快照備註」）。
+ */
+function moveDraftToDate(
+  draft: Snapshot,
+  baseline: Snapshot,
+  date: string
+): { draft: Snapshot; baseline: Snapshot } {
+  const noteEdited = draft.note !== baseline.note;
+  return {
+    draft: { ...draft, date, note: noteEdited ? draft.note : "" },
+    baseline: { ...baseline, date, note: "" },
+  };
 }
 
 /** 修正模式下暫存的今日草稿；baseline 是判斷該草稿有無未存檔編輯的比較基準。 */
@@ -313,22 +332,30 @@ export function useLocalSnapshots() {
       stashedDraftRef.current = stashHasEdits
         ? {
             ...stash,
-            draft: { ...stash.draft, date: today },
-            baseline: { ...stash.baseline, date: today },
+            ...moveDraftToDate(stash.draft, stash.baseline, today),
           }
         : buildFreshStash(financeData, today);
       return today;
     }
     if (draftHasEdits) {
-      setDraft((prev) => ({ ...prev, date: today }));
-      setBaseline((prev) => ({ ...prev, date: today }));
+      const moved = moveDraftToDate(draft, baseline, today);
+      setDraft(moved.draft);
+      setBaseline(moved.baseline);
       return today;
     }
     const { snapshot, estimatedFields } = buildInitialDraft(financeData, today);
     loadDraft(snapshot);
     setEstimatedDebtFields(estimatedFields);
     return today;
-  }, [currentDate, financeData, stashHasEdits, draftHasEdits, loadDraft]);
+  }, [
+    currentDate,
+    financeData,
+    draft,
+    baseline,
+    stashHasEdits,
+    draftHasEdits,
+    loadDraft,
+  ]);
 
   /**
    * 「更新儀表板」：正式將今日草稿寫入 LocalStorage（PRD 4.2 節）。version-mismatch 狀態下拒絕覆蓋既有資料。
@@ -344,10 +371,16 @@ export function useLocalSnapshots() {
     }
     // 存檔一律寫入實際存檔當天，不沿用頁面開啟當天的日期
     const today = syncCurrentDate();
+    // 剛好在這次存檔才換日時，syncCurrentDate 對草稿的更新尚未反映在這裡的 draft，備註比照換日規則處理
+    const source =
+      editingDate === null && today !== currentDate
+        ? moveDraftToDate(draft, baseline, today).draft
+        : draft;
     const finalized: Snapshot = {
-      ...draft,
+      ...source,
       date: editingDate ?? today,
       updatedAt: new Date().toISOString(),
+      note: normalizeSnapshotNote(source.note),
     };
     const next = upsertSnapshot(financeData, finalized);
     if (!persistFinanceData(next)) {
@@ -369,6 +402,8 @@ export function useLocalSnapshots() {
     return { ok: true };
   }, [
     draft,
+    baseline,
+    currentDate,
     financeData,
     loadStatus,
     editingDate,

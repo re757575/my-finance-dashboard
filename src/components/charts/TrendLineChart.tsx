@@ -1,13 +1,24 @@
 import { useState } from "react";
 import { ChartExpandButton } from "@/components/charts/ChartExpandButton";
+import {
+  ChartNoteMarker,
+  ChartTooltipNote,
+} from "@/components/charts/ChartNote";
 import { ChartTooltip } from "@/components/charts/ChartTooltip";
 import { DeltaText } from "@/components/charts/DeltaText";
 import { EmptyTrendCard } from "@/components/charts/EmptyTrendCard";
 import { formatShortDate } from "@/lib/format";
 
+/** note 為該筆快照的備註，有值時節點以圓環標示、Tooltip 多一行（PRD 4.2「快照備註」）。 */
+interface TrendPoint {
+  date: string;
+  value: number;
+  note?: string;
+}
+
 interface TrendLineChartProps {
   title: string;
-  points: { date: string; value: number }[];
+  points: TrendPoint[];
   formatValue?: (value: number) => string;
   colorClassName?: string;
   showDelta?: boolean;
@@ -31,7 +42,7 @@ const Y_AXIS_TICK_COUNT = 4;
 
 interface LineChartSvgProps {
   title: string;
-  points: { date: string; value: number }[];
+  points: TrendPoint[];
   formatValue: (value: number) => string;
   colorClassName: string;
   variant: "compact" | "fullscreen";
@@ -77,7 +88,7 @@ function DeltaSummary({
   formatValue,
   align = "right",
 }: {
-  points: { date: string; value: number }[];
+  points: TrendPoint[];
   formatValue: (value: number) => string;
   align?: "left" | "right";
 }) {
@@ -216,6 +227,9 @@ function LineChartSvg({
           {coords.map((c, i) => (
             <g key={points[i].date}>
               <circle cx={c.x} cy={c.y} r={2.5} fill="currentColor" />
+              {points[i].note && (
+                <ChartNoteMarker cx={c.x} cy={c.y} index={i} />
+              )}
               <circle
                 cx={c.x}
                 cy={c.y}
@@ -281,6 +295,7 @@ function LineChartSvg({
                 />
               </p>
             )}
+            <ChartTooltipNote note={active.note} />
           </ChartTooltip>
         )}
       </div>

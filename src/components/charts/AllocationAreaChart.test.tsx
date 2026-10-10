@@ -266,4 +266,60 @@ describe("AllocationAreaChart", () => {
       );
     });
   });
+
+  // PRD 4.2「快照備註」第 5 點、第 9 節 #72f
+  describe("快照備註", () => {
+    const noted = [
+      points[0],
+      { ...points[1], note: "換工作" },
+      { ...points[2], note: "" },
+    ];
+
+    it("有備註的節點上方畫出帶圓心的圓環標記，其他節點沒有", () => {
+      const { container } = render(<AllocationAreaChart points={noted} />);
+
+      const markers = container.querySelectorAll(
+        '[data-testid^="chart-note-marker-"]'
+      );
+      expect(markers).toHaveLength(1);
+      expect(markers[0]).toHaveAttribute("data-testid", "chart-note-marker-1");
+      expect(markers[0].querySelectorAll("circle")).toHaveLength(2);
+    });
+
+    it("沒有任何備註時不畫標記", () => {
+      const { container } = render(<AllocationAreaChart points={points} />);
+
+      expect(
+        container.querySelector('[data-testid^="chart-note-marker-"]')
+      ).toBeNull();
+    });
+
+    it("有備註的節點 Tooltip 最後多一行備註，其他節點沒有", () => {
+      render(<AllocationAreaChart points={noted} />);
+
+      fireEvent.click(screen.getAllByTestId("chart-node-1")[0]);
+      const tooltip = screen.getByTestId("chart-tooltip");
+      expect(tooltip.lastElementChild?.textContent).toBe("備註：換工作");
+      expect(tooltip.textContent).toContain("2026-07-12");
+
+      fireEvent.click(screen.getAllByTestId("chart-node-0")[0]);
+      expect(
+        screen.queryByTestId("chart-tooltip-note")
+      ).not.toBeInTheDocument();
+    });
+
+    it("全螢幕檢視同樣有標記與備註行", () => {
+      render(<AllocationAreaChart points={noted} />);
+      fireEvent.click(screen.getByLabelText("資產配置趨勢全螢幕檢視"));
+
+      const dialog = screen.getByRole("dialog");
+      expect(
+        within(dialog).getByTestId("chart-note-marker-1")
+      ).toBeInTheDocument();
+      fireEvent.click(within(dialog).getByTestId("chart-node-1"));
+      expect(within(dialog).getByTestId("chart-tooltip-note").textContent).toBe(
+        "備註：換工作"
+      );
+    });
+  });
 });

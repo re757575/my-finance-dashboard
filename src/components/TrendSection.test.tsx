@@ -25,6 +25,7 @@ function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     recurringInvestments: [],
     targetNetWorth: 0,
     targetCashRatio: 0,
+    note: "",
     ...overrides,
   };
 }
@@ -782,6 +783,97 @@ describe("TrendSection", () => {
       selectTab("配置與儲蓄");
       expect(screen.getByTestId("net-worth-performance")).toBeInTheDocument();
       expect(visibleChartTitles()).toEqual(ALLOCATION_CHARTS);
+    });
+  });
+
+  // PRD 4.2「快照備註」第 5、9 點、第 9 節 #72e、#72f
+  describe("快照備註", () => {
+    function renderWithNotes() {
+      const snapshots = [
+        baseSnapshot({
+          date: "2026-01-01",
+          cashSources: [
+            { id: "c", name: "銀行", amount: 100000, restricted: false },
+          ],
+          twStockValue: 100000,
+        }),
+        baseSnapshot({
+          date: "2026-02-01",
+          cashSources: [
+            { id: "c", name: "銀行", amount: 150000, restricted: false },
+          ],
+          twStockValue: 120000,
+          // 顯示時套用與存檔相同的正規化
+          note: "  換工作 \n 加薪 ",
+        }),
+        baseSnapshot({
+          date: "2026-03-01",
+          cashSources: [
+            { id: "c", name: "銀行", amount: 180000, restricted: false },
+          ],
+          twStockValue: 130000,
+          note: "   ",
+        }),
+      ];
+      render(
+        <TrendSection
+          visibleSnapshots={snapshots}
+          snapshotCount={snapshots.length}
+          trendRange="all"
+          onRangeChange={vi.fn()}
+          targetNetWorth={0}
+        />
+      );
+    }
+
+    function markerIds(card: HTMLElement) {
+      return Array.from(
+        card.querySelectorAll('[data-testid^="chart-note-marker-"]')
+      ).map((marker) => marker.getAttribute("data-testid"));
+    }
+
+    function tooltipNote(card: HTMLElement, index: number) {
+      fireEvent.click(within(card).getByTestId(`chart-node-${index}`));
+      return within(card).queryByTestId("chart-tooltip-note")?.textContent;
+    }
+
+    it("八張趨勢圖都只在有備註的節點畫標記，Tooltip 顯示正規化後的備註", () => {
+      renderWithNotes();
+
+      const groups: [TrendTabName, string[]][] = [
+        ["資產", ASSET_CHARTS],
+        ["負債", LIABILITY_CHARTS],
+        ["配置與儲蓄", ALLOCATION_CHARTS],
+      ];
+      for (const [name, titles] of groups) {
+        selectTab(name);
+        for (const title of titles) {
+          const card = cardFor(title);
+          expect(markerIds(card), title).toEqual(["chart-note-marker-1"]);
+          expect(tooltipNote(card, 1), title).toBe("備註：換工作 加薪");
+          // 只有空白的備註視為沒有備註
+          expect(tooltipNote(card, 2), title).toBeUndefined();
+        }
+      }
+    });
+
+    it("沒有任何備註時不畫標記", () => {
+      render(
+        <TrendSection
+          visibleSnapshots={[
+            baseSnapshot({ date: "2026-01-01", twStockValue: 100000 }),
+            baseSnapshot({ date: "2026-02-01", twStockValue: 120000 }),
+          ]}
+          snapshotCount={2}
+          trendRange="all"
+          onRangeChange={vi.fn()}
+          targetNetWorth={0}
+        />
+      );
+
+      expect(
+        document.querySelector('[data-testid^="chart-note-marker-"]')
+      ).toBeNull();
     });
   });
 });

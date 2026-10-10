@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { ChartExpandButton } from "@/components/charts/ChartExpandButton";
+import {
+  ChartNoteMarker,
+  ChartTooltipNote,
+} from "@/components/charts/ChartNote";
 import { ChartTooltip } from "@/components/charts/ChartTooltip";
 import { EmptyTrendCard } from "@/components/charts/EmptyTrendCard";
 import { formatPercent, formatShortDate } from "@/lib/format";
@@ -11,6 +15,8 @@ export interface AllocationPoint {
   restrictedCashRatio: number;
   twStockRatio: number;
   usStockRatio: number;
+  /** 該筆快照的備註，有值時節點上方以圓環標示、Tooltip 多一行（PRD 4.2「快照備註」）。 */
+  note?: string;
 }
 
 interface AllocationAreaChartProps {
@@ -70,6 +76,8 @@ const FULLSCREEN_POINT_SPACING = 48;
 const FULLSCREEN_Y_AXIS_WIDTH = 56;
 /** 占比範圍固定為 0–100%，Y 軸刻度固定 5 個，不需要 nice numbers 演算法（PRD 4.2 節）。 */
 const Y_AXIS_TICKS = [0, 25, 50, 75, 100];
+/** 備註標記畫在繪圖區上緣（100%）之上。 */
+const NOTE_MARKER_OFFSET = 8;
 
 interface AreaChartSvgProps {
   title: string;
@@ -164,6 +172,19 @@ function AreaChartSvg({ title, points, layers, variant }: AreaChartSvgProps) {
               fillOpacity={0.9}
             />
           ))}
+          {xs.map(
+            (x, i) =>
+              points[i].note && (
+                <ChartNoteMarker
+                  key={`note-${points[i].date}`}
+                  cx={x}
+                  cy={padding - NOTE_MARKER_OFFSET}
+                  index={i}
+                  withDot
+                  className="text-slate-500 dark:text-neutral-400"
+                />
+              )
+          )}
           {active && activeIndex !== null && (
             <line
               x1={xs[activeIndex]}
@@ -228,6 +249,7 @@ function AreaChartSvg({ title, points, layers, variant }: AreaChartSvgProps) {
                 </p>
               );
             })}
+            <ChartTooltipNote note={active.note} />
           </ChartTooltip>
         )}
       </div>
