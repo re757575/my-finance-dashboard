@@ -39,4 +39,15 @@ describe("AssetsLiabilitiesBarChart", () => {
     expect(within(dialog).getByText("07/12")).toBeInTheDocument();
     expect(within(dialog).getByText("07/13")).toBeInTheDocument();
   });
+
+  // PRD 第 7 節：圖表內文字一律 12px
+  it("全螢幕檢視的日期標籤為 12px 字級", () => {
+    render(<AssetsLiabilitiesBarChart points={points} />);
+
+    fireEvent.click(screen.getByLabelText("資產負債對比全螢幕檢視"));
+
+    const texts = screen.getByRole("dialog").querySelectorAll("svg text");
+    expect(texts).toHaveLength(points.length);
+    for (const text of texts) expect(text).toHaveClass("text-xs");
+  });
 });

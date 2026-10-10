@@ -66,7 +66,7 @@ const FULLSCREEN_CHART_HEIGHT = 220;
 const FULLSCREEN_LABEL_HEIGHT = 28;
 const FULLSCREEN_HEIGHT = FULLSCREEN_CHART_HEIGHT + FULLSCREEN_LABEL_HEIGHT;
 const FULLSCREEN_PADDING = 32;
-const FULLSCREEN_POINT_SPACING = 40;
+const FULLSCREEN_POINT_SPACING = 48;
 const FULLSCREEN_Y_AXIS_WIDTH = 56;
 /** 占比範圍固定為 0–100%，Y 軸刻度固定 5 個，不需要 nice numbers 演算法（PRD 4.2 節）。 */
 const Y_AXIS_TICKS = [0, 25, 50, 75, 100];
@@ -149,7 +149,7 @@ function AreaChartSvg({ title, points, layers, variant }: AreaChartSvgProps) {
                   y={toY(tick)}
                   dy="0.32em"
                   textAnchor="end"
-                  className="fill-slate-400 dark:fill-neutral-400 text-[9px]"
+                  className="fill-slate-400 dark:fill-neutral-400 text-xs"
                 >
                   {tick}%
                 </text>
@@ -203,7 +203,7 @@ function AreaChartSvg({ title, points, layers, variant }: AreaChartSvgProps) {
                 x={x}
                 y={FULLSCREEN_CHART_HEIGHT + 16}
                 textAnchor="middle"
-                className="fill-slate-400 dark:fill-neutral-400 text-[10px]"
+                className="fill-slate-400 dark:fill-neutral-400 text-xs"
               >
                 {formatShortDate(points[i].date)}
               </text>

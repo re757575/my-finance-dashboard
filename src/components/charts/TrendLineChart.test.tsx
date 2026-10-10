@@ -283,6 +283,25 @@ describe("TrendLineChart", () => {
       const dialog = screen.getByRole("dialog");
       expect(within(dialog).getByText("目標 $200,000")).toBeInTheDocument();
     });
+
+    // PRD 第 7 節：compact 圖會隨卡片寬度縮放，畫在 SVG 裡的文字會跟著縮到讀不到
+    it("目標標籤是疊在圖上的 12px 一般文字，不畫在會縮放的 SVG 裡", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+          targetValue={200000}
+        />
+      );
+
+      const label = screen.getByTestId("chart-target-label");
+      expect(label).toHaveTextContent("目標 $200,000");
+      expect(label.closest("svg")).toBeNull();
+      expect(label).toHaveClass("text-xs");
+      // compact 圖的 SVG 裡不放任何文字
+      expect(screen.getByRole("img").querySelectorAll("text")).toHaveLength(0);
+    });
   });
 
   // PRD 4.2 節：Y 軸金額刻度
@@ -337,6 +356,24 @@ describe("TrendLineChart", () => {
       const dialog = screen.getByRole("dialog");
       expect(within(dialog).getAllByText("$100,000").length).toBeGreaterThan(0);
       expect(within(dialog).queryByText("$100,001")).not.toBeInTheDocument();
+    });
+
+    // PRD 第 7 節：圖表內文字一律 12px
+    it("全螢幕檢視的 Y 軸刻度與日期標籤皆為 12px 字級", () => {
+      render(
+        <TrendLineChart
+          title="淨資產趨勢"
+          points={points}
+          formatValue={formatCurrency}
+        />
+      );
+
+      fireEvent.click(screen.getByLabelText("淨資產趨勢全螢幕檢視"));
+
+      const texts = screen.getByRole("dialog").querySelectorAll("svg text");
+      // 4 個 Y 軸刻度＋3 個節點日期
+      expect(texts).toHaveLength(7);
+      for (const text of texts) expect(text).toHaveClass("text-xs");
     });
   });
 });

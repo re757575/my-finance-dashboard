@@ -2,7 +2,7 @@ import { useCallback, useSyncExternalStore } from "react";
 
 /**
  * 單欄版面（視窗寬度 < 1024px）：與 Tailwind `lg:` 斷點互補，`App.tsx` 用它決定
- * 單欄時的區塊順序與固定儲存列（PRD 第 7 節「版面佈局」）。
+ * 單欄時的區塊順序與進入修正模式的捲動目標（PRD 第 7 節「版面佈局」）。
  */
 export const SINGLE_COLUMN_QUERY = "not all and (min-width: 64rem)";
 

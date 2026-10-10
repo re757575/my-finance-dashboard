@@ -214,6 +214,18 @@ describe("AllocationAreaChart", () => {
       }
     });
 
+    // PRD 第 7 節：圖表內文字一律 12px
+    it("Y 軸刻度與日期標籤皆為 12px 字級", () => {
+      render(<AllocationAreaChart points={points} />);
+
+      fireEvent.click(screen.getByLabelText("資產配置趨勢全螢幕檢視"));
+
+      const texts = screen.getByRole("dialog").querySelectorAll("svg text");
+      // 5 個 Y 軸刻度＋每個節點一個日期
+      expect(texts).toHaveLength(5 + points.length);
+      for (const text of texts) expect(text).toHaveClass("text-xs");
+    });
+
     it("刻度數量固定，不因節點數增加而變多", () => {
       const many = Array.from({ length: 30 }, (_, i) =>
         point(`2026-08-${String(i + 1).padStart(2, "0")}`, 50, 0, 30, 20)

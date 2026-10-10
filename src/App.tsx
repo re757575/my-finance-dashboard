@@ -104,9 +104,9 @@ function App() {
 
   // 固定儲存列只在「使用者動過、而且存得下去」時出現：系統帶入的今日草稿（isDirty 但沒動過）
   // 與修正模式下只有暫存的今日草稿有編輯（存檔鈕無事可做）都不算。
+  // 單欄與雙欄都顯示：桌面左欄的表單同樣有好幾個螢幕高。
   const canSaveEdits = isDirty && hasUnsavedEdits;
-  const showStickyBar =
-    isSingleColumn && (canSaveEdits || saveMessage !== null);
+  const showStickyBar = canSaveEdits || saveMessage !== null;
 
   // 目標達成時間預估（PRD 5.7a）：收支取自表單，歷史速度只看已存檔快照
   const goalEstimates = useMemo(
@@ -279,8 +279,9 @@ function App() {
         </div>
       </div>
       <SummaryCards metrics={metrics} debts={draft.debts} />
-      {/* 手機（360–639px）兩欄並排：第一張「負債比」內容較多、獨佔一列；其餘成對排列，落單的最後一張補滿整列 */}
-      <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-3 xs:max-sm:[&>*:first-child]:col-span-2 xs:max-sm:[&>*:last-child:nth-child(even)]:col-span-2">
+      {/* 手機（360–639px）兩欄並排：第一張「負債比」內容較多、獨佔一列；其餘成對排列，落單的最後一張補滿整列。
+          桌面（≥ 1024px）三欄：「負債比」跨兩欄，八張卡剛好排滿三列；沒有質押卡時最後一張跨兩欄補滿 */}
+      <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-3 xs:max-sm:[&>*:first-child]:col-span-2 xs:max-sm:[&>*:last-child:nth-child(even)]:col-span-2 lg:[&>*:first-child]:col-span-2 lg:[&>*:last-child:nth-child(3n+1)]:col-span-2">
         <DebtRatioBar
           ratio={metrics.debtRatio}
           status={metrics.debtRatioStatus}
@@ -435,14 +436,12 @@ function App() {
 
         <Footer />
       </div>
-      {isSingleColumn && (
-        <StickySaveBar
-          hasUnsavedEdits={canSaveEdits}
-          editingDate={editingDate}
-          message={saveMessage}
-          onSave={handleSave}
-        />
-      )}
+      <StickySaveBar
+        hasUnsavedEdits={canSaveEdits}
+        editingDate={editingDate}
+        message={saveMessage}
+        onSave={handleSave}
+      />
       <PwaUpdatePrompt aboveStickyBar={showStickyBar} />
     </div>
   );

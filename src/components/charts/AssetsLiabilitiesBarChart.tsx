@@ -101,7 +101,7 @@ function BarChartSvg({ points, variant }: BarChartSvgProps) {
                     x={groupX + groupWidth / 2}
                     y={FULLSCREEN_CHART_HEIGHT + 16}
                     textAnchor="middle"
-                    className="fill-slate-400 dark:fill-neutral-400 text-[10px]"
+                    className="fill-slate-400 dark:fill-neutral-400 text-xs"
                   >
                     {formatShortDate(p.date)}
                   </text>

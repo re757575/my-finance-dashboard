@@ -23,9 +23,10 @@ const FULLSCREEN_CHART_HEIGHT = 220;
 const FULLSCREEN_LABEL_HEIGHT = 28;
 const FULLSCREEN_HEIGHT = FULLSCREEN_CHART_HEIGHT + FULLSCREEN_LABEL_HEIGHT;
 const FULLSCREEN_PADDING = 32;
-const FULLSCREEN_POINT_SPACING = 40;
-/** 全螢幕檢視左側保留給 Y 軸金額刻度的寬度；compact 卡片空間有限不顯示刻度。 */
-const FULLSCREEN_Y_AXIS_WIDTH = 56;
+/** 節點間距要容得下 12px 的 `MM/DD` 日期標籤並留有間隔。 */
+const FULLSCREEN_POINT_SPACING = 48;
+/** 全螢幕檢視左側保留給 Y 軸金額刻度的寬度（12px 字級下可容納九位數金額）；compact 卡片空間有限不顯示刻度。 */
+const FULLSCREEN_Y_AXIS_WIDTH = 72;
 const Y_AXIS_TICK_COUNT = 4;
 
 interface LineChartSvgProps {
@@ -186,33 +187,23 @@ function LineChartSvg({
                 y={tick.y}
                 dy="0.32em"
                 textAnchor="end"
-                className="fill-slate-400 dark:fill-neutral-400 text-[9px]"
+                className="fill-slate-400 dark:fill-neutral-400 text-xs"
               >
                 {formatValue(tick.value)}
               </text>
             </g>
           ))}
           {targetY !== null && (
-            <>
-              <line
-                x1={leftInset}
-                y1={targetY}
-                x2={width - padding}
-                y2={targetY}
-                stroke="currentColor"
-                strokeWidth={1.5}
-                strokeDasharray="4 3"
-                className="text-slate-300 dark:text-neutral-600"
-              />
-              <text
-                x={leftInset}
-                y={targetY - 4}
-                textAnchor="start"
-                className="fill-slate-400 dark:fill-neutral-400 text-[9px]"
-              >
-                目標 {formatValue(targetValue!)}
-              </text>
-            </>
+            <line
+              x1={leftInset}
+              y1={targetY}
+              x2={width - padding}
+              y2={targetY}
+              stroke="currentColor"
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              className="text-slate-300 dark:text-neutral-600"
+            />
           )}
           <path
             d={path}
@@ -250,12 +241,26 @@ function LineChartSvg({
                 x={c.x}
                 y={FULLSCREEN_CHART_HEIGHT + 16}
                 textAnchor="middle"
-                className="fill-slate-400 dark:fill-neutral-400 text-[10px]"
+                className="fill-slate-400 dark:fill-neutral-400 text-xs"
               >
                 {formatShortDate(points[i].date)}
               </text>
             ))}
         </svg>
+        {/* 目標標籤疊在 SVG 之上而不是畫在 SVG 裡：compact 圖會隨卡片寬度縮放，
+            SVG 內的文字會跟著縮到讀不到，HTML 文字才能固定在 12px */}
+        {targetY !== null && (
+          <p
+            data-testid="chart-target-label"
+            className="pointer-events-none absolute -translate-y-full pb-1 text-xs leading-none whitespace-nowrap text-slate-400 dark:text-neutral-400"
+            style={{
+              left: `${(leftInset / width) * 100}%`,
+              top: `${(targetY / totalHeight) * 100}%`,
+            }}
+          >
+            目標 {formatValue(targetValue!)}
+          </p>
+        )}
         {active && activeCoord && (
           <ChartTooltip
             x={activeCoord.x}

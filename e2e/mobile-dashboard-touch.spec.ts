@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-// PRD 第 7 節「手機看板兩欄並排」「觸控目標」「操作圖示」「負債清單卡片版面」、第 9 節 #67a～#67i
+// PRD 第 7 節「手機看板兩欄並排」「桌面看板格線」「觸控目標」「操作圖示」「負債清單卡片版面」、
+// 第 9 節 #67a～#67i、#68d～#68f
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -152,7 +153,9 @@ test("320px：看板卡片維持單欄", async ({ page }) => {
 });
 
 // #67d
-test("820px 與 1280px：平板兩欄、桌面三欄的排法不變", async ({ page }) => {
+test("820px 與 1280px：平板兩欄、桌面三欄且「負債比」跨兩欄", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 820, height: 1180 });
   await loadDemo(page);
 
@@ -169,11 +172,119 @@ test("820px 與 1280px：平板兩欄、桌面三欄的排法不變", async ({ p
   summary = await boxes(page, SUMMARY);
   expect(summary[2].y).toBe(summary[0].y);
   status = await boxes(page, STATUS);
-  // 三欄：前三張同一列，第四張換行
+  // 三欄：負債比跨兩欄、與現金比例同列，第三張換行
   expect(status[1].y).toBe(status[0].y);
-  expect(status[2].y).toBe(status[0].y);
-  expect(status[3].y).toBeGreaterThan(status[0].y);
-  expect(status[3].x).toBe(status[0].x);
+  expect(status[0].width).toBeGreaterThan(status[1].width * 2);
+  expect(status[2].y).toBeGreaterThan(status[0].y);
+  expect(status[2].x).toBe(status[0].x);
+  expect(status[2].width).toBeCloseTo(status[1].width, 0);
+});
+
+/** 卡片底部在內距之外多出來的留白：被同列較高的卡片撐高時才會大於 0。 */
+const blankBelowContent = (cardLocator: Locator) =>
+  cardLocator.evaluate((el) => {
+    const contentBottom = Math.max(
+      ...[...el.children].map((child) => child.getBoundingClientRect().bottom)
+    );
+    return (
+      el.getBoundingClientRect().bottom -
+      contentBottom -
+      parseFloat(getComputedStyle(el).paddingBottom)
+    );
+  });
+
+// #68d
+for (const width of [1024, 1280]) {
+  test(`${width}px：八張狀態卡排滿三列，「負債比」不比同列的「現金比例」高出一截`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await loadDemo(page);
+
+    const [debtRatio, cashRatio, ...rest] = await boxes(page, STATUS);
+    expect(cashRatio.y).toBe(debtRatio.y);
+    // 負債比跨兩欄：右緣對齊第二欄
+    expect(debtRatio.x + debtRatio.width).toBeCloseTo(
+      rest[1].x + rest[1].width,
+      0
+    );
+    // 其餘六張三張一列，剛好兩列
+    const rows = [rest.slice(0, 3), rest.slice(3)];
+    for (const row of rows) {
+      expect(row[1].y, row[1].testId).toBe(row[0].y);
+      expect(row[2].y, row[2].testId).toBe(row[0].y);
+      expect(row[0].x).toBe(debtRatio.x);
+      expect(row[2].x).toBeCloseTo(cashRatio.x, 0);
+    }
+    expect(rows[0][0].y).toBeGreaterThan(debtRatio.y + debtRatio.height);
+    expect(rows[1][0].y).toBeGreaterThan(rows[0][0].y + rows[0][0].height);
+    // 最後一列沒有空格
+    expect(rest[5].x + rest[5].width).toBeCloseTo(
+      cashRatio.x + cashRatio.width,
+      0
+    );
+
+    // 現金比例沒有被負債比撐出一大塊留白（1280px 等高，1024px 差距在 8px 內）
+    expect(
+      await blankBelowContent(card(page, "cash-ratio-value"))
+    ).toBeLessThanOrEqual(8);
+    await expectContentInsideCard(card(page, "debt-ratio-value"));
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
+// #68e
+test("1280px 沒有質押負債：最後一張「儲蓄率」跨兩欄補滿", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.getByText("+ 新增現金來源").click();
+  await page.getByLabel("金額", { exact: true }).fill("100000");
+
+  await expect(page.getByTestId("pledge-maintenance-value")).toHaveCount(0);
+  const status = await boxes(page, STATUS.slice(0, 7));
+  const [debtRatio, cashRatio] = status;
+  const [emergency, savings] = status.slice(5);
+  expect(savings.y).toBe(emergency.y);
+  expect(savings.x).toBeGreaterThan(emergency.x + emergency.width);
+  expect(savings.width).toBeCloseTo(debtRatio.width, 0);
+  expect(savings.x + savings.width).toBeCloseTo(
+    cashRatio.x + cashRatio.width,
+    0
+  );
+});
+
+// #68f
+test("負債比卡：390px 金融負債比在進度條下方，1280px 排在右側，數值不變", async ({
+  page,
+}) => {
+  const readings = () =>
+    Promise.all(
+      [
+        "debt-ratio-value",
+        "debt-ratio-status",
+        "financial-debt-ratio-value",
+        "financial-debt-ratio-status",
+      ].map((testId) => page.getByTestId(testId).textContent())
+    );
+  const track = page
+    .getByTestId("debt-ratio-bar-fill")
+    .locator("xpath=parent::div");
+  const financial = page.getByTestId("financial-debt-ratio");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await loadDemo(page);
+  await expect(financial).toContainText("金融負債比（不含不動產與房貸）");
+  let trackBox = (await track.boundingBox())!;
+  let financialBox = (await financial.boundingBox())!;
+  expect(financialBox.y).toBeGreaterThan(trackBox.y + trackBox.height);
+  expect(financialBox.x).toBeCloseTo(trackBox.x, 0);
+  const narrow = await readings();
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  trackBox = (await track.boundingBox())!;
+  financialBox = (await financial.boundingBox())!;
+  expect(financialBox.x).toBeGreaterThan(trackBox.x + trackBox.width);
+  expect(financialBox.y).toBeLessThan(trackBox.y);
+  expect(await readings()).toEqual(narrow);
 });
 
 async function sizes(locator: Locator) {

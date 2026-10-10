@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expandSnapshotSections } from "./helpers";
 
-// PRD 4.2「金額千分位顯示」「固定儲存列」、第 7 節「版面佈局」、第 9 節 #65a～#65k
+// PRD 4.2「金額千分位顯示」「固定儲存列」、第 7 節「版面佈局」、第 9 節 #65a～#65k、#68c
 
 const STORAGE_KEY = "my_finance_dashboard_data";
 const PHONE = { width: 390, height: 844 };
@@ -197,11 +197,12 @@ test("390px 尚無快照：輸入區在前；存下第一筆快照後對調並�
   await expect(page.getByTestId("total-assets")).toBeInViewport();
 });
 
-// #65f
-test("1280px 雙欄：輸入區在左、看板在右，不顯示捷徑與固定儲存列", async ({
+// #65f、#68c
+test("1280px 雙欄：輸入區在左、看板在右，不顯示捷徑；固定儲存列同樣出現並可存檔", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1280, height: 720 });
+  const viewport = { width: 1280, height: 720 };
+  await page.setViewportSize(viewport);
   await seedSnapshots(page, [0]);
 
   expect(await sectionOrder(page)).toEqual(["input-form", "dashboard-now"]);
@@ -210,16 +211,32 @@ test("1280px 雙欄：輸入區在左、看板在右，不顯示捷徑與固定�
   expect(dashboardBox!.x).toBeGreaterThan(formBox!.x + formBox!.width);
   expect(dashboardBox!.y).toBe(formBox!.y);
   await expect(jumpToForm(page)).toHaveCount(0);
-
-  await cashAmount(page).fill("200000");
-  await expect(page.getByTestId("save-button")).toBeEnabled();
   await expect(stickyBar(page)).toHaveCount(0);
 
-  await page.getByTestId("save-button").click();
+  // 桌面左欄的表單同樣比一個螢幕高：改完上方欄位，不必捲到表單最底就能存檔
+  await cashAmount(page).fill("200000");
+  await expect(page.getByTestId("save-button")).toBeEnabled();
+  await expect(page.getByTestId("save-button")).not.toBeInViewport();
+  await expect(stickyMessage(page)).toHaveText("有未儲存的變更");
+  await expect(stickyButton(page)).toHaveText("更新儀表板");
+  await expect(stickyBar(page)).toBeInViewport();
+  const barBox = await stickyBar(page).boundingBox();
+  expect(barBox!.width).toBe(viewport.width);
+  expect(Math.round(barBox!.y + barBox!.height)).toBe(viewport.height);
+
+  await stickyButton(page).click();
+  await expect(stickyMessage(page)).toHaveText("已更新並儲存今日資料。");
+  // 表單底部的訊息仍同步顯示
   await expect(page.getByTestId("save-message")).toHaveText(
     "已更新並儲存今日資料。"
   );
-  await expect(stickyBar(page)).toHaveCount(0);
+  await expect(stickyButton(page)).toHaveCount(0);
+  const data = await savedSnapshots(page);
+  expect(data.snapshots).toHaveLength(1);
+  expect(data.snapshots[0].cashSources[0].amount).toBe(200000);
+
+  // 訊息約 4 秒後消失，整列跟著收起
+  await expect(stickyBar(page)).toHaveCount(0, { timeout: 8000 });
 });
 
 // #65g、#65h
