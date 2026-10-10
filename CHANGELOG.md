@@ -2,6 +2,16 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.14](https://github.com/re757575/my-finance-dashboard/compare/v0.3.13...v0.3.14) (2026-10-10)
+
+### Features
+
+- **儀表板:** 新增金額千分位、單欄看板優先與固定儲存列 ([2016194](https://github.com/re757575/my-finance-dashboard/commit/2016194ea678837ae2bb583210b45bf514063242))
+
+### Bug Fixes
+
+- **儀表板:** 修正平板與手機版面截斷與溢出問題 ([500fe8d](https://github.com/re757575/my-finance-dashboard/commit/500fe8d1f89c22ea3d9cc3cd2ad301f1786516f5))
+
 ## [0.3.13](https://github.com/re757575/my-finance-dashboard/compare/v0.3.12...v0.3.13) (2026-10-09)
 
 ### Features
