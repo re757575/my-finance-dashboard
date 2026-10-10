@@ -542,9 +542,13 @@ export function calculatePledgeMaintenance(debts: Debt[]): {
 /** 壓力測試的一鍵情境：股票下跌百分比（PRD 4.2、5.9 節）。 */
 export const STRESS_TEST_DROPS = [10, 20, 30] as const;
 
+/** 自訂跌幅的上限（%）：股票最多跌到 0（PRD 5.9 節「跌幅範圍」）。 */
+export const STRESS_TEST_MAX_DROP = 100;
+
 /**
  * 股票壓力測試（PRD 5.9 節）：假設台股與美股市值同步下跌 dropPercent%，質押負債的質押股票市值同步下跌；
  * 現金、不動產、負債本金與匯率不變，其餘沿用 calculateMetrics 重新計算。純即時試算，不寫入任何資料。
+ * dropPercent 一律夾在 0–STRESS_TEST_MAX_DROP 之間（非數字視為 0），自訂跌幅不會讓股票市值變成負數。
  * netWorthChangeRate 以現況淨資產的絕對值為分母，現況淨資產為 0 時為 null。
  */
 export function calculateStressScenario(
@@ -556,7 +560,11 @@ export function calculateStressScenario(
   netWorthChange: number;
   netWorthChangeRate: number | null;
 } {
-  const factor = 1 - dropPercent / 100;
+  const drop = Math.min(
+    Math.max(toSafeNumber(dropPercent), 0),
+    STRESS_TEST_MAX_DROP
+  );
+  const factor = 1 - drop / 100;
   const before = calculateMetrics(snapshot);
   const after = calculateMetrics({
     ...snapshot,

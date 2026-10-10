@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandSnapshotSections } from "./helpers";
+import { expandInputSections, expandSnapshotSections } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -88,6 +88,7 @@ test("定期定額隨快照存檔，重新整理後仍保留", async ({ page }) 
   await page.getByTestId("save-button").click();
   await expect(page.getByTestId("save-message")).toBeVisible();
   await page.reload();
+  await expandInputSections(page);
 
   await expect(page.getByLabel("定期定額名稱")).toHaveCount(2);
   await expect(page.getByLabel("定期定額名稱").first()).toHaveValue("0050");
@@ -143,6 +144,7 @@ test("V7 舊資料遷移後補上空的定期定額清單，現金流不變", as
     );
   });
   await page.reload();
+  await expandInputSections(page);
 
   await expect(page.getByTestId("cash-flow-value")).toHaveText("$40,000");
   await expect(page.getByText("尚未新增定期定額")).toBeVisible();

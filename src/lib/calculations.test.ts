@@ -27,6 +27,7 @@ import {
   PLEDGE_MARGIN_CALL_RATIO,
   STRESS_BREAKPOINT_DEBT_RATIOS,
   STRESS_TEST_DROPS,
+  STRESS_TEST_MAX_DROP,
   type StressBreakpointKey,
   sumFinancialDebtPrincipal,
   sumRecurringInvestments,
@@ -2486,5 +2487,77 @@ describe("每月定期定額（PRD 5.3a 節）", () => {
 
     expect(result.totalRecurringInvestment).toBe(0);
     expect(result.cashFlowAfterInvestment).toBe(result.cashFlow);
+  });
+});
+
+// PRD 5.9 節「跌幅範圍」、第 9 節 #71b～#71d：自訂跌幅
+describe("calculateStressScenario：自訂跌幅", () => {
+  // 同 #44：現金 300,000、股票 700,000、房貸 400,000
+  const snapshot = baseSnapshotInput({
+    cashSources: [{ id: "c", name: "現金", amount: 300000, restricted: false }],
+    twStockValue: 400000,
+    usStockValue: 300000,
+    usStockCurrency: "TWD",
+    debts: [baseDebt({ category: "房貸", principal: 400000 })],
+  });
+
+  it("自訂跌幅的上限為 100%", () => {
+    expect(STRESS_TEST_MAX_DROP).toBe(100);
+  });
+
+  it("接受一鍵情境以外的跌幅", () => {
+    const result = calculateStressScenario(snapshot, 50);
+
+    expect(result.after.totalStockValue).toBeCloseTo(350000, 5);
+    expect(result.after.netWorth).toBeCloseTo(250000, 5);
+    expect(result.netWorthChange).toBeCloseTo(-350000, 5);
+    expect(result.netWorthChangeRate).toBeCloseTo(-58.33, 2);
+    expect(result.after.debtRatio).toBeCloseTo(61.54, 2);
+  });
+
+  it("接受小數跌幅", () => {
+    const result = calculateStressScenario(snapshot, 12.5);
+
+    expect(result.after.totalStockValue).toBeCloseTo(612500, 5);
+  });
+
+  it("跌幅 100% 時股票與質押股票市值歸零，不出現 NaN", () => {
+    const pledged = {
+      ...snapshot,
+      debts: [
+        baseDebt({
+          category: "質押",
+          principal: 200000,
+          collateralValue: 400000,
+          repaymentMethod: "interestOnly",
+        }),
+      ],
+    };
+
+    const result = calculateStressScenario(pledged, 100);
+
+    expect(result.after.totalStockValue).toBe(0);
+    expect(result.after.pledgeCollateralValue).toBe(0);
+    expect(result.after.netWorth).toBe(100000);
+    expect(Number.isFinite(result.after.debtRatio)).toBe(true);
+    expect(Number.isFinite(result.netWorthChangeRate)).toBe(true);
+  });
+
+  it("超過 100 的跌幅夾在 100，股票市值不會變成負數", () => {
+    const result = calculateStressScenario(snapshot, 150);
+
+    expect(result.after.totalStockValue).toBe(0);
+    expect(result.after.netWorth).toBe(-100000);
+    expect(result).toEqual(calculateStressScenario(snapshot, 100));
+  });
+
+  it("負數與非數字的跌幅視為 0，情境與現況相同", () => {
+    for (const drop of [-10, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const result = calculateStressScenario(snapshot, drop);
+
+      expect(result.after.totalStockValue).toBe(700000);
+      expect(result.after.netWorth).toBe(600000);
+      expect(result.netWorthChange).toBe(0);
+    }
   });
 });

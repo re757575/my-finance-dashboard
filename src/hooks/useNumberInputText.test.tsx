@@ -11,10 +11,12 @@ import {
 function Field({
   initial,
   min,
+  max,
   onChange,
 }: {
   initial: number;
   min?: number;
+  max?: number;
   onChange?: (value: number) => void;
 }) {
   const [value, setValue] = useState(initial);
@@ -25,6 +27,7 @@ function Field({
       onChange?.(next);
     },
     min,
+    max,
   });
   return (
     <>
@@ -173,5 +176,44 @@ describe("useNumberInputText", () => {
     fireEvent.click(screen.getByRole("button", { name: "由外部改值" }));
 
     expect(input()).toHaveValue("12");
+  });
+});
+
+// PRD 4.2「壓力測試卡」第 9 點：自訂跌幅上限 100
+describe("useNumberInputText：上限", () => {
+  it("輸入超過 max 時，文字與數值都改為上限", () => {
+    const onChange = vi.fn();
+    render(<Field initial={20} min={0} max={100} onChange={onChange} />);
+
+    fireEvent.focus(input());
+    fireEvent.change(input(), { target: { value: "150" } });
+
+    expect(input()).toHaveValue("100");
+    expect(onChange).toHaveBeenLastCalledWith(100);
+  });
+
+  it("未超過 max 時照常輸入，含小數與剛好等於上限", () => {
+    const onChange = vi.fn();
+    render(<Field initial={20} min={0} max={100} onChange={onChange} />);
+
+    fireEvent.focus(input());
+    fireEvent.change(input(), { target: { value: "45.5" } });
+    expect(input()).toHaveValue("45.5");
+    expect(onChange).toHaveBeenLastCalledWith(45.5);
+
+    fireEvent.change(input(), { target: { value: "100" } });
+    expect(input()).toHaveValue("100");
+    expect(onChange).toHaveBeenLastCalledWith(100);
+  });
+
+  it("沒有設定 max 的欄位不受限制", () => {
+    const onChange = vi.fn();
+    render(<Field initial={20} min={0} onChange={onChange} />);
+
+    fireEvent.focus(input());
+    fireEvent.change(input(), { target: { value: "150" } });
+
+    expect(input()).toHaveValue("150");
+    expect(onChange).toHaveBeenLastCalledWith(150);
   });
 });

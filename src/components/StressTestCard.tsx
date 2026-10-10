@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FormulaInfoButton } from "@/components/FormulaInfoButton";
 import {
   calculateStressBreakpoints,
@@ -8,6 +8,7 @@ import {
   PLEDGE_MARGIN_CALL_RATIO,
   STRESS_BREAKPOINT_DEBT_RATIOS,
   STRESS_TEST_DROPS,
+  STRESS_TEST_MAX_DROP,
 } from "@/lib/calculations";
 import type {
   calculateMetrics,
@@ -16,10 +17,14 @@ import type {
 } from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { SegmentedToggle } from "@/components/SegmentedToggle";
+import { Input } from "@/components/ui/input";
+import { useNumberInputText } from "@/hooks/useNumberInputText";
 import { cn } from "@/lib/utils";
 import type { DebtRatioStatus, PledgeMaintenanceStatus } from "@/types/schema";
 
 const DEFAULT_DROP = 20;
+const CUSTOM = "custom";
+type DropSelection = number | typeof CUSTOM;
 
 const DEBT_STATUS_STYLE: Record<DebtRatioStatus, string> = {
   "debt-free":
@@ -72,19 +77,33 @@ interface StressTestCardProps {
   snapshot: Parameters<typeof calculateMetrics>[0];
 }
 
+const DROP_OPTIONS: { value: DropSelection; label: string }[] = [
+  ...STRESS_TEST_DROPS.map((value) => ({
+    value,
+    label: `\u2212${value}%`,
+  })),
+  { value: CUSTOM, label: "自訂" },
+];
+
 /**
- * 股票壓力測試卡（PRD 4.2、5.9 節）：一鍵切換 −10%／−20%／−30% 情境，
+ * 股票壓力測試卡（PRD 4.2、5.9 節）：一鍵切換 −10%／−20%／−30% 情境，或選「自訂」輸入 0–100% 的跌幅，
  * 以「現況 → 情境」呈現股票市值、淨資產、負債比與質押整戶維持率。
  * 情境結果下方另列「臨界點」（PRD 5.9a 節）：反推股票再下跌多少會碰到各條風險線，與所選情境無關。
- * 股票市值合計為 0（沒有可下跌的部位）時整區不顯示。純即時試算，不改動任何輸入或存檔資料。
+ * 股票市值合計為 0（沒有可下跌的部位）時整區不顯示。純即時試算，不改動任何輸入或存檔資料；
+ * 所選情境與自訂跌幅都只存在元件 state。
  */
-const DROP_OPTIONS = STRESS_TEST_DROPS.map((value) => ({
-  value,
-  label: `\u2212${value}%`,
-}));
-
 export function StressTestCard({ snapshot }: StressTestCardProps) {
-  const [drop, setDrop] = useState<number>(DEFAULT_DROP);
+  const [selection, setSelection] = useState<DropSelection>(DEFAULT_DROP);
+  // 自訂跌幅：第一次選「自訂」前為 null，屆時沿用當下的固定情境，結果才不會跳動
+  const [customDrop, setCustomDrop] = useState<number | null>(null);
+  const isCustom = selection === CUSTOM;
+  const drop = isCustom ? (customDrop ?? DEFAULT_DROP) : selection;
+
+  function handleSelect(next: DropSelection) {
+    if (next === CUSTOM && customDrop === null) setCustomDrop(drop);
+    setSelection(next);
+  }
+
   const { before, after, netWorthChange, netWorthChangeRate } =
     calculateStressScenario(snapshot, drop);
 
@@ -148,10 +167,12 @@ export function StressTestCard({ snapshot }: StressTestCardProps) {
         <SegmentedToggle
           label="股票下跌情境"
           options={DROP_OPTIONS}
-          value={drop}
-          onChange={setDrop}
+          value={selection}
+          onChange={handleSelect}
         />
       </div>
+
+      {isCustom && <CustomDropInput value={drop} onChange={setCustomDrop} />}
 
       <dl className="mt-3 space-y-2 text-sm">
         <Row label="股票市值合計">
@@ -237,6 +258,55 @@ export function StressTestCard({ snapshot }: StressTestCardProps) {
       <p className="mt-3 text-xs text-slate-400 dark:text-neutral-400">
         僅為簡化的即時試算，未考量匯率變動、個股差異與融資追繳的實際規定
       </p>
+    </div>
+  );
+}
+
+/** 自訂跌幅輸入框：選「自訂」時才掛載，掛載當下聚焦（聚焦會全選），可直接輸入（PRD 4.2「壓力測試卡」第 9 點）。 */
+function CustomDropInput({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { text, handleChange, handleFocus, handleBlur } = useNumberInputText({
+    value,
+    onChange,
+    min: 0,
+    max: STRESS_TEST_MAX_DROP,
+  });
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  return (
+    <div className="mt-3 flex items-center justify-end gap-2">
+      <span
+        aria-hidden="true"
+        className="text-sm text-slate-500 dark:text-neutral-400"
+      >
+        自訂跌幅
+      </span>
+      <div className="relative w-24">
+        <Input
+          ref={inputRef}
+          type="text"
+          inputMode="decimal"
+          placeholder="0"
+          value={text}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          className="pr-7 text-right"
+          aria-label="自訂跌幅"
+        />
+        <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-slate-400 dark:text-neutral-400">
+          %
+        </span>
+      </div>
     </div>
   );
 }

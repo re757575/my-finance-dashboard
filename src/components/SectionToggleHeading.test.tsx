@@ -85,3 +85,31 @@ describe("SectionToggleHeading", () => {
     expect(icon).toHaveClass("rotate-90");
   });
 });
+
+// PRD 第 7 節「輸入區分段收合」：輸入區內的分段標題字級較小
+describe("SectionToggleHeading：字級", () => {
+  it('預設為頁面層級的 text-lg，size="sm" 時改為 text-sm', () => {
+    const { rerender } = render(
+      <SectionToggleHeading
+        title="負債"
+        open={false}
+        onToggle={vi.fn()}
+        contentId="content"
+      />
+    );
+    expect(screen.getByRole("heading", { level: 2 })).toHaveClass("text-lg");
+
+    rerender(
+      <SectionToggleHeading
+        title="負債"
+        open={false}
+        onToggle={vi.fn()}
+        contentId="content"
+        size="sm"
+      />
+    );
+    const heading = screen.getByRole("heading", { level: 2 });
+    expect(heading).toHaveClass("text-sm");
+    expect(heading).not.toHaveClass("text-lg");
+  });
+});

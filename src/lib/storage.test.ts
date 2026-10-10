@@ -3,6 +3,7 @@ import {
   createEmptyFinanceData,
   getCurrentDate,
   getLatestSnapshot,
+  getSnapshotBefore,
   getSnapshotForDate,
   getSnapshotsInRange,
   getSnapshotsYearToDate,
@@ -788,4 +789,27 @@ describe("LocalStorage 讀寫失敗", () => {
 
 beforeEach(() => {
   localStorage.clear();
+});
+
+// PRD 4.2「總覽卡增減比對」第 1 點、第 9 節 #69b～#69d：比對基準
+describe("getSnapshotBefore", () => {
+  const snapshots = [
+    snapshot("2026-07-13", 3000),
+    snapshot("2026-07-05", 1000),
+    snapshot("2026-07-10", 2000),
+  ];
+
+  it("回傳日期早於指定日期的最近一筆，不受陣列順序影響", () => {
+    expect(getSnapshotBefore(snapshots, "2026-07-20")?.date).toBe("2026-07-13");
+    expect(getSnapshotBefore(snapshots, "2026-07-12")?.date).toBe("2026-07-10");
+  });
+
+  it("不包含指定日期當天的快照（今天已存檔時不與自己比較）", () => {
+    expect(getSnapshotBefore(snapshots, "2026-07-13")?.date).toBe("2026-07-10");
+  });
+
+  it("沒有更早的快照時回傳 undefined", () => {
+    expect(getSnapshotBefore(snapshots, "2026-07-05")).toBeUndefined();
+    expect(getSnapshotBefore([], "2026-07-05")).toBeUndefined();
+  });
 });

@@ -319,8 +319,8 @@ test.describe("觸控裝置", () => {
 
     // 範例資料：5 筆現金（各 3 顆）＋ 5 筆負債 ＋ 2 筆收入 ＋ 2 筆定期定額的刪除鈕
     await expect(rowIconButtons(page)).toHaveCount(24);
-    // 幣別 2 ＋ 5 筆負債的攤還方式 10 ＋ 壓力測試 3
-    await expect(segmentButtons(page)).toHaveCount(15);
+    // 幣別 2 ＋ 5 筆負債的攤還方式 10 ＋ 壓力測試 4（含「自訂」）
+    await expect(segmentButtons(page)).toHaveCount(16);
     await expect(addButtons(page)).toHaveCount(4);
 
     for (const group of [

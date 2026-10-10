@@ -5,6 +5,8 @@ interface UseNumberInputTextOptions {
   value: number;
   onChange: (value: number) => void;
   min?: number;
+  /** 上限：輸入超過時，畫面上的文字與數值都直接改為上限（如百分比欄位的 100）。 */
+  max?: number;
 }
 
 /** 過濾成合法的數字字串：只保留數字、最多一個開頭負號（若允許）、最多一個小數點。 */
@@ -57,6 +59,7 @@ export function useNumberInputText({
   value,
   onChange,
   min,
+  max,
 }: UseNumberInputTextOptions) {
   const allowNegative = min === undefined || min < 0;
   const [text, setText] = useState(() => formatGroupedNumberText(value));
@@ -77,8 +80,14 @@ export function useNumberInputText({
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const sanitized = sanitizeNumericText(e.target.value, allowNegative);
-    setText(sanitized);
     const next = toSafeNumber(sanitized);
+    // 超過上限時連文字一起改掉，使用者才不會看到自己「打得出」超過上限的數字
+    if (max !== undefined && next > max) {
+      setText(toPlainText(max));
+      onChange(max);
+      return;
+    }
+    setText(sanitized);
     onChange(min !== undefined ? Math.max(min, next) : next);
   }
 

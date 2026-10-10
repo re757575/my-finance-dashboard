@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandSnapshotSections } from "./helpers";
+import { expandInputSections, expandSnapshotSections } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -249,6 +249,8 @@ test("今日草稿自動估算負債剩餘本金與期數，並標示系統估�
     );
   });
   await page.reload();
+  // 已有快照且沒有質押負債：「負債」預設收合
+  await expandInputSections(page);
 
   const principalInput = page.getByLabel("剩餘本金");
   const monthsInput = page.getByLabel("剩餘還款期數");
@@ -599,6 +601,7 @@ async function seedHistory(page: Page, daysAgo: number[]) {
   }, daysAgo.map(dateDaysAgo));
   await page.reload();
   await expandSnapshotSections(page);
+  await expandInputSections(page);
 }
 
 function storedAmounts(page: Page) {

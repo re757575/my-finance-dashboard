@@ -422,6 +422,147 @@ describe("StressTestCard", () => {
     });
   });
 
+  // PRD 4.2「壓力測試卡」第 9 點、第 9 節 #71a～#71e
+  describe("自訂跌幅", () => {
+    const customButton = () => screen.getByRole("button", { name: "自訂" });
+    const customInput = () =>
+      screen.getByLabelText<HTMLInputElement>("自訂跌幅");
+    const typeDrop = (value: string) =>
+      fireEvent.change(customInput(), { target: { value } });
+
+    it("預設未選取「自訂」，不顯示輸入框", () => {
+      render(<StressTestCard snapshot={withStocks} />);
+
+      expect(customButton()).toHaveAttribute("aria-pressed", "false");
+      expect(screen.queryByLabelText("自訂跌幅")).not.toBeInTheDocument();
+    });
+
+    it("選「自訂」後出現輸入框並取得焦點，初始值沿用當下的固定情境", () => {
+      render(<StressTestCard snapshot={withStocks} />);
+      fireEvent.click(screen.getByRole("button", { name: "\u221230%" }));
+
+      fireEvent.click(customButton());
+
+      expect(customButton()).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: "\u221230%" })).toHaveAttribute(
+        "aria-pressed",
+        "false"
+      );
+      expect(customInput()).toHaveValue("30");
+      expect(customInput()).toHaveFocus();
+      expect(screen.getByTestId("stress-test-stock")).toHaveTextContent(
+        "$700,000 → $490,000"
+      );
+    });
+
+    it("輸入跌幅後情境結果即時更新", () => {
+      render(<StressTestCard snapshot={withStocks} />);
+      fireEvent.click(customButton());
+
+      typeDrop("50");
+
+      expect(screen.getByTestId("stress-test-stock")).toHaveTextContent(
+        "$700,000 → $350,000"
+      );
+      expect(screen.getByTestId("stress-test-net-worth")).toHaveTextContent(
+        "$600,000 → $250,000"
+      );
+      expect(
+        screen.getByTestId("stress-test-net-worth-change")
+      ).toHaveTextContent("-$350,000，-58.3%");
+      expect(screen.getByTestId("stress-test-debt-ratio")).toHaveTextContent(
+        "40.0% → 61.5%"
+      );
+    });
+
+    it("可輸入小數，公式說明的代入數值跟著顯示", () => {
+      render(<StressTestCard snapshot={withStocks} />);
+      fireEvent.click(customButton());
+
+      typeDrop("12.5");
+
+      expect(screen.getByTestId("stress-test-stock")).toHaveTextContent(
+        "$700,000 → $612,500"
+      );
+      fireEvent.click(screen.getByLabelText("壓力測試計算公式說明"));
+      expect(screen.getByTestId("formula-info-content")).toHaveTextContent(
+        "$700,000 × (1 − 12.5%) = $612,500"
+      );
+    });
+
+    it("輸入超過 100 時欄位改為 100，股票市值歸零", () => {
+      render(<StressTestCard snapshot={withStocks} />);
+      fireEvent.click(customButton());
+
+      typeDrop("150");
+
+      expect(customInput()).toHaveValue("100");
+      expect(screen.getByTestId("stress-test-stock")).toHaveTextContent(
+        "$700,000 → $0"
+      );
+      expect(screen.getByTestId("stress-test-net-worth")).toHaveTextContent(
+        "$600,000 → -$100,000"
+      );
+    });
+
+    it("清空輸入框視為沒有下跌，情境與現況相同", () => {
+      render(<StressTestCard snapshot={withStocks} />);
+      fireEvent.click(customButton());
+
+      typeDrop("");
+
+      expect(screen.getByTestId("stress-test-stock")).toHaveTextContent(
+        "$700,000 → $700,000"
+      );
+      expect(
+        screen.getByTestId("stress-test-net-worth-change")
+      ).toHaveTextContent("$0，0.0%");
+      expect(screen.getByTestId("stress-test-debt-ratio")).toHaveTextContent(
+        "40.0% → 40.0%"
+      );
+    });
+
+    it("切回固定情境時輸入框消失，再切回「自訂」保留先前輸入的跌幅", () => {
+      render(<StressTestCard snapshot={withStocks} />);
+      fireEvent.click(customButton());
+      typeDrop("50");
+
+      fireEvent.click(screen.getByRole("button", { name: "\u221210%" }));
+      expect(screen.queryByLabelText("自訂跌幅")).not.toBeInTheDocument();
+      expect(screen.getByTestId("stress-test-stock")).toHaveTextContent(
+        "$700,000 → $630,000"
+      );
+
+      fireEvent.click(customButton());
+      expect(customInput()).toHaveValue("50");
+      expect(screen.getByTestId("stress-test-stock")).toHaveTextContent(
+        "$700,000 → $350,000"
+      );
+    });
+
+    it("自訂跌幅讓質押維持率跌破追繳線時同樣顯示提示", () => {
+      render(
+        <StressTestCard
+          snapshot={{
+            ...base,
+            twStockValue: 1000000,
+            debts: [pledge(500000, 800000)],
+          }}
+        />
+      );
+      fireEvent.click(customButton());
+
+      typeDrop("25");
+
+      expect(screen.getByTestId("stress-test-pledge-ratio")).toHaveTextContent(
+        "160.0% → 120.0%"
+      );
+      expect(
+        screen.getByTestId("stress-test-margin-call-warning")
+      ).toBeInTheDocument();
+    });
+  });
+
   it("卡片下方註明僅為簡化的即時試算", () => {
     render(<StressTestCard snapshot={withStocks} />);
     expect(

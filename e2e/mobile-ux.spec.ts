@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandSnapshotSections } from "./helpers";
+import { expandInputSections, expandSnapshotSections } from "./helpers";
 
 // PRD 4.2「金額千分位顯示」「固定儲存列」、第 7 節「版面佈局」、第 9 節 #65a～#65k、#68c
 
@@ -102,6 +102,7 @@ test("金額千分位：離開欄位後顯示千分位，存檔的數值不變",
 
   // 重新整理後仍以千分位顯示
   await page.reload();
+  await expandInputSections(page);
   await expect(page.getByLabel("剩餘本金")).toHaveValue("5,487,138");
 });
 
@@ -339,6 +340,7 @@ for (const width of [390, 1024]) {
   test(`${width}px 負債卡：千分位後的九位數本金不被截斷`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await seedSnapshots(page, [0]);
+    await expandInputSections(page);
 
     const principal = page.getByLabel("剩餘本金");
     await principal.fill("123456789");

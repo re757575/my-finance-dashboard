@@ -412,6 +412,23 @@ export function getLatestSnapshot(data: FinanceData): Snapshot | undefined {
 }
 
 /**
+ * 日期早於 date 的最近一筆快照（不要求輸入已排序），沒有更早的快照時為 undefined。
+ * 用於總覽卡的增減比對基準（PRD 4.2「總覽卡增減比對」）。
+ */
+export function getSnapshotBefore(
+  snapshots: Snapshot[],
+  date: string
+): Snapshot | undefined {
+  return snapshots.reduce<Snapshot | undefined>(
+    (latest, snapshot) =>
+      snapshot.date < date && (!latest || snapshot.date > latest.date)
+        ? snapshot
+        : latest,
+    undefined
+  );
+}
+
+/**
  * 兩個 YYYY-MM-DD 日期字串的「曆月差」（只看年月，忽略日），用於負債剩餘本金／期數自動估算
  * （PRD 4.2 節）。例如 2026-01-15 → 2026-03-02 視為經過 2 期，接受曆月差帶來的天數誤差。
  */

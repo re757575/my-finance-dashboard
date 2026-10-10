@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
-import { expandSnapshotSections } from "./helpers";
+import { expandInputSections, expandSnapshotSections } from "./helpers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sampleBackup = path.join(__dirname, "fixtures/sample-backup.json");
@@ -794,6 +794,7 @@ test("快照比較：質押本金不變時，仍看得出質押股票市值與�
   await page.reload();
   await expect(page.getByText("目前檢視日期：2026-10-02")).toBeVisible();
   await expandSnapshotSections(page);
+  await expandInputSections(page);
   await page.getByRole("button", { name: "+ 新增負債" }).click();
   await page.getByLabel("負債類別").selectOption("質押");
   await page.getByLabel("備註名稱").fill("股票質押");

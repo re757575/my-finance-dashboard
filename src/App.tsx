@@ -18,6 +18,7 @@ import { ExpenseInput } from "@/components/ExpenseInput";
 import { Footer } from "@/components/Footer";
 import { GoalProgressSection } from "@/components/GoalProgressSection";
 import { IncomeSourceList } from "@/components/IncomeSourceList";
+import { InputSection } from "@/components/InputSection";
 import { MonthlyDebtPaymentCard } from "@/components/MonthlyDebtPaymentCard";
 import { PledgeMaintenanceCard } from "@/components/PledgeMaintenanceCard";
 import { PwaUpdatePrompt } from "@/components/PwaUpdatePrompt";
@@ -36,12 +37,14 @@ import { TargetNetWorthInput } from "@/components/TargetNetWorthInput";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TrendSection } from "@/components/TrendSection";
 import { Button } from "@/components/ui/button";
+import { useInputSections } from "@/hooks/useInputSections";
 import { useLocalSnapshots } from "@/hooks/useLocalSnapshots";
 import { SINGLE_COLUMN_QUERY, useMediaQuery } from "@/hooks/useMediaQuery";
 import { useTheme } from "@/hooks/useTheme";
-import { calculateGoalEstimates } from "@/lib/calculations";
+import { calculateGoalEstimates, calculateMetrics } from "@/lib/calculations";
 import { getBackupReminder, getDataFreshness } from "@/lib/dataFreshness";
-import { getCurrentDate } from "@/lib/storage";
+import { buildInputSectionSummaries } from "@/lib/inputSections";
+import { getCurrentDate, getSnapshotBefore } from "@/lib/storage";
 
 function App() {
   const {
@@ -114,6 +117,27 @@ function App() {
     [draft, snapshots]
   );
 
+  // 總覽卡的增減基準（PRD 4.2「總覽卡增減比對」）：日期早於表單日期的最近一筆已存檔快照，
+  // 今天已存檔時不會拿今天自己那筆來比；修正模式下 draft.date 是被修正的日期。
+  const previousSummary = useMemo(() => {
+    const previous = getSnapshotBefore(snapshots, draft.date);
+    if (!previous) return null;
+    const { totalAssets, totalLiabilities, netWorth } =
+      calculateMetrics(previous);
+    return { date: previous.date, totalAssets, totalLiabilities, netWorth };
+  }, [snapshots, draft.date]);
+
+  // 輸入區分段收合（PRD 4.2）：展開狀態只存在 state；收合的區塊以一行摘要顯示目前數值
+  const { open: sectionOpen, toggle: toggleSection } = useInputSections({
+    hasLoaded,
+    hasSnapshots: snapshotCount > 0,
+    hasPledgeDebt: draft.debts.some((debt) => debt.category === "質押"),
+  });
+  const sectionSummaries = buildInputSectionSummaries(draft, metrics);
+  const hasEstimatedDebts = Object.values(estimatedDebtFields).some(
+    (fields) => fields.principal || fields.remainingMonths
+  );
+
   // 資料新鮮度與備份提醒（PRD 4.2）：只看已存檔快照，與今日草稿是否有未存檔異動無關
   const freshness = getDataFreshness(latestSnapshotDate, currentDate);
   const backupReminder = getBackupReminder({
@@ -169,52 +193,98 @@ function App() {
       key="form"
       ref={formRef}
       data-testid="input-form"
+      // 初次讀取 LocalStorage 完成前，欄位內容與各區塊的展開狀態都還會變
+      aria-busy={!hasLoaded}
       className="scroll-mt-4 space-y-4 rounded-xl bg-white dark:bg-card p-4 shadow-sm lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:self-start"
     >
       <SnapshotEditBanner date={editingDate} onCancel={cancelEditing} />
-      <CashSourceList
-        value={draft.cashSources}
-        onChange={(cashSources) => updateDraft({ cashSources })}
-      />
-      <StockInputs
-        twStockValue={draft.twStockValue}
-        usStockValue={draft.usStockValue}
-        usStockCurrency={draft.usStockCurrency}
-        exchangeRate={draft.exchangeRate}
-        onChange={updateDraft}
-      />
-      <RealEstateInput
-        value={draft.realEstateValue}
-        onChange={(realEstateValue) => updateDraft({ realEstateValue })}
-      />
-      <DebtList
-        value={draft.debts}
-        onChange={updateDebts}
-        estimatedFields={estimatedDebtFields}
-      />
-      <IncomeSourceList
-        value={draft.incomeSources}
-        onChange={(incomeSources) => updateDraft({ incomeSources })}
-      />
-      <ExpenseInput
-        value={draft.monthlyExpense}
-        onChange={(monthlyExpense) => updateDraft({ monthlyExpense })}
-      />
-      <RecurringInvestmentList
-        value={draft.recurringInvestments}
-        onChange={(recurringInvestments) =>
-          updateDraft({ recurringInvestments })
-        }
-      />
-      <TargetNetWorthInput
-        value={draft.targetNetWorth}
-        monthlyExpense={draft.monthlyExpense}
-        onChange={(targetNetWorth) => updateDraft({ targetNetWorth })}
-      />
-      <TargetCashRatioInput
-        value={draft.targetCashRatio}
-        onChange={(targetCashRatio) => updateDraft({ targetCashRatio })}
-      />
+      <div className="divide-y divide-slate-100 dark:divide-border">
+        <InputSection
+          title="資產"
+          testId="input-section-assets"
+          open={sectionOpen.assets}
+          onToggle={() => toggleSection("assets")}
+          summary={sectionSummaries.assets}
+        >
+          <CashSourceList
+            value={draft.cashSources}
+            onChange={(cashSources) => updateDraft({ cashSources })}
+          />
+          <StockInputs
+            twStockValue={draft.twStockValue}
+            usStockValue={draft.usStockValue}
+            usStockCurrency={draft.usStockCurrency}
+            exchangeRate={draft.exchangeRate}
+            onChange={updateDraft}
+          />
+          <RealEstateInput
+            value={draft.realEstateValue}
+            onChange={(realEstateValue) => updateDraft({ realEstateValue })}
+          />
+        </InputSection>
+        <InputSection
+          title="負債"
+          testId="input-section-debts"
+          open={sectionOpen.debts}
+          onToggle={() => toggleSection("debts")}
+          summary={
+            <>
+              {sectionSummaries.debts}
+              {/* 收合時看不到負債卡上的「系統估算」標記，在摘要提醒有數值待確認 */}
+              {hasEstimatedDebts && (
+                <span className="rounded bg-sky-50 dark:bg-sky-950 px-1 py-0.5 text-[10px] font-medium text-sky-600 dark:text-sky-300">
+                  含系統估算
+                </span>
+              )}
+            </>
+          }
+        >
+          <DebtList
+            value={draft.debts}
+            onChange={updateDebts}
+            estimatedFields={estimatedDebtFields}
+          />
+        </InputSection>
+        <InputSection
+          title="收入與支出"
+          testId="input-section-cash-flow"
+          open={sectionOpen.cashFlow}
+          onToggle={() => toggleSection("cashFlow")}
+          summary={sectionSummaries.cashFlow}
+        >
+          <IncomeSourceList
+            value={draft.incomeSources}
+            onChange={(incomeSources) => updateDraft({ incomeSources })}
+          />
+          <ExpenseInput
+            value={draft.monthlyExpense}
+            onChange={(monthlyExpense) => updateDraft({ monthlyExpense })}
+          />
+          <RecurringInvestmentList
+            value={draft.recurringInvestments}
+            onChange={(recurringInvestments) =>
+              updateDraft({ recurringInvestments })
+            }
+          />
+        </InputSection>
+        <InputSection
+          title="目標"
+          testId="input-section-goals"
+          open={sectionOpen.goals}
+          onToggle={() => toggleSection("goals")}
+          summary={sectionSummaries.goals}
+        >
+          <TargetNetWorthInput
+            value={draft.targetNetWorth}
+            monthlyExpense={draft.monthlyExpense}
+            onChange={(targetNetWorth) => updateDraft({ targetNetWorth })}
+          />
+          <TargetCashRatioInput
+            value={draft.targetCashRatio}
+            onChange={(targetCashRatio) => updateDraft({ targetCashRatio })}
+          />
+        </InputSection>
+      </div>
 
       <div className="space-y-1">
         <Button
@@ -278,7 +348,11 @@ function App() {
           />
         </div>
       </div>
-      <SummaryCards metrics={metrics} debts={draft.debts} />
+      <SummaryCards
+        metrics={metrics}
+        debts={draft.debts}
+        previous={previousSummary}
+      />
       {/* 手機（360–639px）兩欄並排：第一張「負債比」內容較多、獨佔一列；其餘成對排列，落單的最後一張補滿整列。
           桌面（≥ 1024px）三欄：「負債比」跨兩欄，八張卡剛好排滿三列；沒有質押卡時最後一張跨兩欄補滿 */}
       <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-3 xs:max-sm:[&>*:first-child]:col-span-2 xs:max-sm:[&>*:last-child:nth-child(even)]:col-span-2 lg:[&>*:first-child]:col-span-2 lg:[&>*:last-child:nth-child(3n+1)]:col-span-2">
