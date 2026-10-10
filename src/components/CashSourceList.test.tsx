@@ -114,7 +114,44 @@ describe("CashSourceList", () => {
 
   // PRD 4.2「多來源現金清單」：不可動用切換
   describe("不可動用標記", () => {
-    it("點擊 🔒 鈕會切換該筆來源的不可動用狀態，且 aria-pressed 反映目前狀態", () => {
+    // PRD 第 7 節「操作圖示」、第 9 節 #67g、#67h：狀態不只靠顏色，也不使用 emoji
+    it("未標記顯示開鎖圖示、已標記顯示閉鎖圖示", () => {
+      const value: CashSource[] = [
+        { id: "1", name: "薪轉戶", amount: 50000, restricted: false },
+        { id: "2", name: "期貨保證金", amount: 100000, restricted: true },
+      ];
+      render(<CashSourceList value={value} onChange={vi.fn()} />);
+
+      const unlocked = screen.getByLabelText("標記 薪轉戶 為不可動用");
+      const locked = screen.getByLabelText("標記 期貨保證金 為不可動用");
+      expect(unlocked.querySelector("svg")).toHaveClass("lucide-lock-open");
+      expect(locked.querySelector("svg")).toHaveClass("lucide-lock");
+      expect(locked.querySelector("svg")).not.toHaveClass("lucide-lock-open");
+      expect(locked).toHaveClass("bg-amber-50");
+      expect(unlocked).not.toHaveClass("bg-amber-50");
+    });
+
+    it("鎖定、複製、刪除按鈕都是 SVG 圖示，不含 emoji 文字", () => {
+      const value: CashSource[] = [
+        { id: "1", name: "薪轉戶", amount: 50000, restricted: false },
+      ];
+      render(<CashSourceList value={value} onChange={vi.fn()} />);
+
+      for (const label of [
+        "標記 薪轉戶 為不可動用",
+        "複製 薪轉戶",
+        "刪除 薪轉戶",
+      ]) {
+        const button = screen.getByLabelText(label);
+        expect(button).toHaveTextContent("");
+        expect(button.querySelector("svg")).toHaveAttribute(
+          "aria-hidden",
+          "true"
+        );
+      }
+    });
+
+    it("點擊鎖定鈕會切換該筆來源的不可動用狀態，且 aria-pressed 反映目前狀態", () => {
       const value: CashSource[] = [
         { id: "1", name: "期貨保證金", amount: 100000, restricted: false },
       ];

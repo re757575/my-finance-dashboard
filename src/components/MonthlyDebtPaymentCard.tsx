@@ -24,7 +24,7 @@ export function MonthlyDebtPaymentCard({
           .join(" + ")} = ${formatCurrency(amount)}`;
 
   return (
-    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
+    <div className="@container rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-center gap-1">
         <p className="text-sm text-slate-500 dark:text-neutral-400">
           本月應還款總額
@@ -37,7 +37,7 @@ export function MonthlyDebtPaymentCard({
       </div>
       <p
         data-testid="total-monthly-debt-payment"
-        className="mt-1 text-2xl font-bold text-slate-900 dark:text-neutral-50"
+        className="mt-1 text-[clamp(1.125rem,17cqw,1.5rem)] leading-8 font-bold text-slate-900 dark:text-neutral-50"
       >
         {formatCurrency(amount)}
       </p>

@@ -1,4 +1,7 @@
-import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { AddRowButton } from "@/components/AddRowButton";
+import { RowIconButton } from "@/components/RowIconButton";
+import { SegmentedToggle } from "@/components/SegmentedToggle";
 import { Input } from "@/components/ui/input";
 import type { EstimatedDebtFields } from "@/hooks/useLocalSnapshots";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
@@ -7,10 +10,13 @@ import {
   DEFAULT_REPAYMENT_METHOD_BY_CATEGORY,
 } from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { Debt, DebtCategory, RepaymentMethod } from "@/types/schema";
 
 const DEBT_CATEGORIES: DebtCategory[] = ["信貸", "質押", "房貸", "其他"];
+const REPAYMENT_METHOD_OPTIONS: { value: RepaymentMethod; label: string }[] = [
+  { value: "amortizing", label: "本息平均攤還" },
+  { value: "interestOnly", label: "只計息" },
+];
 
 interface DebtListProps {
   value: Debt[];
@@ -52,9 +58,7 @@ export function DebtList({ value, onChange, estimatedFields }: DebtListProps) {
         <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
           負債清單
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={addDebt}>
-          + 新增負債
-        </Button>
+        <AddRowButton onClick={addDebt}>+ 新增負債</AddRowButton>
       </div>
 
       {value.length === 0 && (
@@ -127,7 +131,9 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
 
   return (
     <div className="@container space-y-2 rounded-lg border border-slate-200 dark:border-border p-3">
-      <div className="flex items-center gap-2">
+      {/* 卡片寬度不足時備註名稱獨佔一行（類別與刪除鈕在上一行），名稱才不會被截斷；
+          刪除鈕的 DOM 順序排在名稱之前，窄版的鍵盤順序才與畫面一致 */}
+      <div className="flex flex-wrap items-center gap-2 @sm:flex-nowrap">
         <select
           aria-label="負債類別"
           value={debt.category}
@@ -146,21 +152,21 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
             </option>
           ))}
         </select>
+        <RowIconButton
+          label={`刪除 ${debt.name || "此筆負債"}`}
+          tone="danger"
+          className="ml-auto @sm:order-last @sm:ml-0"
+          onClick={onRemove}
+        >
+          <Trash2 aria-hidden="true" />
+        </RowIconButton>
         <Input
           placeholder="備註名稱（選填）"
           value={debt.name}
           onChange={(e) => onUpdate({ name: e.target.value })}
-          className="flex-1"
+          className="basis-full @sm:basis-auto @sm:flex-1"
           aria-label="備註名稱"
         />
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label={`刪除 ${debt.name || "此筆負債"}`}
-          className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-rose-50 dark:hover:bg-rose-950 hover:text-rose-500 dark:hover:text-rose-400"
-        >
-          🗑️
-        </button>
       </div>
 
       {/* 卡片寬度不足時本金獨佔一行：千分位後的八、九位數金額放不進三等分的欄位 */}
@@ -247,9 +253,12 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
 
       {/* 卡片寬度不足時固定排成兩行，避免各筆負債因金額長短不同而有的折行、有的不折 */}
       <div className="flex flex-col gap-1 @sm:flex-row @sm:items-center @sm:justify-between">
-        <RepaymentMethodToggle
+        <SegmentedToggle
+          label="攤還方式"
+          options={REPAYMENT_METHOD_OPTIONS}
           value={debt.repaymentMethod}
           onChange={(repaymentMethod) => onUpdate({ repaymentMethod })}
+          className="self-start @sm:self-auto"
         />
         <p className="self-end text-sm whitespace-nowrap text-slate-500 dark:text-neutral-400 @sm:self-auto">
           該筆每月應還：
@@ -261,44 +270,6 @@ function DebtCard({ debt, onUpdate, onRemove, estimated }: DebtCardProps) {
           </span>
         </p>
       </div>
-    </div>
-  );
-}
-
-function RepaymentMethodToggle({
-  value,
-  onChange,
-}: {
-  value: RepaymentMethod;
-  onChange: (method: RepaymentMethod) => void;
-}) {
-  const options: { value: RepaymentMethod; label: string }[] = [
-    { value: "amortizing", label: "本息平均攤還" },
-    { value: "interestOnly", label: "只計息" },
-  ];
-
-  return (
-    <div
-      role="group"
-      aria-label="攤還方式"
-      className="inline-flex shrink-0 self-start rounded-full border border-slate-200 dark:border-border p-0.5 text-xs whitespace-nowrap @sm:self-auto"
-    >
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-          className={cn(
-            "rounded-full px-2.5 py-0.5 font-medium transition-colors",
-            value === option.value
-              ? "bg-slate-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
-              : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200"
-          )}
-        >
-          {option.label}
-        </button>
-      ))}
     </div>
   );
 }

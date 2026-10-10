@@ -7,6 +7,8 @@
 
 @theme {
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  /* 360px：看板卡片從單欄改為兩欄並排的最小寬度（PRD 第 7 節） */
+  --breakpoint-xs: 22.5rem;
 }
 
 @layer base {

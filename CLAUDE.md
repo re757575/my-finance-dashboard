@@ -135,6 +135,15 @@ Commit 時 `.husky/pre-commit` 會自動依序執行：`lint-staged`（Prettier 
 - **`StickySaveBar`** 只在單欄渲染，顯示條件是 `isDirty && hasUnsavedEdits`（使用者動過而且存得下去）或有 `saveMessage`。它的按鈕與訊息用獨立的 `data-testid`（`sticky-save-button`／`sticky-save-message`），既有測試用的 `save-button`／`save-message` 仍指表單底部那一組。顯示時 `PwaUpdatePrompt` 以 `aboveStickyBar` 往上移。
 - **金額千分位**在 `useNumberInputText`：未聚焦時 `text` 是千分位（`formatGroupedNumberText`），聚焦時還原成純數字並全選。所有數字輸入框都走這個 hook，測試斷言輸入框的值時要用千分位後的字串（如 `"5,000,000"`）；用 `fill()`／`fireEvent.change` 輸入純數字不受影響。
 
+### 手機看板兩欄、觸控目標與操作圖示
+
+規格見 [docs/PRD.md](docs/PRD.md) 第 7 節「手機看板兩欄並排」「觸控目標」「操作圖示」。
+
+- **`xs` 斷點（360px）**定義在 `src/index.css` 的 `@theme`（`--breakpoint-xs`），只用來決定看板卡片何時由單欄改兩欄。`App.tsx` 的狀態卡格線以 `xs:max-sm:[&>*:first-child]:col-span-2`（第一張「負債比」獨佔一列）與 `xs:max-sm:[&>*:last-child:nth-child(even)]:col-span-2`（落單的最後一張補滿）處理——**這兩條規則依賴卡片的順序**，調整狀態卡順序或在最前面插入新卡時要一起檢查。`SummaryCards` 的淨資產卡同樣在 `xs:max-sm` 跨兩欄。
+- **半寬卡片放得下內容的做法**：金額用容器查詢字級（卡片加 `@container`、數字用 `text-[clamp(…cqw…)]`），徽章與狀態文字靠 `flex-wrap` 整個換行。新增看板卡片時要在 360px 與 390px 檢查。
+- **觸控目標用 `pointer-coarse:` 變體放大**（不是用視窗寬度），集中在三個共用元件：`RowIconButton`（清單列的圖示鈕，滑鼠 32px／觸控 40px）、`AddRowButton`（「+ 新增…」）、`SegmentedToggle`（幣別／攤還方式／壓力測試的膠囊切換鈕，`role="group"`＋`aria-pressed`）。新增同類控制項請直接用這三個元件。e2e 要驗證觸控尺寸時用 `test.use({ hasTouch: true })`。
+- **操作圖示一律用 `lucide-react` 的 SVG**（`Lock`／`LockOpen`／`Copy`／`Trash2`），不要用 emoji——emoji 不吃文字顏色。圖示加 `aria-hidden`，名稱由 `RowIconButton` 的 `label`（`aria-label`）提供。
+
 ### 元件分層
 
 - `src/components/*.tsx`：業務元件（輸入表單、看板卡片、趨勢區塊），大多為純展示元件，透過 `onChange`/`value` 與 `App.tsx` 溝通。

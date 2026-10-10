@@ -21,7 +21,7 @@ export function SummaryCards({ metrics, debts }: SummaryCardsProps) {
           .join(" + ")} = ${formatCurrency(metrics.totalLiabilities)}`;
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 sm:grid-cols-3">
       <SummaryCard
         testId="total-assets"
         label="總資產"
@@ -50,6 +50,7 @@ export function SummaryCards({ metrics, debts }: SummaryCardsProps) {
       <SummaryCard
         testId="net-worth"
         label="個人淨資產"
+        className="xs:max-sm:col-span-2"
         value={metrics.netWorth}
         negative={netWorthNegative}
         formula={
@@ -70,22 +71,27 @@ function SummaryCard({
   value,
   negative,
   formula,
+  className,
 }: {
   testId: string;
   label: string;
   value: number;
   negative?: boolean;
   formula: React.ReactNode;
+  /** 手機兩欄並排時，淨資產獨佔一列。 */
+  className?: string;
 }) {
   return (
-    <div className="@container rounded-xl bg-white dark:bg-card p-4 shadow-sm">
+    <div
+      className={`@container rounded-xl bg-white dark:bg-card p-4 shadow-sm ${className ?? ""}`}
+    >
       <div className="flex items-center gap-1">
         <p className="text-sm text-slate-500 dark:text-neutral-400">{label}</p>
         {formula}
       </div>
       <p
         data-testid={testId}
-        className={`mt-1 text-2xl font-bold wrap-anywhere sm:text-[clamp(1.25rem,14.5cqw,1.875rem)] ${negative ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-neutral-50"}`}
+        className={`mt-1 text-[clamp(1.125rem,14.5cqw,1.875rem)] leading-8 font-bold wrap-anywhere ${negative ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-neutral-50"}`}
       >
         {formatCurrency(value)}
       </p>

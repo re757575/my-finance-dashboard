@@ -1,4 +1,6 @@
-import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { AddRowButton } from "@/components/AddRowButton";
+import { RowIconButton } from "@/components/RowIconButton";
 import { Input } from "@/components/ui/input";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
 import { sumRecurringInvestments } from "@/lib/calculations";
@@ -38,14 +40,7 @@ export function RecurringInvestmentList({
         <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
           每月定期定額清單
         </span>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addInvestment}
-        >
-          + 新增定期定額
-        </Button>
+        <AddRowButton onClick={addInvestment}>+ 新增定期定額</AddRowButton>
       </div>
       <p className="text-xs text-slate-400 dark:text-neutral-400">
         買股票不算支出，請勿重複填入本月支出
@@ -113,14 +108,13 @@ function RecurringInvestmentRow({
         className="flex-1 @md:w-32 @md:flex-none"
         aria-label="定期定額金額"
       />
-      <button
-        type="button"
+      <RowIconButton
+        label={`刪除 ${investment.name || "此筆定期定額"}`}
+        tone="danger"
         onClick={onRemove}
-        aria-label={`刪除 ${investment.name || "此筆定期定額"}`}
-        className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-rose-50 dark:hover:bg-rose-950 hover:text-rose-500 dark:hover:text-rose-400"
       >
-        🗑️
-      </button>
+        <Trash2 aria-hidden="true" />
+      </RowIconButton>
     </div>
   );
 }

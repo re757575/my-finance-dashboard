@@ -15,6 +15,7 @@ import type {
   StressBreakpointKey,
 } from "@/lib/calculations";
 import { formatCurrency, formatPercent } from "@/lib/format";
+import { SegmentedToggle } from "@/components/SegmentedToggle";
 import { cn } from "@/lib/utils";
 import type { DebtRatioStatus, PledgeMaintenanceStatus } from "@/types/schema";
 
@@ -77,6 +78,11 @@ interface StressTestCardProps {
  * 情境結果下方另列「臨界點」（PRD 5.9a 節）：反推股票再下跌多少會碰到各條風險線，與所選情境無關。
  * 股票市值合計為 0（沒有可下跌的部位）時整區不顯示。純即時試算，不改動任何輸入或存檔資料。
  */
+const DROP_OPTIONS = STRESS_TEST_DROPS.map((value) => ({
+  value,
+  label: `\u2212${value}%`,
+}));
+
 export function StressTestCard({ snapshot }: StressTestCardProps) {
   const [drop, setDrop] = useState<number>(DEFAULT_DROP);
   const { before, after, netWorthChange, netWorthChangeRate } =
@@ -139,28 +145,12 @@ export function StressTestCard({ snapshot }: StressTestCardProps) {
             note="台股與美股同步下跌，質押股票市值同比例下跌；現金、不動產、負債本金與匯率不變。臨界點算出的跌幅 ≤ 0 為「已觸及」、超過 100%（股票跌到 0 也碰不到）為「不會觸及」。簡化的即時試算，不預測機率，也未考慮個股差異與實際追繳規定"
           />
         </div>
-        <div
-          role="group"
-          aria-label="股票下跌情境"
-          className="inline-flex rounded-full border border-slate-200 dark:border-border p-0.5 text-xs"
-        >
-          {STRESS_TEST_DROPS.map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={drop === value}
-              onClick={() => setDrop(value)}
-              className={cn(
-                "rounded-full px-2.5 py-0.5 font-medium transition-colors",
-                drop === value
-                  ? "bg-slate-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
-                  : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200"
-              )}
-            >
-              {`\u2212${value}%`}
-            </button>
-          ))}
-        </div>
+        <SegmentedToggle
+          label="股票下跌情境"
+          options={DROP_OPTIONS}
+          value={drop}
+          onChange={setDrop}
+        />
       </div>
 
       <dl className="mt-3 space-y-2 text-sm">

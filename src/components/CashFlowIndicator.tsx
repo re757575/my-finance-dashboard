@@ -30,7 +30,7 @@ export function CashFlowIndicator({
   const substitution = `${formatCurrency(totalIncome)} − ${formatCurrency(monthlyExpense)} − ${formatCurrency(totalMonthlyDebtPayment)} = ${formatCurrency(cashFlow)}`;
 
   return (
-    <div className="rounded-xl bg-white dark:bg-card p-4 shadow-sm">
+    <div className="@container rounded-xl bg-white dark:bg-card p-4 shadow-sm">
       <div className="flex items-center gap-1">
         <p className="text-sm text-slate-500 dark:text-neutral-400">
           本月預估現金流
@@ -54,18 +54,19 @@ export function CashFlowIndicator({
           }
         />
       </div>
-      <div className="mt-1 flex items-center gap-2">
+      {/* 卡片較窄（手機兩欄並排）時，狀態文字整個換到下一行，金額字級隨卡片寬度略縮 */}
+      <div className="mt-1 flex flex-wrap items-center gap-x-2">
         <span
           className={`h-2.5 w-2.5 shrink-0 rounded-full ${isNegative ? "bg-rose-500" : "bg-emerald-500"}`}
           aria-hidden
         />
         <p
           data-testid="cash-flow-value"
-          className={`text-2xl font-bold ${isNegative ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-neutral-50"}`}
+          className={`text-[clamp(1.125rem,15cqw,1.5rem)] leading-8 font-bold ${isNegative ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-neutral-50"}`}
         >
           {formatCurrency(cashFlow)}
         </p>
-        <span className="text-xs text-slate-500 dark:text-neutral-400">
+        <span className="text-xs whitespace-nowrap text-slate-500 dark:text-neutral-400">
           {isNegative ? "入不敷出" : "收支為正"}
         </span>
       </div>

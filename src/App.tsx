@@ -279,7 +279,8 @@ function App() {
         </div>
       </div>
       <SummaryCards metrics={metrics} debts={draft.debts} />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* 手機（360–639px）兩欄並排：第一張「負債比」內容較多、獨佔一列；其餘成對排列，落單的最後一張補滿整列 */}
+      <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-3 xs:max-sm:[&>*:first-child]:col-span-2 xs:max-sm:[&>*:last-child:nth-child(even)]:col-span-2">
         <DebtRatioBar
           ratio={metrics.debtRatio}
           status={metrics.debtRatioStatus}

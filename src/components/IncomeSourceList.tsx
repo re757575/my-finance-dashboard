@@ -1,4 +1,6 @@
-import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { AddRowButton } from "@/components/AddRowButton";
+import { RowIconButton } from "@/components/RowIconButton";
 import { Input } from "@/components/ui/input";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
 import { sumIncomeSources } from "@/lib/calculations";
@@ -32,9 +34,7 @@ export function IncomeSourceList({ value, onChange }: IncomeSourceListProps) {
         <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
           每月收入清單
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={addSource}>
-          + 新增收入
-        </Button>
+        <AddRowButton onClick={addSource}>+ 新增收入</AddRowButton>
       </div>
 
       {value.length === 0 && (
@@ -95,14 +95,13 @@ function IncomeSourceRow({ source, onUpdate, onRemove }: IncomeSourceRowProps) {
         className="flex-1 @md:w-32 @md:flex-none"
         aria-label="收入金額"
       />
-      <button
-        type="button"
+      <RowIconButton
+        label={`刪除 ${source.name || "此筆收入"}`}
+        tone="danger"
         onClick={onRemove}
-        aria-label={`刪除 ${source.name || "此筆收入"}`}
-        className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-rose-50 dark:hover:bg-rose-950 hover:text-rose-500 dark:hover:text-rose-400"
       >
-        🗑️
-      </button>
+        <Trash2 aria-hidden="true" />
+      </RowIconButton>
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { Copy, Lock, LockOpen, Trash2 } from "lucide-react";
+import { AddRowButton } from "@/components/AddRowButton";
+import { RowIconButton } from "@/components/RowIconButton";
 import { Input } from "@/components/ui/input";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
 import { sumCashSources, sumRestrictedCashSources } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { CashSource } from "@/types/schema";
 
 interface CashSourceListProps {
@@ -58,9 +59,7 @@ export function CashSourceList({ value, onChange }: CashSourceListProps) {
         <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
           多來源現金清單
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={addSource}>
-          + 新增現金來源
-        </Button>
+        <AddRowButton onClick={addSource}>+ 新增現金來源</AddRowButton>
       </div>
 
       {value.length === 0 && (
@@ -143,37 +142,37 @@ function CashSourceRow({
         className="flex-1 @md:w-32 @md:flex-none"
         aria-label="金額"
       />
-      <button
-        type="button"
-        onClick={() => onUpdate({ restricted: !source.restricted })}
+      <RowIconButton
+        label={`標記 ${source.name || "此筆現金來源"} 為不可動用`}
         aria-pressed={source.restricted}
-        aria-label={`標記 ${source.name || "此筆現金來源"} 為不可動用`}
         title="不可動用（如期貨保證金）：仍計入總資產，但不計入緊急預備金與現金比例"
-        className={cn(
-          "shrink-0 rounded-md p-1.5 hover:bg-slate-100 dark:hover:bg-muted",
+        onClick={() => onUpdate({ restricted: !source.restricted })}
+        // 已鎖定：琥珀色底＋閉鎖圖示；未鎖定：開鎖圖示，狀態不只靠顏色區分
+        className={
           source.restricted
-            ? "bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400"
-            : "text-slate-300 dark:text-neutral-500 hover:text-slate-500 dark:hover:text-neutral-400"
+            ? "bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900 hover:text-amber-700 dark:hover:text-amber-300"
+            : undefined
+        }
+      >
+        {source.restricted ? (
+          <Lock aria-hidden="true" />
+        ) : (
+          <LockOpen aria-hidden="true" />
         )}
-      >
-        🔒
-      </button>
-      <button
-        type="button"
+      </RowIconButton>
+      <RowIconButton
+        label={`複製 ${source.name || "此筆現金來源"}`}
         onClick={onDuplicate}
-        aria-label={`複製 ${source.name || "此筆現金來源"}`}
-        className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-muted hover:text-slate-600 dark:hover:text-neutral-300"
       >
-        📄
-      </button>
-      <button
-        type="button"
+        <Copy aria-hidden="true" />
+      </RowIconButton>
+      <RowIconButton
+        label={`刪除 ${source.name || "此筆現金來源"}`}
+        tone="danger"
         onClick={onRemove}
-        aria-label={`刪除 ${source.name || "此筆現金來源"}`}
-        className="shrink-0 rounded-md p-1.5 text-slate-400 dark:text-neutral-400 hover:bg-rose-50 dark:hover:bg-rose-950 hover:text-rose-500 dark:hover:text-rose-400"
       >
-        🗑️
-      </button>
+        <Trash2 aria-hidden="true" />
+      </RowIconButton>
     </div>
   );
 }

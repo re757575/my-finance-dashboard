@@ -1,10 +1,15 @@
 import { NumberField } from "@/components/NumberField";
 import { Input } from "@/components/ui/input";
+import { SegmentedToggle } from "@/components/SegmentedToggle";
 import { useNumberInputText } from "@/hooks/useNumberInputText";
 import { calculateTotalStockValue } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { StockCurrency } from "@/types/schema";
+
+const CURRENCY_OPTIONS: { value: StockCurrency; label: string }[] = [
+  { value: "USD", label: "USD" },
+  { value: "TWD", label: "TWD" },
+];
 
 interface StockInputsProps {
   twStockValue: number;
@@ -49,7 +54,9 @@ export function StockInputs({
           <span className="text-sm font-medium text-slate-700 dark:text-neutral-200">
             美股市值
           </span>
-          <CurrencyToggle
+          <SegmentedToggle
+            label="美股市值計價幣別"
+            options={CURRENCY_OPTIONS}
             value={usStockCurrency}
             onChange={(nextCurrency) =>
               onChange({ usStockCurrency: nextCurrency })
@@ -76,39 +83,6 @@ export function StockInputs({
       <p className="text-right text-sm text-slate-500 dark:text-neutral-400">
         股票市值合計：{formatCurrency(totalStockValue)}
       </p>
-    </div>
-  );
-}
-
-function CurrencyToggle({
-  value,
-  onChange,
-}: {
-  value: StockCurrency;
-  onChange: (currency: StockCurrency) => void;
-}) {
-  return (
-    <div
-      role="group"
-      aria-label="美股市值計價幣別"
-      className="inline-flex rounded-full border border-slate-200 dark:border-border p-0.5 text-xs"
-    >
-      {(["USD", "TWD"] as const).map((currency) => (
-        <button
-          key={currency}
-          type="button"
-          aria-pressed={value === currency}
-          onClick={() => onChange(currency)}
-          className={cn(
-            "rounded-full px-2.5 py-0.5 font-medium transition-colors",
-            value === currency
-              ? "bg-slate-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
-              : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200"
-          )}
-        >
-          {currency}
-        </button>
-      ))}
     </div>
   );
 }
