@@ -2,6 +2,19 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.15](https://github.com/re757575/my-finance-dashboard/compare/v0.3.14...v0.3.15) (2026-10-10)
+
+### Features
+
+- **儀表板:** 快照比較與歷史快照改為預設收合 ([4a8225a](https://github.com/re757575/my-finance-dashboard/commit/4a8225aae3f96f19e60c8f0a1acc8055ac9a7f06))
+- **儀表板:** 新增快照備註，顯示於趨勢圖節點與歷史快照清單 ([9f32635](https://github.com/re757575/my-finance-dashboard/commit/9f32635042f9070c8cf96ef91c16e7a75f1aafd0))
+- **儀表板:** 新增總覽卡增減、輸入區分段收合與壓力測試自訂跌幅 ([ef4ddc3](https://github.com/re757575/my-finance-dashboard/commit/ef4ddc34ee49ffd69027a3713b23c8daf93fd09b))
+
+### Bug Fixes
+
+- **儀表板:** 手機看板改兩欄並排，放大觸控目標並改用 SVG 圖示 ([4185609](https://github.com/re757575/my-finance-dashboard/commit/41856099fef71c87631ec839855036d629baf448))
+- **儀表板:** 放大圖表文字，桌面也顯示固定儲存列並對齊看板格線 ([bc1e377](https://github.com/re757575/my-finance-dashboard/commit/bc1e377570e032f3fc276ee5e597745f226c186b))
+
 ## [0.3.14](https://github.com/re757575/my-finance-dashboard/compare/v0.3.13...v0.3.14) (2026-10-10)
 
 ### Features
