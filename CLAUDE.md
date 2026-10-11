@@ -20,13 +20,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 開發流程
 
-每當要異動程式碼，依下列順序進行：
+每當要異動 repo 內的檔案，依序進行，前一步的完成條件達成才進下一步。只改文件（`*.md`）時略過第 2、4 步，第 5 步的完成條件改為 `npx prettier --check .` 通過。
 
-1. **從 `main` 建立新分支與 git worktree**：不直接在 `main` 上修改，改動一律在新分支對應的 worktree 內進行。
-2. **實際測試資料使用 [fixtures/finance-data.json](fixtures/finance-data.json)**：手動驗證、e2e 匯入等需要真實規模資料時都用這份（說明見 [docs/architecture/testing.md](docs/architecture/testing.md)），不要使用含真實帳戶名稱或金額的個人備份。
-3. **功能改完後檢查測試是否要跟著改**：檢查單元/元件測試（`*.test.ts(x)`）與 `e2e/*.spec.ts` 是否需要跟著新增或調整測試案例（新元件、新看板卡片、新輸入欄位、新計算邏輯等，即使部分已有其他層級測試覆蓋，仍缺乏對應案例時要一併補上），避免功能與測試覆蓋範圍脫節。發現需要異動單元測試或 e2e 測試時，先向使用者說明本次功能異動內容並詢問是否確認無誤，待使用者確認後才動手修改測試。
-4. **功能完成後詢問使用者是否要 commit**：不自行 commit，待使用者確認後才執行（commit 訊息見全域的 `/generating-commit-messages` 規範）。
-5. **commit 完成後才關閉 worktree**：commit 前不可移除 worktree，避免遺失未提交的改動。
+1. **建立 worktree**：執行 `scripts/new-worktree.sh <分支名稱>`，從 `main` 開新分支，worktree 建在上層目錄的 `my-finance-dashboard-<分支名稱最後一段>`，之後所有改動都在裡面進行。完成條件：worktree 內有 `node_modules` 與 `.husky/_`——少了 `.husky/_`，pre-commit 不會執行，也不會有任何錯誤訊息。
+2. **先改規格**：異動資料結構（`Snapshot`／`schemaVersion`）、計算公式，或新增畫面上的輸入欄位與指標時，先更新 [docs/PRD.md](docs/PRD.md) 的對應章節（4.1、4.2、5、6 與 6.1 的遷移表、7、9），並在 [docs/PRD_CHANGELOG.md](docs/PRD_CHANGELOG.md) 最上方加上新版本的說明，再寫程式。小型 bug 修正與純外觀調整略過這一步。
+3. **實作**：手動驗證、e2e 匯入等需要真實規模資料時，一律用全部虛構的 [fixtures/finance-data.json](fixtures/finance-data.json)（說明見 [docs/architecture/testing.md](docs/architecture/testing.md)），個人備份留在 repo 之外。
+4. **測試**：檢查單元/元件測試（`*.test.ts(x)`）與 `e2e/*.spec.ts` 是否需要新增或調整案例（新元件、新看板卡片、新輸入欄位、新計算邏輯等；其他層級已有覆蓋但缺少對應案例時一併補上）。要改的內容分兩種處理：
+   - **行為斷言的新增或變更**（新案例、改預期值、改測試描述的行為）：先向使用者說明本次功能異動內容並詢問是否確認無誤，確認後才動手。
+   - **機械性修正**（schema 升版後更新寫死的 `schemaVersion`、替測試資料補上新欄位的預設值這類沒有判斷空間的修改）：直接修改，回報時列出改了哪些檔案。
+5. **驗證**：完成條件是 `npm run typecheck`、`npm run lint`、`npm run test`、`npm run test:e2e` 全數通過；畫面有變動時，另外載入範例資料在瀏覽器實際操作過。
+6. **詢問是否 commit**：向使用者回報結果並詢問是否 commit，確認後才執行（訊息依全域的 `/generating-commit-messages` 規範）。完成條件：commit 的輸出中看得到 lint-staged 與測試的執行結果，代表 pre-commit 確實跑過。
+7. **併回 `main` 並收尾**：使用者同意 commit 即包含這一步。在主目錄執行 `git merge --ff-only <分支>`，成功後 `git worktree remove <路徑>`、`git branch -d <分支>`。無法 fast-forward 時（`main` 有新的 commit），先在 worktree 內 `git rebase main` 並重做第 5 步。push 留給使用者決定——push 到 `main` 就會部署。
 
 ## Architecture
 
