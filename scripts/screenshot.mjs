@@ -11,7 +11,9 @@ import path from "node:path";
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
 
-/** @type {{ name: string, context: import("@playwright/test").BrowserContextOptions }[]} */
+/** @import { Browser, BrowserContextOptions, Locator, Page } from "@playwright/test" */
+
+/** @type {{ name: string, context: BrowserContextOptions }[]} */
 const VARIANTS = [
   {
     name: "desktop-light",
@@ -45,7 +47,7 @@ function parseOutDir(argv) {
 }
 
 /**
- * @param {import("@playwright/test").Page | import("@playwright/test").Locator} page
+ * @param {Page | Locator} page
  * @param {string} name
  */
 async function expandSection(page, name) {
@@ -56,7 +58,7 @@ async function expandSection(page, name) {
 }
 
 /**
- * @param {import("@playwright/test").Browser} browser
+ * @param {Browser} browser
  * @param {string} baseUrl
  * @param {string} outDir
  * @param {(typeof VARIANTS)[number]} variant
@@ -77,7 +79,7 @@ async function capture(browser, baseUrl, outDir, variant) {
   });
 
   /**
-   * @param {import("@playwright/test").Locator} locator
+   * @param {Locator} locator
    * @param {string} file
    */
   const shot = (locator, file) =>
