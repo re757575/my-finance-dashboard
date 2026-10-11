@@ -1,4 +1,15 @@
 npx lint-staged
+
+# 只改文件的 commit（每個 staged 路徑都以 .md 結尾）只跑文件完整性檢查；
+# 其餘情況（包含沒有任何 staged 檔案）跑完整流程。
+# --no-renames：改名時新舊路徑都要列出來，把程式檔改名成 .md 才不會被當成只改文件。
+# 檔名含特殊字元時 git 會加上引號，結尾不是 .md，同樣跑完整流程。
+staged="$(git -c core.quotePath=false diff --cached --name-only --no-renames)"
+if [ -n "$staged" ] && ! printf '%s\n' "$staged" | grep -qv '\.md$'; then
+  npx vitest run src/test/docsIntegrity.test.ts
+  exit $?
+fi
+
 npm run lint
 npm run typecheck
 npm run test
