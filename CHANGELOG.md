@@ -2,6 +2,8 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.16](https://github.com/re757575/my-finance-dashboard/compare/v0.3.15...v0.3.16) (2026-10-11)
+
 ## [0.3.15](https://github.com/re757575/my-finance-dashboard/compare/v0.3.14...v0.3.15) (2026-10-10)
 
 ### Features
