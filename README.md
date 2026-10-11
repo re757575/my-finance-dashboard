@@ -4,7 +4,7 @@
 
 ## 專案狀態
 
-目前版本 [v0.3.2](./CHANGELOG.md)。核心功能（多來源現金/股票/負債/收入/定期定額管理、歷史趨勢、備份還原、財務健康指標、AI 分析提示詞多模式、PWA 離線安裝）皆已完成，並具備 pre-commit 品質檢查（Husky + lint-staged + Prettier）。完整版本異動請見 [CHANGELOG.md](./CHANGELOG.md)。
+核心功能（多來源現金/股票/負債/收入/定期定額管理、歷史趨勢、備份還原、財務健康指標、AI 分析提示詞多模式、PWA 離線安裝）皆已完成，並具備 pre-commit 品質檢查（Husky + lint-staged + Prettier）。目前版本與各版異動請見 [CHANGELOG.md](./CHANGELOG.md)。
 
 ## 專案架構
 
