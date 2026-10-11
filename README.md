@@ -39,6 +39,7 @@ npm run typecheck          # TypeScript 型別檢查
 npm run test               # 執行單元/元件測試（Vitest）
 npx playwright install --with-deps chromium   # 首次執行 e2e 測試前，安裝瀏覽器
 npm run test:e2e           # 執行 e2e 測試（Playwright，會自動啟動 dev server）
+npm run screenshot         # 載入範例資料，截下桌面淺色／手機深色各區塊到 test-results/screenshots/
 ```
 
 Commit 時會自動觸發 `.husky/pre-commit`：依序執行 `lint-staged`（Prettier 格式化）、`lint`（oxlint）、`typecheck`、`test`（單元/元件測試）。e2e 測試因啟動較慢，不包含在 pre-commit 內：push 到 `main` 之前由 `.husky/pre-push` 在本機先跑一次（失敗會擋下 push），push 之後再由 CI（`.github/workflows/deploy.yml`）自動執行。

@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-指令定義在 `package.json` 的 `scripts`（`dev`／`build`／`typecheck`／`lint`／`test`／`test:e2e`）。
+指令定義在 `package.json` 的 `scripts`（`dev`／`build`／`typecheck`／`lint`／`test`／`test:e2e`／`screenshot`）。
 
 - 首次執行 e2e 前先安裝瀏覽器：`npx playwright install --with-deps chromium`。
 - Commit 時 `.husky/pre-commit` 依序執行 `lint-staged`（Prettier 格式化）→ `lint` → `typecheck` → `test`；e2e 啟動較慢，不包含在內。
@@ -29,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. **測試**：檢查單元/元件測試（`*.test.ts(x)`）與 `e2e/*.spec.ts` 是否需要新增或調整案例（新元件、新看板卡片、新輸入欄位、新計算邏輯等；其他層級已有覆蓋但缺少對應案例時一併補上）。要改的內容分兩種處理：
    - **行為斷言的新增或變更**（新案例、改預期值、改測試描述的行為）：先向使用者說明本次功能異動內容並詢問是否確認無誤，確認後才動手。
    - **機械性修正**（schema 升版後更新寫死的 `schemaVersion`、替測試資料補上新欄位的預設值這類沒有判斷空間的修改）：直接修改，回報時列出改了哪些檔案。
-5. **驗證**：完成條件是 `npm run typecheck`、`npm run lint`、`npm run test`、`npm run test:e2e` 全數通過；畫面有變動時，另外載入範例資料在瀏覽器實際操作過。
+5. **驗證**：完成條件是 `npm run typecheck`、`npm run lint`、`npm run test`、`npm run test:e2e` 全數通過。畫面有變動時，另外執行 `npm run screenshot`（載入範例資料，在桌面淺色與手機深色截下各區塊到 `test-results/screenshots/`，有 console error 或頁面可水平捲動時以非零結束）並看過截圖，再針對改動的部分在瀏覽器實際操作。
 6. **詢問是否 commit**：向使用者回報結果並詢問是否 commit，確認後才執行（訊息依全域的 `/generating-commit-messages` 規範）。完成條件：commit 的輸出中看得到 lint-staged、lint 與測試的執行結果，代表 pre-commit 確實跑過。
 7. **併回 `main` 並收尾**：使用者同意 commit 即包含這一步。在主目錄執行 `git merge --ff-only <分支>`，成功後 `git worktree remove <路徑>`、`git branch -d <分支>`。無法 fast-forward 時（`main` 有新的 commit），先在 worktree 內 `git rebase main` 並重做第 5 步。push 留給使用者決定——push 到 `main` 就會部署。
 
