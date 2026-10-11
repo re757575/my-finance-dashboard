@@ -22,6 +22,7 @@
 ## 文件
 
 - **[docs/PRD.md](./docs/PRD.md)** — 產品需求文件，定義功能需求、財務計算公式、資料結構、UI/UX 規範、非功能性需求與驗收標準。
+- **[docs/PRD_CHANGELOG.md](./docs/PRD_CHANGELOG.md)** — PRD 各版的異動說明，由新到舊。
 - **[docs/TECH_STACK.md](./docs/TECH_STACK.md)** — 前端技術建議，說明建置工具、框架、狀態管理、圖表、UI 元件庫等技術選型與理由。
 - **[docs/architecture/](./docs/architecture/)** — 程式架構說明，按主題分檔（資料流、備份與範例資料、財務計算、深色模式、版面、元件分層、測試），修改對應範圍前先讀。
 - **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** — 常見問題排解，目前收錄 GitHub Pages 部署失敗的原因與修正流程。
