@@ -31,7 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - **機械性修正**（schema 升版後更新寫死的 `schemaVersion`、替測試資料補上新欄位的預設值這類沒有判斷空間的修改）：直接修改，回報時列出改了哪些檔案。
 5. **驗證**：完成條件是 `npm run typecheck`、`npm run lint`、`npm run test`、`npm run test:e2e` 全數通過。畫面有變動時，另外執行 `npm run screenshot` 並看過它輸出的截圖，再針對改動的部分在瀏覽器實際操作。
 6. **詢問是否 commit**：向使用者回報結果並詢問是否 commit，確認後才執行（訊息依全域的 `/generating-commit-messages` 規範）。完成條件：commit 的輸出中看得到 Commands 所列 pre-commit 各項的執行結果，代表 pre-commit 確實跑過。
-7. **併回 `main` 並收尾**：使用者同意 commit 即包含這一步。在主目錄執行 `scripts/finish-worktree.sh <分支>`，它停下來時依訊息處理後重跑。完成條件：腳本印出「已將 <分支> 併入 main」。push 留給使用者決定——push 到 `main` 就會部署。
+7. **併回 `main` 並收尾**：使用者同意 commit 即包含這一步。在主目錄執行 `scripts/finish-worktree.sh <分支>`，它停下來時依訊息處理後重跑。完成條件：腳本印出「<分支> 已併入 main」。push 留給使用者決定——push 到 `main` 就會部署。
 
 ## Architecture
 
