@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.e2e.tsbuildinfo",
+    "target": "es2023",
+    /* DOM：page.evaluate 的 callback 在瀏覽器內執行，會用到 localStorage、document 等 */
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["node"],
+    "skipLibCheck": true,
+    /* scripts/ 內的 .mjs 以 JSDoc 標註型別 */
+    "allowJs": true,
+    "checkJs": true,
+
+    /* Bundler mode：Playwright 自行轉譯，spec 之間以不帶副檔名的相對路徑互相匯入 */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["e2e", "playwright.config.ts", "scripts"]
+}

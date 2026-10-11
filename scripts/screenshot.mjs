@@ -11,6 +11,7 @@ import path from "node:path";
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
 
+/** @type {{ name: string, context: import("@playwright/test").BrowserContextOptions }[]} */
 const VARIANTS = [
   {
     name: "desktop-light",
@@ -33,6 +34,7 @@ const TREND_TABS = [
   ["allocation", "配置與儲蓄"],
 ];
 
+/** @param {string[]} argv */
 function parseOutDir(argv) {
   const index = argv.indexOf("--out");
   return path.resolve(
@@ -42,6 +44,10 @@ function parseOutDir(argv) {
   );
 }
 
+/**
+ * @param {import("@playwright/test").Page | import("@playwright/test").Locator} page
+ * @param {string} name
+ */
 async function expandSection(page, name) {
   const toggle = page.getByRole("button", { name, exact: true });
   if ((await toggle.getAttribute("aria-expanded")) !== "true") {
@@ -49,12 +55,19 @@ async function expandSection(page, name) {
   }
 }
 
+/**
+ * @param {import("@playwright/test").Browser} browser
+ * @param {string} baseUrl
+ * @param {string} outDir
+ * @param {(typeof VARIANTS)[number]} variant
+ */
 async function capture(browser, baseUrl, outDir, variant) {
   const context = await browser.newContext({
     ...variant.context,
     reducedMotion: "reduce",
   });
   const page = await context.newPage();
+  /** @type {string[]} */
   const problems = [];
   page.on("pageerror", (error) => problems.push(`例外：${error.message}`));
   page.on("console", (message) => {
@@ -63,6 +76,10 @@ async function capture(browser, baseUrl, outDir, variant) {
     }
   });
 
+  /**
+   * @param {import("@playwright/test").Locator} locator
+   * @param {string} file
+   */
   const shot = (locator, file) =>
     locator.screenshot({
       path: path.join(outDir, `${variant.name}-${file}.png`),
@@ -118,7 +135,10 @@ const server = await createServer({
   server: { port: 5273, strictPort: false },
 });
 await server.listen();
-const baseUrl = server.resolvedUrls.local[0];
+// listen() 完成後 resolvedUrls 一定有值，型別上的 null 只出現在啟動之前
+const baseUrl = /** @type {import("vite").ResolvedServerUrls} */ (
+  server.resolvedUrls
+).local[0];
 const browser = await chromium.launch();
 
 let failed = false;
