@@ -1,14 +1,18 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
-import { expandSnapshotSections } from "./helpers";
+import {
+  CURRENT_SCHEMA_VERSION,
+  expandSnapshotSections,
+  makeSnapshot,
+  STORAGE_KEY,
+} from "./helpers";
 
 // PRD 4.2「範例資料」、6.2 節、第 9 節 #63a～#63n
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sampleBackup = path.join(__dirname, "fixtures/sample-backup.json");
 
-const STORAGE_KEY = "my_finance_dashboard_data";
 const DEMO_MODE_KEY = "my_finance_dashboard_demo";
 const LAST_BACKUP_KEY = "my_finance_dashboard_last_backup";
 const THEME_KEY = "my_finance_dashboard_theme";
@@ -273,26 +277,13 @@ test("LocalStorage 已有快照時拒絕載入範例資料，既有資料不被�
 }) => {
   await expect(offer(page)).toBeVisible();
   const raw = JSON.stringify({
-    schemaVersion: 8,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     snapshots: [
-      {
-        date: "2026-01-01",
-        updatedAt: "2026-01-01T00:00:00.000Z",
+      makeSnapshot("2026-01-01", {
         cashSources: [
           { id: "c1", name: "我的銀行", amount: 4321, restricted: false },
         ],
-        twStockValue: 0,
-        usStockValue: 0,
-        usStockCurrency: "USD",
-        exchangeRate: 0,
-        realEstateValue: 0,
-        debts: [],
-        incomeSources: [],
-        monthlyExpense: 0,
-        recurringInvestments: [],
-        targetNetWorth: 0,
-        targetCashRatio: 0,
-      },
+      }),
     ],
   });
   await page.evaluate(

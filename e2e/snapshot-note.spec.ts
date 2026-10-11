@@ -1,9 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandSnapshotSections } from "./helpers";
+import {
+  CURRENT_SCHEMA_VERSION,
+  dateDaysAgo,
+  expandSnapshotSections,
+  makeSnapshot,
+  seedFinanceData,
+  STORAGE_KEY,
+} from "./helpers";
 
 // PRD 4.2「快照備註」、第 7 節「快照備註」、第 9 節 #72a～#72i
-
-const STORAGE_KEY = "my_finance_dashboard_data";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -11,12 +16,6 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
 });
-
-function dateDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 interface SeedSnapshot {
   daysAgo: number;
@@ -29,46 +28,24 @@ interface SeedSnapshot {
 async function seedSnapshots(
   page: Page,
   snapshots: SeedSnapshot[],
-  schemaVersion = 9
+  schemaVersion = CURRENT_SCHEMA_VERSION
 ) {
-  await page.evaluate(
-    ({ key, version, items }) => {
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          schemaVersion: version,
-          snapshots: items.map(({ date, cash, note }) => ({
-            date,
-            updatedAt: `${date}T00:00:00.000Z`,
-            cashSources: [
-              { id: "c1", name: "銀行", amount: cash, restricted: false },
-            ],
-            twStockValue: 200000,
-            usStockValue: 0,
-            usStockCurrency: "USD",
-            exchangeRate: 0,
-            realEstateValue: 0,
-            debts: [],
-            incomeSources: [],
-            monthlyExpense: 0,
-            recurringInvestments: [],
-            targetNetWorth: 0,
-            targetCashRatio: 0,
-            ...(note === undefined ? {} : { note }),
-          })),
-        })
-      );
-    },
-    {
-      key: STORAGE_KEY,
-      version: schemaVersion,
-      items: snapshots.map(({ daysAgo, ...rest }) => ({
-        date: dateDaysAgo(daysAgo),
-        ...rest,
-      })),
-    }
+  await seedFinanceData(
+    page,
+    snapshots.map(({ daysAgo, cash, note }) => {
+      const snapshot = makeSnapshot(dateDaysAgo(daysAgo), {
+        cashSources: [
+          { id: "c1", name: "銀行", amount: cash, restricted: false },
+        ],
+        twStockValue: 200000,
+      });
+      if (note !== undefined) return { ...snapshot, note };
+      // 沒給 note：拿掉這個欄位，還原成 v8 以前的資料形狀
+      const { note: _note, ...legacy } = snapshot;
+      return legacy;
+    }),
+    schemaVersion
   );
-  await page.reload();
   await expect(page.getByTestId("input-form")).toHaveAttribute(
     "aria-busy",
     "false"
@@ -113,7 +90,7 @@ test("輸入備註並存檔：歷史快照顯示備註，重新整理後仍在",
 
   await expandSnapshotSections(page);
   await expect(historyNote(page, today)).toHaveText("備註：買房");
-  expect((await storedData(page)).schemaVersion).toBe(9);
+  expect((await storedData(page)).schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
   expect(await storedNotes(page)).toEqual({ [today]: "買房" });
 
   await page.reload();
@@ -299,7 +276,7 @@ test("schema v8 的舊資料：自動補上空的備註，存檔後升為 v9", a
   await expect(page.getByTestId("save-message")).toBeVisible();
 
   const data = await storedData(page);
-  expect(data.schemaVersion).toBe(9);
+  expect(data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
   expect(await storedNotes(page)).toEqual({
     [yesterday]: "",
     [today]: "第一筆備註",

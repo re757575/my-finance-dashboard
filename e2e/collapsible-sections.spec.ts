@@ -1,8 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { dateDaysAgo, makeSnapshot, seedFinanceData } from "./helpers";
 
 // PRD 4.2「快照比較與歷史快照預設收合」、第 9 節 #66a～#66f
-
-const STORAGE_KEY = "my_finance_dashboard_data";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -11,43 +10,23 @@ test.beforeEach(async ({ page }) => {
   await page.reload();
 });
 
-function dateDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /** 直接寫入 LocalStorage：由舊到新依序為 100,000／200,000／… 的現金快照。 */
 async function seedSnapshots(page: Page, daysAgo: number[]) {
-  await page.evaluate(
-    ({ key, dates }) => {
-      const snapshot = (date: string, amount: number) => ({
-        date,
-        updatedAt: `${date}T00:00:00.000Z`,
-        cashSources: [{ id: "c1", name: "銀行", amount, restricted: false }],
-        twStockValue: 0,
-        usStockValue: 0,
-        usStockCurrency: "USD",
-        exchangeRate: 0,
-        realEstateValue: 0,
-        debts: [],
-        incomeSources: [],
-        monthlyExpense: 0,
-        recurringInvestments: [],
-        targetNetWorth: 0,
-        targetCashRatio: 0,
-      });
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          schemaVersion: 8,
-          snapshots: dates.map((d, i) => snapshot(d, (i + 1) * 100000)),
-        })
-      );
-    },
-    { key: STORAGE_KEY, dates: daysAgo.map(dateDaysAgo) }
+  await seedFinanceData(
+    page,
+    daysAgo.map((n, i) =>
+      makeSnapshot(dateDaysAgo(n), {
+        cashSources: [
+          {
+            id: "c1",
+            name: "銀行",
+            amount: (i + 1) * 100000,
+            restricted: false,
+          },
+        ],
+      })
+    )
   );
-  await page.reload();
   await expect(page.getByTestId("total-assets")).not.toHaveText("$0");
 }
 

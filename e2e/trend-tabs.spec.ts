@@ -1,8 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { dateDaysAgo, makeSnapshot, seedFinanceData } from "./helpers";
 
 // PRD 4.2「趨勢圖分組分頁」、第 7 節、第 9 節 #58a～#58j
-
-const STORAGE_KEY = "my_finance_dashboard_data";
 
 const ASSET_CHARTS = ["淨資產趨勢", "現金趨勢", "股票趨勢"];
 const LIABILITY_CHARTS = ["負債比趨勢", "資產負債對比", "每月應還款趨勢"];
@@ -10,19 +9,12 @@ const ALLOCATION_CHARTS = ["資產配置趨勢", "儲蓄率趨勢"];
 
 type TrendTabName = "資產" | "負債" | "配置與儲蓄";
 
-function dateDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /** 直接寫入 LocalStorage：每筆快照都有現金、台股、負債與收支，八張趨勢圖皆有資料可畫。 */
 async function seedHistory(page: Page, daysAgo: number[]) {
-  await page.evaluate(
-    ({ key, dates }) => {
-      const snapshot = (date: string, i: number) => ({
-        date,
-        updatedAt: `${date}T00:00:00.000Z`,
+  await seedFinanceData(
+    page,
+    daysAgo.map((n, i) =>
+      makeSnapshot(dateDaysAgo(n), {
         cashSources: [
           {
             id: "c1",
@@ -32,10 +24,6 @@ async function seedHistory(page: Page, daysAgo: number[]) {
           },
         ],
         twStockValue: 200000 + i * 5000,
-        usStockValue: 0,
-        usStockCurrency: "USD",
-        exchangeRate: 0,
-        realEstateValue: 0,
         debts: [
           {
             id: "d1",
@@ -50,21 +38,9 @@ async function seedHistory(page: Page, daysAgo: number[]) {
         ],
         incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
         monthlyExpense: 40000,
-        recurringInvestments: [],
-        targetNetWorth: 0,
-        targetCashRatio: 0,
-      });
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          schemaVersion: 8,
-          snapshots: dates.map((d, i) => snapshot(d, i)),
-        })
-      );
-    },
-    { key: STORAGE_KEY, dates: daysAgo.map(dateDaysAgo) }
+      })
+    )
   );
-  await page.reload();
 }
 
 const trendTab = (page: Page, name: TrendTabName) =>

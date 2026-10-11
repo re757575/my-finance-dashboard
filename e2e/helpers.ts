@@ -1,4 +1,61 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import {
+  createEmptySnapshot,
+  CURRENT_SCHEMA_VERSION,
+  type Snapshot,
+} from "../src/types/schema";
+
+export { CURRENT_SCHEMA_VERSION };
+
+/** 快照資料所在的 LocalStorage 鍵（與 `src/lib/storage.ts` 的 `STORAGE_KEY` 相同）。 */
+export const STORAGE_KEY = "my_finance_dashboard_data";
+
+/** 本機日期字串（與 App 的 getCurrentDate 一致）：今天往前推 n 天。 */
+export function dateDaysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * 一筆符合目前 schema 的快照：未指定的欄位取自 `createEmptySnapshot`，只需寫出與預設不同的欄位。
+ * schema 新增欄位時這裡會自動帶上預設值，各 spec 的種子資料不必跟著改。
+ */
+export function makeSnapshot(
+  date: string,
+  overrides: Partial<Snapshot> = {}
+): Snapshot {
+  return {
+    ...createEmptySnapshot(date),
+    updatedAt: `${date}T00:00:00.000Z`,
+    ...overrides,
+  };
+}
+
+/**
+ * 把快照直接寫入 LocalStorage，不重新整理頁面。`schemaVersion` 預設為目前版本；
+ * 要測舊版資料遷移時，自行傳入版本號與該版本形狀的快照。
+ */
+export async function writeFinanceData(
+  page: Page,
+  snapshots: unknown[],
+  schemaVersion: number = CURRENT_SCHEMA_VERSION
+) {
+  await page.evaluate(
+    ({ key, data }) => localStorage.setItem(key, JSON.stringify(data)),
+    { key: STORAGE_KEY, data: { schemaVersion, snapshots } }
+  );
+}
+
+/** `writeFinanceData` 之後重新整理頁面，讓 App 讀到寫入的資料。 */
+export async function seedFinanceData(
+  page: Page,
+  snapshots: unknown[],
+  schemaVersion: number = CURRENT_SCHEMA_VERSION
+) {
+  await writeFinanceData(page, snapshots, schemaVersion);
+  await page.reload();
+}
 
 /** 逐一展開指定標題的可收合區塊；已展開的不會被收合。 */
 async function expandSections(scope: Page | Locator, names: string[]) {

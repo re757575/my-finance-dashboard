@@ -1,8 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { STORAGE_KEY } from "./helpers";
 
 // PRD 4.2「壓力測試卡」第 9 點、5.9 節「跌幅範圍」、第 9 節 #71a～#71e
-
-const STORAGE_KEY = "my_finance_dashboard_data";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空

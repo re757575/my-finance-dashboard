@@ -1,9 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandInputSections, expandSnapshotSections } from "./helpers";
+import {
+  dateDaysAgo,
+  expandInputSections,
+  expandSnapshotSections,
+  makeSnapshot,
+  seedFinanceData,
+} from "./helpers";
 
 // PRD 4.2「總覽卡增減比對」、第 7 節「總覽卡增減」、第 9 節 #69a～#69e
-
-const STORAGE_KEY = "my_finance_dashboard_data";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -11,12 +15,6 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
 });
-
-function dateDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 interface SeedSnapshot {
   daysAgo: number;
@@ -27,56 +25,31 @@ interface SeedSnapshot {
 
 /** 直接寫入 LocalStorage：每筆快照一個現金來源，可另帶一筆負債。 */
 async function seedSnapshots(page: Page, snapshots: SeedSnapshot[]) {
-  await page.evaluate(
-    ({ key, items }) => {
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          schemaVersion: 8,
-          snapshots: items.map(({ date, cash, debt }) => ({
-            date,
-            updatedAt: `${date}T00:00:00.000Z`,
-            cashSources: [
-              { id: "c1", name: "銀行", amount: cash, restricted: false },
-            ],
-            twStockValue: 0,
-            usStockValue: 0,
-            usStockCurrency: "USD",
-            exchangeRate: 0,
-            realEstateValue: 0,
-            debts:
-              debt === undefined
-                ? []
-                : [
-                    {
-                      id: "d1",
-                      name: "信貸",
-                      category: "信貸",
-                      principal: debt,
-                      annualRate: 0,
-                      remainingMonths: 0,
-                      repaymentMethod: "interestOnly",
-                      collateralValue: 0,
-                    },
-                  ],
-            incomeSources: [],
-            monthlyExpense: 0,
-            recurringInvestments: [],
-            targetNetWorth: 0,
-            targetCashRatio: 0,
-          })),
-        })
-      );
-    },
-    {
-      key: STORAGE_KEY,
-      items: snapshots.map(({ daysAgo, ...rest }) => ({
-        date: dateDaysAgo(daysAgo),
-        ...rest,
-      })),
-    }
+  await seedFinanceData(
+    page,
+    snapshots.map(({ daysAgo, cash, debt }) =>
+      makeSnapshot(dateDaysAgo(daysAgo), {
+        cashSources: [
+          { id: "c1", name: "銀行", amount: cash, restricted: false },
+        ],
+        debts:
+          debt === undefined
+            ? []
+            : [
+                {
+                  id: "d1",
+                  name: "信貸",
+                  category: "信貸",
+                  principal: debt,
+                  annualRate: 0,
+                  remainingMonths: 0,
+                  repaymentMethod: "interestOnly",
+                  collateralValue: 0,
+                },
+              ],
+      })
+    )
   );
-  await page.reload();
   await expect(page.getByTestId("input-form")).toHaveAttribute(
     "aria-busy",
     "false"

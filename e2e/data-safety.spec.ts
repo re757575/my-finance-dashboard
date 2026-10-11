@@ -1,9 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandSnapshotSections } from "./helpers";
+import { expandSnapshotSections, STORAGE_KEY } from "./helpers";
 
 // PRD 4.2「寫入失敗防護」「未存檔離開提醒」「多分頁資料同步」「跨日自動換日」、第 9 節 #51a～#54d
-
-const STORAGE_KEY = "my_finance_dashboard_data";
 
 function twStockInput(page: Page) {
   return page.locator('label:has-text("台股市值") input');

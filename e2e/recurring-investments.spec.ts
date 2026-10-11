@@ -1,5 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandInputSections, expandSnapshotSections } from "./helpers";
+import {
+  CURRENT_SCHEMA_VERSION,
+  expandInputSections,
+  expandSnapshotSections,
+  makeSnapshot,
+  writeFinanceData,
+} from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -100,7 +106,7 @@ test("定期定額隨快照存檔，重新整理後仍保留", async ({ page }) 
   const stored = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("my_finance_dashboard_data") ?? "{}")
   );
-  expect(stored.schemaVersion).toBe(9);
+  expect(stored.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
   expect(
     stored.snapshots[0].recurringInvestments.map(
       (investment: { name: string; amount: number }) => [
@@ -150,7 +156,7 @@ test("V7 舊資料遷移後補上空的定期定額清單，現金流不變", as
   await expect(page.getByText("尚未新增定期定額")).toBeVisible();
   await expect(page.getByTestId("cash-flow-after-investment")).toHaveCount(0);
 
-  // 補上定期定額並存檔後，資料以 V8 寫回，舊快照也帶有空清單
+  // 補上定期定額並存檔後，資料以目前版本寫回，舊快照也帶有空清單
   await addRecurringInvestment(page, "0050", "10000");
   await page.getByTestId("save-button").click();
   await expect(page.getByTestId("save-message")).toBeVisible();
@@ -158,7 +164,7 @@ test("V7 舊資料遷移後補上空的定期定額清單，現金流不變", as
   const stored = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("my_finance_dashboard_data") ?? "{}")
   );
-  expect(stored.schemaVersion).toBe(9);
+  expect(stored.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
   expect(stored.snapshots[0].recurringInvestments).toEqual([]);
   expect(stored.snapshots.at(-1).recurringInvestments).toHaveLength(1);
 });
@@ -167,46 +173,40 @@ test("V7 舊資料遷移後補上空的定期定額清單，現金流不變", as
 test("快照比較列出每月定期定額的合計與逐筆增減；兩筆皆無時不顯示該組", async ({
   page,
 }) => {
+  const snapshot = (
+    date: string,
+    recurringInvestments: { id: string; name: string; amount: number }[]
+  ) =>
+    makeSnapshot(date, {
+      updatedAt: `${date}T12:00:00.000Z`,
+      cashSources: [
+        { id: "c1", name: "現金", amount: 300000, restricted: false },
+      ],
+      incomeSources: [{ id: "i1", name: "薪資", amount: 60000 }],
+      monthlyExpense: 20000,
+      recurringInvestments,
+    });
   const seed = (withInvestments: boolean) =>
-    page.evaluate((hasInvestments) => {
-      const snapshot = (
-        date: string,
-        recurringInvestments: { id: string; name: string; amount: number }[]
-      ) => ({
-        date,
-        updatedAt: `${date}T12:00:00.000Z`,
-        cashSources: [
-          { id: "c1", name: "現金", amount: 300000, restricted: false },
-        ],
-        twStockValue: 0,
-        usStockValue: 0,
-        usStockCurrency: "USD",
-        exchangeRate: 0,
-        realEstateValue: 0,
-        debts: [],
-        incomeSources: [{ id: "i1", name: "薪資", amount: 60000 }],
-        monthlyExpense: 20000,
-        recurringInvestments: hasInvestments ? recurringInvestments : [],
-        targetNetWorth: 0,
-        targetCashRatio: 0,
-      });
-      localStorage.setItem(
-        "my_finance_dashboard_data",
-        JSON.stringify({
-          schemaVersion: 8,
-          snapshots: [
-            snapshot("2026-01-31", [
+    writeFinanceData(page, [
+      snapshot(
+        "2026-01-31",
+        withInvestments
+          ? [
               { id: "r1", name: "0050", amount: 10000 },
               { id: "r2", name: "VT", amount: 5000 },
-            ]),
-            snapshot("2026-02-28", [
+            ]
+          : []
+      ),
+      snapshot(
+        "2026-02-28",
+        withInvestments
+          ? [
               { id: "r1", name: "0050", amount: 15000 },
               { id: "r3", name: "QQQ", amount: 3000 },
-            ]),
-          ],
-        })
-      );
-    }, withInvestments);
+            ]
+          : []
+      ),
+    ]);
 
   await seed(true);
   await page.reload();

@@ -1,9 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandInputSections, expandSnapshotSections } from "./helpers";
+import {
+  dateDaysAgo,
+  expandInputSections,
+  expandSnapshotSections,
+  makeSnapshot,
+  seedFinanceData,
+  STORAGE_KEY,
+} from "./helpers";
 
 // PRD 4.2「金額千分位顯示」「固定儲存列」、第 7 節「版面佈局」、第 9 節 #65a～#65k、#68c
 
-const STORAGE_KEY = "my_finance_dashboard_data";
 const PHONE = { width: 390, height: 844 };
 
 test.beforeEach(async ({ page }) => {
@@ -13,27 +19,15 @@ test.beforeEach(async ({ page }) => {
   await page.reload();
 });
 
-function dateDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /** 直接寫入 LocalStorage：每筆快照一個 100,000 的現金來源與一筆本息攤還的信貸。 */
 async function seedSnapshots(page: Page, daysAgo: number[]) {
-  await page.evaluate(
-    ({ key, dates }) => {
-      const snapshot = (date: string) => ({
-        date,
-        updatedAt: `${date}T00:00:00.000Z`,
+  await seedFinanceData(
+    page,
+    daysAgo.map((n) =>
+      makeSnapshot(dateDaysAgo(n), {
         cashSources: [
           { id: "c1", name: "銀行", amount: 100000, restricted: false },
         ],
-        twStockValue: 0,
-        usStockValue: 0,
-        usStockCurrency: "USD",
-        exchangeRate: 0,
-        realEstateValue: 0,
         debts: [
           {
             id: "d1",
@@ -46,20 +40,9 @@ async function seedSnapshots(page: Page, daysAgo: number[]) {
             collateralValue: 0,
           },
         ],
-        incomeSources: [],
-        monthlyExpense: 0,
-        recurringInvestments: [],
-        targetNetWorth: 0,
-        targetCashRatio: 0,
-      });
-      localStorage.setItem(
-        key,
-        JSON.stringify({ schemaVersion: 8, snapshots: dates.map(snapshot) })
-      );
-    },
-    { key: STORAGE_KEY, dates: daysAgo.map(dateDaysAgo) }
+      })
+    )
   );
-  await page.reload();
   await expect(page.getByTestId("total-assets")).toHaveText("$100,000");
 }
 

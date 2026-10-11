@@ -1,5 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expandInputSections, expandSnapshotSections } from "./helpers";
+import {
+  dateDaysAgo,
+  expandInputSections,
+  expandSnapshotSections,
+  makeSnapshot,
+  seedFinanceData,
+} from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空
@@ -565,41 +571,23 @@ test("壓力測試不會改動已存檔資料：切換情境後重新整理，�
   );
 });
 
-/** 本機日期字串（與 App 的 getCurrentDate 一致）：今天往前推 n 天。 */
-function dateDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /** 直接寫入 LocalStorage：由舊到新依序為 100,000／200,000／… 的現金快照。 */
 async function seedHistory(page: Page, daysAgo: number[]) {
-  await page.evaluate((dates) => {
-    const snapshot = (date: string, amount: number) => ({
-      date,
-      updatedAt: `${date}T00:00:00.000Z`,
-      cashSources: [{ id: "c1", name: "銀行", amount, restricted: false }],
-      twStockValue: 0,
-      usStockValue: 0,
-      usStockCurrency: "USD",
-      exchangeRate: 0,
-      realEstateValue: 0,
-      debts: [],
-      incomeSources: [],
-      monthlyExpense: 0,
-      recurringInvestments: [],
-      targetNetWorth: 0,
-      targetCashRatio: 0,
-    });
-    localStorage.setItem(
-      "my_finance_dashboard_data",
-      JSON.stringify({
-        schemaVersion: 8,
-        snapshots: dates.map((d, i) => snapshot(d, (i + 1) * 100000)),
+  await seedFinanceData(
+    page,
+    daysAgo.map((n, i) =>
+      makeSnapshot(dateDaysAgo(n), {
+        cashSources: [
+          {
+            id: "c1",
+            name: "銀行",
+            amount: (i + 1) * 100000,
+            restricted: false,
+          },
+        ],
       })
-    );
-  }, daysAgo.map(dateDaysAgo));
-  await page.reload();
+    )
+  );
   await expandSnapshotSections(page);
   await expandInputSections(page);
 }
@@ -877,45 +865,31 @@ test("歷史快照展開 400 筆後在區塊內捲動，頁面高度不隨筆數
 
 /** 寫入「含收入、支出、負債與股票」的快照，用來驗證儲蓄率／月付／資產配置三張新趨勢圖。 */
 async function seedRichHistory(page: Page, daysAgo: number[]) {
-  await page.evaluate((dates) => {
-    const snapshot = (date: string, i: number) => ({
-      date,
-      updatedAt: `${date}T00:00:00.000Z`,
-      cashSources: [
-        { id: "c1", name: "銀行", amount: 100000, restricted: false },
-      ],
-      twStockValue: 100000,
-      usStockValue: 0,
-      usStockCurrency: "USD",
-      exchangeRate: 0,
-      realEstateValue: 0,
-      debts: [
-        {
-          id: "d1",
-          name: "信貸",
-          category: "信貸",
-          principal: 120000 - i * 30000,
-          annualRate: 0,
-          remainingMonths: 12,
-          repaymentMethod: "amortizing",
-          collateralValue: 0,
-        },
-      ],
-      incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
-      monthlyExpense: 40000 - i * 10000,
-      recurringInvestments: [],
-      targetNetWorth: 0,
-      targetCashRatio: 0,
-    });
-    localStorage.setItem(
-      "my_finance_dashboard_data",
-      JSON.stringify({
-        schemaVersion: 8,
-        snapshots: dates.map((d, i) => snapshot(d, i)),
+  await seedFinanceData(
+    page,
+    daysAgo.map((n, i) =>
+      makeSnapshot(dateDaysAgo(n), {
+        cashSources: [
+          { id: "c1", name: "銀行", amount: 100000, restricted: false },
+        ],
+        twStockValue: 100000,
+        debts: [
+          {
+            id: "d1",
+            name: "信貸",
+            category: "信貸",
+            principal: 120000 - i * 30000,
+            annualRate: 0,
+            remainingMonths: 12,
+            repaymentMethod: "amortizing",
+            collateralValue: 0,
+          },
+        ],
+        incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
+        monthlyExpense: 40000 - i * 10000,
       })
-    );
-  }, daysAgo.map(dateDaysAgo));
-  await page.reload();
+    )
+  );
 }
 
 const trendCard = (page: Page, title: string) =>

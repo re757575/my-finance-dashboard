@@ -7,25 +7,12 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TrendSection } from "@/components/TrendSection";
-import type { Snapshot } from "@/types/schema";
+import { createEmptySnapshot, type Snapshot } from "@/types/schema";
 
 function baseSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
   return {
-    date: "2026-01-01",
+    ...createEmptySnapshot("2026-01-01"),
     updatedAt: "2026-01-01T09:00:00.000Z",
-    cashSources: [],
-    twStockValue: 0,
-    usStockValue: 0,
-    usStockCurrency: "USD",
-    exchangeRate: 0,
-    realEstateValue: 0,
-    debts: [],
-    incomeSources: [],
-    monthlyExpense: 0,
-    recurringInvestments: [],
-    targetNetWorth: 0,
-    targetCashRatio: 0,
-    note: "",
     ...overrides,
   };
 }

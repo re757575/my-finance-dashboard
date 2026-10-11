@@ -1,8 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
+import {
+  dateDaysAgo,
+  makeSnapshot,
+  seedFinanceData,
+  STORAGE_KEY,
+} from "./helpers";
 
 // PRD 4.2「輸入區分段收合」、第 7 節同名項目、第 9 節 #70a～#70h
 
-const STORAGE_KEY = "my_finance_dashboard_data";
 const SECTIONS = ["資產", "負債", "收入與支出", "目標"] as const;
 
 test.beforeEach(async ({ page }) => {
@@ -11,12 +16,6 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
 });
-
-function dateDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 /** 前 n 個月 1 日的日期字串（跨月才會觸發負債自動估算）。 */
 function firstDayMonthsAgo(n: number): string {
@@ -40,45 +39,26 @@ interface SeedDebt {
  * 定期定額 20,000、目標淨資產 30,000,000、目標現金比例 20%，負債由參數決定。
  */
 async function seedSnapshot(page: Page, debts: SeedDebt[], date?: string) {
-  await page.evaluate(
-    ({ key, date, debts }) => {
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          schemaVersion: 8,
-          snapshots: [
-            {
-              date,
-              updatedAt: `${date}T00:00:00.000Z`,
-              cashSources: [
-                { id: "c1", name: "銀行", amount: 1000000, restricted: false },
-              ],
-              twStockValue: 0,
-              usStockValue: 0,
-              usStockCurrency: "USD",
-              exchangeRate: 0,
-              realEstateValue: 0,
-              debts: debts.map((debt) => ({
-                name: "",
-                annualRate: 0,
-                remainingMonths: 0,
-                repaymentMethod: "interestOnly",
-                collateralValue: 0,
-                ...debt,
-              })),
-              incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
-              monthlyExpense: 40000,
-              recurringInvestments: [{ id: "r1", name: "0050", amount: 20000 }],
-              targetNetWorth: 30000000,
-              targetCashRatio: 20,
-            },
-          ],
-        })
-      );
-    },
-    { key: STORAGE_KEY, date: date ?? dateDaysAgo(0), debts }
-  );
-  await page.reload();
+  await seedFinanceData(page, [
+    makeSnapshot(date ?? dateDaysAgo(0), {
+      cashSources: [
+        { id: "c1", name: "銀行", amount: 1000000, restricted: false },
+      ],
+      debts: debts.map((debt) => ({
+        name: "",
+        annualRate: 0,
+        remainingMonths: 0,
+        repaymentMethod: "interestOnly",
+        collateralValue: 0,
+        ...debt,
+      })),
+      incomeSources: [{ id: "i1", name: "薪資", amount: 100000 }],
+      monthlyExpense: 40000,
+      recurringInvestments: [{ id: "r1", name: "0050", amount: 20000 }],
+      targetNetWorth: 30000000,
+      targetCashRatio: 20,
+    }),
+  ]);
   await expect(form(page)).toHaveAttribute("aria-busy", "false");
 }
 

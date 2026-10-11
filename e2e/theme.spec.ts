@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { STORAGE_KEY } from "./helpers";
 
 // PRD 4.2「深色模式」、6.2 節、第 9 節 #59a～#59k
 
 const THEME_KEY = "my_finance_dashboard_theme";
-const STORAGE_KEY = "my_finance_dashboard_data";
 
 function html(page: Page) {
   return page.locator("html");

@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-
-const STORAGE_KEY = "my_finance_dashboard_data";
+import { STORAGE_KEY } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   // 只在測試開始前清空一次；不可用 addInitScript，否則測試中的 page.reload() 也會被清空

@@ -557,7 +557,6 @@ describe("parseFinanceData", () => {
     if (result.status === "ok") {
       const snapshot = result.data.snapshots[0];
       expect(result.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
-      expect(result.data.schemaVersion).toBe(9);
       expect(snapshot.note).toBe("");
       // 既有欄位不受影響
       expect(snapshot.date).toBe("2026-09-30");

@@ -3,7 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
-import { expandInputSections, expandSnapshotSections } from "./helpers";
+import {
+  dateDaysAgo,
+  expandInputSections,
+  expandSnapshotSections,
+  makeSnapshot,
+  writeFinanceData,
+} from "./helpers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sampleBackup = path.join(__dirname, "fixtures/sample-backup.json");
@@ -259,49 +265,28 @@ test("取消清空對話框時資料不受影響", async ({ page }) => {
   await expect(page.getByTestId("total-assets")).toHaveText("$12,345");
 });
 
-/** 本機日期字串（與 App 的 getCurrentDate 一致）：今天往前推 n 天。 */
-function dateDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /** 直接寫入 LocalStorage：每個日期（YYYY-MM-DD）一筆快照（現金 123,456），並可指定上次備份時間。 */
 async function seedSnapshotDates(
   page: Page,
   dates: string[],
   backupIso: string | null = null
 ) {
-  await page.evaluate(
-    ({ dates, backupIso }) => {
-      const snapshot = (date: string) => ({
-        date,
-        updatedAt: `${date}T00:00:00.000Z`,
+  await writeFinanceData(
+    page,
+    dates.map((date) =>
+      makeSnapshot(date, {
         cashSources: [
           { id: "c1", name: "秘密銀行", amount: 123456, restricted: false },
         ],
-        twStockValue: 0,
-        usStockValue: 0,
-        usStockCurrency: "USD",
-        exchangeRate: 0,
-        realEstateValue: 0,
-        debts: [],
-        incomeSources: [],
-        monthlyExpense: 0,
-        recurringInvestments: [],
-        targetNetWorth: 0,
-        targetCashRatio: 0,
-      });
-      localStorage.setItem(
-        "my_finance_dashboard_data",
-        JSON.stringify({ schemaVersion: 8, snapshots: dates.map(snapshot) })
-      );
-      if (backupIso) {
-        localStorage.setItem("my_finance_dashboard_last_backup", backupIso);
-      }
-    },
-    { dates, backupIso }
+      })
+    )
   );
+  if (backupIso) {
+    await page.evaluate(
+      (iso) => localStorage.setItem("my_finance_dashboard_last_backup", iso),
+      backupIso
+    );
+  }
   await page.reload();
   await expandSnapshotSections(page);
 }
