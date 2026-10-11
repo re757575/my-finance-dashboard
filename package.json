@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
+    "test:docs": "vitest run src/test/docsIntegrity.test.ts",
     "test:e2e": "playwright test",
     "screenshot": "node scripts/screenshot.mjs",
     "prepare": "husky",

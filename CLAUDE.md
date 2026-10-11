@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 指令定義在 `package.json` 的 `scripts`。
 
 - 首次執行 e2e 前先安裝瀏覽器：`npx playwright install --with-deps chromium`。
-- Commit 時 `.husky/pre-commit` 先跑 `lint-staged`（Prettier 格式化），再依 staged 的檔案二選一：全是 `*.md` 時只跑**文件檢查** `npx vitest run src/test/docsIntegrity.test.ts`；其餘跑 `lint` → `typecheck` → `test`。e2e 啟動較慢，不包含在內。
+- Commit 時 `.husky/pre-commit` 先跑 `lint-staged`（Prettier 格式化），再依 staged 的檔案二選一：全是 `*.md` 時只跑**文件檢查** `npm run test:docs`；其餘跑 `lint` → `typecheck` → `test`。e2e 啟動較慢，不包含在內。
 - push 到 `main` 時 `.husky/pre-push` 會先跑 `npm run test:e2e`，失敗就擋下這次 push；其他分支與只推 tag 不受影響。
 
 ## 開發流程
