@@ -16,7 +16,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 指令定義在 `package.json` 的 `scripts`（`dev`／`build`／`typecheck`／`lint`／`test`／`test:e2e`）。
 
 - 首次執行 e2e 前先安裝瀏覽器：`npx playwright install --with-deps chromium`。
-- Commit 時 `.husky/pre-commit` 依序執行 `lint-staged`（Prettier 格式化）→ `typecheck` → `test`；e2e 啟動較慢，不包含在內。
+- Commit 時 `.husky/pre-commit` 依序執行 `lint-staged`（Prettier 格式化）→ `lint` → `typecheck` → `test`；e2e 啟動較慢，不包含在內。
+- push 到 `main` 時 `.husky/pre-push` 會先跑 `npm run test:e2e`，失敗就擋下這次 push；其他分支與只推 tag 不受影響。
 
 ## 開發流程
 
@@ -29,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - **行為斷言的新增或變更**（新案例、改預期值、改測試描述的行為）：先向使用者說明本次功能異動內容並詢問是否確認無誤，確認後才動手。
    - **機械性修正**（schema 升版後更新寫死的 `schemaVersion`、替測試資料補上新欄位的預設值這類沒有判斷空間的修改）：直接修改，回報時列出改了哪些檔案。
 5. **驗證**：完成條件是 `npm run typecheck`、`npm run lint`、`npm run test`、`npm run test:e2e` 全數通過；畫面有變動時，另外載入範例資料在瀏覽器實際操作過。
-6. **詢問是否 commit**：向使用者回報結果並詢問是否 commit，確認後才執行（訊息依全域的 `/generating-commit-messages` 規範）。完成條件：commit 的輸出中看得到 lint-staged 與測試的執行結果，代表 pre-commit 確實跑過。
+6. **詢問是否 commit**：向使用者回報結果並詢問是否 commit，確認後才執行（訊息依全域的 `/generating-commit-messages` 規範）。完成條件：commit 的輸出中看得到 lint-staged、lint 與測試的執行結果，代表 pre-commit 確實跑過。
 7. **併回 `main` 並收尾**：使用者同意 commit 即包含這一步。在主目錄執行 `git merge --ff-only <分支>`，成功後 `git worktree remove <路徑>`、`git branch -d <分支>`。無法 fast-forward 時（`main` 有新的 commit），先在 worktree 內 `git rebase main` 並重做第 5 步。push 留給使用者決定——push 到 `main` 就會部署。
 
 ## Architecture
@@ -47,4 +48,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Release 與部署
 
 - **版本號與 `CHANGELOG.md` 一律由 `npm run release` 產生**（commit-and-tag-version，依 Conventional Commits），不手動改 `package.json` 的 `version` 或 `CHANGELOG.md`。指令與 0.x 階段的版號規則見 [README.md](README.md)「版本發布」。
-- **push 到 `main` 就會部署**到 GitHub Pages（`.github/workflows/deploy.yml`：typecheck → 單元測試 → e2e → build → deploy）。設定見 [README.md](README.md)「部署到 GitHub Pages」，deploy 步驟以 404 失敗時見 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。
+- **push 到 `main` 就會部署**到 GitHub Pages（`.github/workflows/deploy.yml`：lint → typecheck → 單元測試 → e2e → build → deploy）。設定見 [README.md](README.md)「部署到 GitHub Pages」，deploy 步驟以 404 失敗時見 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。

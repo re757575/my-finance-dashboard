@@ -1,0 +1,8 @@
+# push 到 main 就會部署，而 pre-commit 不含 e2e：推送 main 之前先跑一次，失敗就擋下這次 push。
+# 其他分支與只推 tag 的 push 不受影響。
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    npm run test:e2e
+    exit $?
+  fi
+done
