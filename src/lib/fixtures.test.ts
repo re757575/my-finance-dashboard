@@ -10,7 +10,7 @@ import { getLatestSnapshot, parseFinanceData } from "@/lib/storage";
 import { CURRENT_SCHEMA_VERSION } from "@/types/schema";
 
 // fixtures/finance-data.json 是全部虛構、填滿所有功能欄位的測試資料；
-// 新增／調整功能或 schema 欄位時必須同步更新它（見 CLAUDE.md「測試」章節）。
+// 新增／調整功能或 schema 欄位時必須同步更新它（見 docs/architecture/testing.md）。
 function loadFixture() {
   const result = parseFinanceData(rawFinanceData);
   if (result.status !== "ok") {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import appSource from "../App.tsx?raw";
 
 /**
- * 深色樣式覆蓋檢查（PRD 4.2「深色模式」、第 7 節；CLAUDE.md「深色模式」）：
+ * 深色樣式覆蓋檢查（PRD 4.2「深色模式」、第 7 節；docs/architecture/dark-mode.md）：
  * 業務元件裡寫死的淺色 className（白底、slate 灰階、狀態色的淺底與深字）必須在
  * 同一個 class 字串內帶有對應的 `dark:` 變體，避免新增元件時漏掉深色樣式。
  *

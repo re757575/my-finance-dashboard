@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 // PRD 4.2「淨資產成長率與最大回撤」、5.11 節、第 9 節 #14k～#14o
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// 全功能、60 筆月底快照的虛構測試資料（2021-10-31～2026-09-30，全專案共用，見 CLAUDE.md「測試」章節）
+// 全功能、60 筆月底快照的虛構測試資料（2021-10-31～2026-09-30，全專案共用，見 docs/architecture/testing.md）
 const financeDataFixture = path.join(
   __dirname,
   "../fixtures/finance-data.json"

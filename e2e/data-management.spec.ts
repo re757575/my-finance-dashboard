@@ -8,7 +8,7 @@ import { expandInputSections, expandSnapshotSections } from "./helpers";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sampleBackup = path.join(__dirname, "fixtures/sample-backup.json");
 const corruptedBackup = path.join(__dirname, "fixtures/corrupted-backup.json");
-// 全功能、60 筆月底快照的虛構測試資料（全專案共用，見 CLAUDE.md「測試」章節）
+// 全功能、60 筆月底快照的虛構測試資料（全專案共用，見 docs/architecture/testing.md）
 const financeDataFixture = path.join(
   __dirname,
   "../fixtures/finance-data.json"

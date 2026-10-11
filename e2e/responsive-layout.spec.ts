@@ -6,7 +6,7 @@ import { expandSnapshotSections } from "./helpers";
 // PRD 第 7 節「版面佈局」：1024px 以上雙欄、以下單欄；窄欄位不截斷內容
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// 全功能、60 筆月底快照的虛構測試資料（全專案共用，見 CLAUDE.md「測試」章節）
+// 全功能、60 筆月底快照的虛構測試資料（全專案共用，見 docs/architecture/testing.md）
 const financeDataFixture = path.join(
   __dirname,
   "../fixtures/finance-data.json"
