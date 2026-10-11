@@ -2,6 +2,12 @@
 
 本檔案由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) 依照 [Conventional Commits](https://www.conventionalcommits.org/) 規範的 commit 訊息自動產生，請勿手動編輯內容，執行 `npm run release` 即可更新。
 
+## [0.3.17](https://github.com/re757575/my-finance-dashboard/compare/v0.3.16...v0.3.17) (2026-10-11)
+
+### Bug Fixes
+
+- **scripts:** 收尾腳本中斷後可以重跑，讀不到 git status 時中止 ([0080992](https://github.com/re757575/my-finance-dashboard/commit/008099291ece5ff36ac54fd9660a42695df66093))
+
 ## [0.3.16](https://github.com/re757575/my-finance-dashboard/compare/v0.3.15...v0.3.16) (2026-10-11)
 
 ## [0.3.15](https://github.com/re757575/my-finance-dashboard/compare/v0.3.14...v0.3.15) (2026-10-10)
