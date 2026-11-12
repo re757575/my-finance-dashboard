@@ -13,3 +13,4 @@
   - **`loadDemoData()` 絕不覆蓋既有快照**：寫入前重新讀取 LocalStorage，已有快照或版本不相容一律拒絕；先寫標記再寫資料，失敗時收回標記並回 `{ ok: false, reason }`、不更新任何 state。成功後與 `importBackup` 共用 `applyReplacedData()` 重置修正模式與草稿，並把趨勢圖範圍切到 1 年（只存在 state）。
   - **結束範例模式**：橫幅的「清除範例資料」二次確認後直接呼叫 `clearAllData()`——這是「清空前必須先強制匯出」的唯一例外（虛構資料可重新載入）。`clearAllData`、`importBackup` 成功、以及 `save()` 從零筆快照開始存檔時都會清除標記；`storage` 事件會同步其他分頁的標記變化。
 - **PWA**（`vite-plugin-pwa`）：`registerType: "prompt"` 只快取建置產出的同源靜態檔案，不新增任何對外網路請求，符合零伺服器傳輸原則；更新提示 UI 見 `src/components/PwaUpdatePrompt.tsx`。
+  - **圖示**：`public/favicon.svg`、`pwa-*.png`、`maskable-icon-512x512.png`、`apple-touch-icon-180x180.png` 全由 [scripts/generate-icons.mjs](../../scripts/generate-icons.mjs) 產生（`npm run icons`），不要直接改輸出檔。一般圖示是四角透明的圓角方塊；maskable 與 apple-touch-icon 滿版、圖案縮在中央安全區，因為系統會自行裁切，透明的四角在 iOS 會變成黑色。`theme_color`（`vite.config.ts`）與 `index.html` 的 `theme-color` 同為 emerald-600 `#059669`，兩處要一起改。

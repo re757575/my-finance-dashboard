@@ -17,6 +17,7 @@
     "test:docs": "vitest run src/test/docsIntegrity.test.ts",
     "test:e2e": "playwright test",
     "screenshot": "node scripts/screenshot.mjs",
+    "icons": "node scripts/generate-icons.mjs",
     "prepare": "husky",
     "release": "commit-and-tag-version",
     "release:patch": "commit-and-tag-version --release-as patch",

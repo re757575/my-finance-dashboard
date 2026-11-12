@@ -23,14 +23,14 @@ export default defineConfig({
     VitePWA({
       // 只快取建置產出的靜態檔案（同源），不新增任何對外網路請求，不違反零網路請求原則（PRD 第 8 節）。
       registerType: "prompt",
-      includeAssets: ["favicon.svg"],
+      includeAssets: ["favicon.svg", "apple-touch-icon-180x180.png"],
       manifest: {
         name: "個人資產負債儀表板",
         short_name: "資產儀表板",
         description:
           "去中心化、無伺服器、高度重視隱私的個人財務健康管理工具，所有資料僅儲存在你的瀏覽器中。",
         lang: "zh-Hant",
-        theme_color: "#7e14ff",
+        theme_color: "#059669",
         background_color: "#F9FAFB",
         display: "standalone",
         start_url: "./",
